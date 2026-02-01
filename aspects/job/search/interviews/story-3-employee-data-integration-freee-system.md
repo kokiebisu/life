@@ -6,7 +6,6 @@ updated: 2025年12月6日 22:53
 
 # Story 3: Employee Data Integration @ Freee (System Design)
 
-
 # 背景
 
 ドキュメントの内容、目的、および範囲

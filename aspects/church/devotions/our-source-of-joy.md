@@ -5,8 +5,6 @@ updated: 2025年10月26日 14:26
 ---
 
 # Our Source of Joy
-
-
 神は讃え尽くせないほど偉大。
 
 God is so great, he cannot be praised enough.

@@ -6,7 +6,6 @@ updated: 2025年12月6日 22:53
 
 # Story 4: OIDC統合 @ Freee (Security)
 
-
 # 背景
 
 ドキュメントの内容、目的、および範囲

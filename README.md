@@ -2,6 +2,24 @@
 
 GitHub を使った人生管理リポジトリ
 
+## アスペクト（生活の側面）
+
+`aspects/` フォルダに生活の各側面を管理するチームがいます。
+
+| アスペクト | 説明 | コマンド |
+|-----------|------|----------|
+| [ダイエット](aspects/diet/) | 減量・健康管理サポートチーム | `/ask:diet` |
+| [就職活動](aspects/job/search/) | 就職・転職活動サポートチーム | `/ask:job:search` |
+| [Tsumugi](aspects/tsumugi/) | 個人プロジェクト | - |
+
+## Claude Code コマンド
+
+| コマンド | 説明 |
+|----------|------|
+| `/ask:diet` | ダイエットチームに相談 |
+| `/ask:job:search` | 就職活動チームに相談 |
+| `/pr` | 変更をグループ化してPR作成 |
+
 ## 使い方
 
 ### Issue でタスク管理
@@ -19,4 +37,3 @@ GitHub を使った人生管理リポジトリ
 ## 参考
 - [life repo のススメ](https://zenn.dev/hand_dot/articles/85c9640b7dcc66)
 - [2025年版 life repo](https://qiita.com/e99h2121/items/45c62307565458964b94)
-# life

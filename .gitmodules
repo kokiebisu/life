@@ -1,0 +1,3 @@
+[submodule "tsumugi"]
+	path = tsumugi
+	url = https://github.com/kokiebisu/tsumugi

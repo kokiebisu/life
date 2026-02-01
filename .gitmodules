@@ -1,3 +1,3 @@
 [submodule "tsumugi"]
-	path = tsumugi
+	path = aspects/tsumugi
 	url = https://github.com/kokiebisu/tsumugi

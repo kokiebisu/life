@@ -8,14 +8,22 @@
       "extensions": [
         "Anthropic.claude-code",
         "esbenp.prettier-vscode",
-        "eamodio.gitlens"
+        "eamodio.gitlens",
+        "yzhang.markdown-all-in-one",
+        "DavidAnson.vscode-markdownlint",
+        "bierner.markdown-mermaid"
       ],
       "settings": {
-        "editor.formatOnSave": true
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "[markdown]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.wordWrap": "on"
+        }
       }
     }
   },
-  "postCreateCommand": "git config --global worktree.guessRemote true",
+  "postCreateCommand": "git submodule update --init --recursive && git config --global worktree.guessRemote true",
   "remoteUser": "node",
   "mounts": [
     "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/node/.ssh,type=bind,consistency=cached",

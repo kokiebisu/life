@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -e  # Exit on error
+
+# 1. Check if already in container
+if [ -n "$REMOTE_CONTAINERS" ] || [ -n "$CODESPACES" ]; then
+  echo "[OK] Already in devcontainer!"
+  exit 0
+fi
+
+# 2. Determine how to run devcontainer CLI
+run_devcontainer() {
+  if command -v bunx &> /dev/null; then
+    bunx @devcontainers/cli "$@"
+  elif command -v npx &> /dev/null; then
+    npx @devcontainers/cli "$@"
+  elif command -v devcontainer &> /dev/null; then
+    devcontainer "$@"
+  else
+    echo "Error: No way to run devcontainer CLI."
+    echo "Install Node.js: https://nodejs.org/"
+    echo "Or install bun: curl -fsSL https://bun.sh/install | bash"
+    exit 1
+  fi
+}
+
+# 3. Start container if needed (idempotent)
+echo "Starting devcontainer..."
+if ! run_devcontainer up --workspace-folder .; then
+  echo "Error: Failed to start devcontainer. Check Docker is running." >&2
+  exit 1
+fi
+
+# 4. Open shell with Claude Code
+echo "Opening shell with Claude Code..."
+if ! run_devcontainer exec --workspace-folder . bash -c "claude; exec bash"; then
+  echo "Error: Failed to open shell in devcontainer." >&2
+  exit 1
+fi

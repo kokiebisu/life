@@ -1,17 +1,2 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(tree:*)",
-      "Bash(gh repo view:*)",
-      "Bash(git checkout:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git push:*)",
-      "Bash(gh pr create --title \"refactor: move tsumugi submodule to aspects directory\" --body \"$\\(cat <<''EOF''\n## 概要\ntsumugiサブモジュールをリポジトリのルートから`aspects/`ディレクトリ配下に移動。\nプロジェクトの構造を整理し、関連するアスペクトを一箇所に集約します。\n\n## 変更点\n- `tsumugi` → `aspects/tsumugi` にサブモジュールを移動\n- `.gitmodules` のパスを更新\n\n## テスト計画\n- [ ] サブモジュールが正しく動作することを確認\n\nGenerated with Claude Code\nEOF\n\\)\")",
-      "Bash(brew list:*)",
-      "Bash(git config:*)",
-      "Bash(gh pr create:*)",
-      "Bash(unzip:*)"
-    ]
-  }
 }

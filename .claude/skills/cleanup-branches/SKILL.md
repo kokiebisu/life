@@ -99,3 +99,69 @@ git remote prune origin
 - **Always confirm** before deleting
 - **Show clear summary** of what will be deleted
 - **Verify branches are merged** before deleting
+
+## Edge Cases
+
+1. **Current branch is not main**:
+   - Switch to main first: `git checkout main`
+   - Pull latest changes: `git pull`
+
+2. **Uncommitted changes**:
+   - Warn user about uncommitted changes
+   - Suggest stashing: `git stash`
+
+3. **Squash-merged branches**:
+   - `git branch --merged` won't show squash-merged branches
+   - Must use `gh pr list --state merged` to find them
+   - User confirmation is important since git can't verify the merge
+   - Use `-D` (force delete) instead of `-d` when deleting
+
+4. **Branches not merged but pushed to remote**:
+   - List these separately
+   - Warn user they may contain unmerged work
+   - Only delete if user explicitly confirms
+
+5. **Authentication required for remote**:
+   - Ensure gh CLI is authenticated
+   - Use `gh auth status` to check
+
+## Example Output
+
+```
+Checking for merged branches...
+
+Found 5 local branches that can be deleted:
+  - feat/location-picker (squash-merged in PR #45)
+  - feat/date-picker (squash-merged in PR #46)
+  - fix/typo-fix (traditionally merged)
+  - docs/update-readme (squash-merged in PR #47)
+  - chore/cleanup (traditionally merged)
+
+Found 3 remote merged branches:
+  - feat/location-picker
+  - feat/date-picker
+  - fix/typo-fix
+
+How would you like to clean up these merged branches?
+[Options selected: Delete both local and remote branches]
+
+Deleting local branches...
+✓ Deleted feat/location-picker
+✓ Deleted feat/date-picker
+✓ Deleted fix/typo-fix
+✓ Deleted docs/update-readme
+✓ Deleted chore/cleanup
+
+Deleting remote branches...
+✓ Deleted origin/feat/location-picker
+✓ Deleted origin/feat/date-picker
+✓ Deleted origin/fix/typo-fix
+
+Pruning remote references...
+✓ Pruned 5 stale references
+
+Cleanup complete!
+- Deleted 5 local branches
+- Deleted 3 remote branches
+- Remaining: 1 local branch (main), 1 remote branch (origin/main)
+```

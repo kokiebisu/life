@@ -12,6 +12,8 @@
 
 ```bash
 ./dev                    # devcontainer を起動して Claude Code を開く
+./scripts/tsumugi-sync.sh            # tsumugi ↔ LIFE タスク同期
+./scripts/tsumugi-sync.sh --dry-run  # 同期プレビュー（変更なし）
 ```
 
 ### Claude Code コマンド
@@ -20,6 +22,9 @@
 # チーム相談
 /ask:diet                # ダイエットチームに相談
 /ask:job:search          # 就職活動チームに相談
+
+# タスク同期
+/sync:tsumugi            # tsumugi ↔ LIFE Linear タスク同期
 
 # 開発ワークフロー
 /pr                      # 変更をグループ化してPR作成

@@ -13,6 +13,14 @@
     "superpowers@claude-plugins-official": true
   },
   "permissions": {
-    "allow": ["mcp__*", "Bash(*)"]
+    "allow": [
+      "mcp__*",
+      "Bash(*)",
+      "Read",
+      "Edit",
+      "Write",
+      "WebFetch",
+      "WebSearch"
+    ]
   }
 }

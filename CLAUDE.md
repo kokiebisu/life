@@ -41,9 +41,13 @@ aspects/
 ├── church/              # 教会関連
 ├── diary/               # 日記・振り返り
 ├── diet/                # ダイエット・健康管理（チーム対応）
-├── guitar/              # ギター練習
+├── fukuoka/             # 福岡移住検討（チーム対応）
+├── guitar/              # ギター練習（チーム対応）
+├── investment/          # 投資（チーム対応）
 ├── job/                 # 就職・転職活動（チーム対応）
-├── reading/             # 読書記録
+├── planning/            # ライフプランニング（横断管理）
+├── reading/             # 読書記録（チーム対応）
+├── study/               # 学習（起業・法律・技術）（チーム対応）
 └── tsumugi/             # 個人プロジェクト（サブモジュール）
 ```
 
@@ -70,12 +74,18 @@ Types: feat, fix, refactor, docs, chore
 
 ### チーム対応 aspect
 
-- **diet** - ダイエットサポートチーム（栄養士、トレーナー、心理学者など）
+- **diet** - ダイエットサポートチーム（栄養士、トレーナー、心理学者など6人）
+- **guitar** - ギターチーム（瀬戸涼介、黒田奏、橋本海の3人）
+- **investment** - 投資チーム（Buffett, Munger, Thiel, Wood, Dalio, Soros, Fisher, Marks の8人）
+- **study** - 学習チーム（起業メンター5人 + 法律メンター1人 + 技術メンター3人）
 - **job/search** - 就職活動サポートチーム（履歴書、面接、交渉など）
+- **fukuoka** - 福岡移住アドバイザー（田中誠）
+- **reading** - 読書ナビゲーター（村上葉月）
+- **planning** - ライフコーチ（松本あかり）- 全aspect横断管理
 
 ### サブモジュール
 
-- **tsumugi** - 個人開発プロジェクト（独立した git リポジトリ）
+- **tsumugi** - 個人プロジェクト（本業。開発+営業。独立した git リポジトリ）
 
 ## Claude Code & Devcontainer
 

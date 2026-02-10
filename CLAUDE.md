@@ -49,6 +49,12 @@ aspects/
 ├── reading/             # 読書記録（チーム対応）
 ├── study/               # 学習（起業・法律・技術）（チーム対応）
 └── tsumugi/             # 個人プロジェクト（サブモジュール）
+memory-bank/
+├── project-context.md   # プロジェクト全体の背景・目的
+├── active-context.md    # 現在進行中の作業・フォーカス
+├── decisions.md         # 設計判断とその理由の記録
+├── patterns.md          # うまくいったパターン・避けるべきパターン
+└── progress.md          # 各 aspect の進捗・状態
 ```
 
 ## Git Workflow
@@ -102,6 +108,26 @@ Types: feat, fix, refactor, docs, chore
 2. 必要に応じて `CLAUDE.md` を追加（チーム構成、対応方針など）
 3. 必要に応じて `.claude/commands/ask:<name>.md` にスキルを追加
 4. `README.md` のテーブルを更新
+
+## Memory Bank
+
+`memory-bank/` はセッション間で文脈を引き継ぐための記憶システム。
+
+### 運用ルール
+
+- **セッション開始時:** `memory-bank/` のファイルを読んで現在の文脈を把握する
+- **セッション中:** 重要な決定や発見があれば該当ファイルに追記する
+- **セッション終了時:** `active-context.md` を更新して次回に引き継ぐ
+
+### ファイルの役割
+
+| ファイル | 更新タイミング | 内容 |
+|---------|--------------|------|
+| `project-context.md` | 構造変更時 | プロジェクト背景・ユーザー情報 |
+| `active-context.md` | 毎セッション | 現在の作業・次にやること |
+| `decisions.md` | 判断時 | 設計判断と理由 |
+| `patterns.md` | 発見時 | 効果的/非効果的なパターン |
+| `progress.md` | 進捗時 | aspect ごとの進捗状態 |
 
 ## Security
 

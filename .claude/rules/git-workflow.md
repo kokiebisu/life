@@ -22,6 +22,7 @@ Types: feat, fix, refactor, docs, chore
 6. Merge PR (`gh pr merge <number> --squash --delete-branch`)
 7. Switch to main (`git checkout main`)
 8. Pull latest changes (`git pull origin main`)
+9. Clean up merged branches (see Post-Merge Cleanup below)
 
 **When to merge automatically:**
 
@@ -56,3 +57,31 @@ For each PR group, follow this exact sequence:
 - **Always verify** - Run `git status` before committing
 - **Sequential processing** - Complete PR1 (merge) before starting PR2
 - **Clean state** - Return to main between PRs
+
+## Post-Merge Cleanup
+
+After every PR merge, clean up stale branches:
+
+1. **Delete merged local branches**:
+
+   ```bash
+   # List local branches (excluding main)
+   git branch | grep -v "^\* main$" | grep -v "^  main$" | sed 's/^[* ] //'
+   # Cross-reference with merged PRs (handles squash-merged branches)
+   gh pr list --state merged --json headRefName --jq '.[].headRefName'
+   # Delete branches that appear in both lists
+   git branch -D <merged-branches>
+   ```
+
+2. **Prune stale remote references**:
+
+   ```bash
+   git remote prune origin
+   ```
+
+**Notes:**
+
+- `git branch --merged` does not detect squash-merged branches — use `gh pr list --state merged` instead
+- Use `-D` (force) instead of `-d` to handle squash-merged branches
+- NEVER delete `main`/`master` or the current branch
+- Warn user if any branch has unpushed commits before deleting

@@ -8,7 +8,7 @@
  *   bun run scripts/notion-add.ts --title "買い出し" --date 2026-02-14 --allday
  */
 
-import { getTasksConfig, notionFetch, parseArgs } from "./lib/notion";
+import { getTasksConfig, notionFetch, parseArgs, pickTaskIcon, pickCover } from "./lib/notion";
 
 function main() {
   const { flags, opts } = parseArgs();
@@ -46,7 +46,10 @@ function main() {
     properties["Description"] = { rich_text: [{ text: { content: opts.desc } }] };
   }
 
-  return notionFetch(apiKey, "/pages", { parent: { database_id: dbId }, properties })
+  const icon = pickTaskIcon(opts.title);
+  const cover = pickCover(opts.title);
+
+  return notionFetch(apiKey, "/pages", { parent: { database_id: dbId }, properties, icon, cover })
     .then((data: any) => {
       const title = data.properties.Name.title[0].plain_text;
       const date = data.properties["Due date"].date;

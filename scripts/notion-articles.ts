@@ -9,7 +9,7 @@
  *   bun run scripts/notion-articles.ts list --aspect tsumugi
  */
 
-import { getApiKey, getDbId, notionFetch, parseArgs, todayJST } from "./lib/notion";
+import { getApiKey, getDbId, notionFetch, parseArgs, todayJST, pickArticleIcon, pickCover } from "./lib/notion";
 
 const KNOWN_SOURCES: Record<string, string> = {
   "news.ycombinator.com": "Hacker News",
@@ -84,9 +84,15 @@ async function addArticle(opts: Record<string, string>) {
     properties["Summary"] = { rich_text: [{ text: { content: summary.slice(0, 2000) } }] };
   }
 
+  const icon = pickArticleIcon(source);
+  const aspectHint = opts.aspect || "";
+  const cover = pickCover(aspectHint);
+
   await notionFetch(apiKey, "/pages", {
     parent: { database_id: dbId },
     properties,
+    icon,
+    cover,
   });
 
   console.log(`記事を追加しました: ${title}`);

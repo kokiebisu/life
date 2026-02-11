@@ -11,7 +11,8 @@
         "eamodio.gitlens",
         "yzhang.markdown-all-in-one",
         "DavidAnson.vscode-markdownlint",
-        "bierner.markdown-mermaid"
+        "bierner.markdown-mermaid",
+        "ms-azuretools.vscode-containers"
       ],
       "settings": {
         "editor.formatOnSave": true,

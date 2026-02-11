@@ -26,11 +26,11 @@
 # タスク同期
 /sync:tsumugi            # tsumugi ↔ LIFE Linear タスク同期
 
+# 目標管理
+/goal                    # 壁打ちして新しい目標を追加
+
 # 開発ワークフロー
 /pr                      # 変更をグループ化してPR作成
-/plan                    # 実装計画を立てる（確認後に実行）
-/code-review             # セキュリティ・品質レビュー
-/learn                   # セッションからパターンを抽出・保存
 ```
 
 ## Directory Structure

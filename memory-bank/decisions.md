@@ -15,6 +15,15 @@
 
 ---
 
+### [2026-02-11] kawa → Notion 統合
+
+**決定:** kawa（Expo ライフジャーナルアプリ）を廃止し、Journal / Articles 機能を Notion DB + CLI スクリプトに統合
+**理由:** kawa は3画面ともプレースホルダー状態で実機能なし。Notion は既に稼働中でタスク管理が定着している。別アプリを作るよりNotionに統合した方が運用が楽で、開発リソースを tsumugi に集中できる
+**代替案:** kawa を完成させる / 別の日記アプリを使う
+**影響:** aspects/kawa 削除。Journal DB と Articles DB が Notion に追加。scripts/ に3つの新スクリプト追加
+
+---
+
 ### [2026-02-10] memory bank の導入
 
 **決定:** リポジトリ内に `memory-bank/` ディレクトリを作成し、プロジェクト文脈を構造化して保存する

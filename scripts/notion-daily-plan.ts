@@ -201,7 +201,7 @@ function formatMarkdown(data: DailyPlanData): string {
   lines.push("");
 
   // 登録済みタスク
-  lines.push("### 登録済みタスク");
+  lines.push("### 登録済みタスク（※ 既存イベントは変更・削除しないこと）");
   if (data.todayTasks.length > 0) {
     for (const t of data.todayTasks) {
       const time = t.start.includes("T")
@@ -209,6 +209,8 @@ function formatMarkdown(data: DailyPlanData): string {
         : "[終日]";
       lines.push(`  ${time}  ${t.title}`);
     }
+    lines.push("");
+    lines.push("  ⚠ 上記は登録済み。重複登録しないこと。空き時間にのみ新規追加する。");
   } else {
     lines.push("  登録済みタスクなし");
   }

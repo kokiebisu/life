@@ -60,10 +60,10 @@ export function notionHeaders(apiKey: string) {
   };
 }
 
-export async function notionFetch(apiKey: string, path: string, body?: unknown): Promise<any> {
-  const method = body !== undefined ? "POST" : "GET";
+export async function notionFetch(apiKey: string, path: string, body?: unknown, method?: "GET" | "POST" | "PATCH"): Promise<any> {
+  const resolvedMethod = method || (body !== undefined ? "POST" : "GET");
   const res = await fetch(`https://api.notion.com/v1${path}`, {
-    method,
+    method: resolvedMethod,
     headers: notionHeaders(apiKey),
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });

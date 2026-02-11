@@ -65,19 +65,7 @@ const DB_SCHEMAS: Record<string, { title: string; properties: Record<string, unk
         },
       },
       "Summary": { rich_text: {} },
-      "Status": {
-        status: {
-          options: [
-            { name: "未読", color: "default" },
-            { name: "読了", color: "green" },
-            { name: "お気に入り", color: "yellow" },
-          ],
-          groups: [
-            { name: "To-do", option_names: ["未読"] },
-            { name: "Complete", option_names: ["読了", "お気に入り"] },
-          ],
-        },
-      },
+      "Status": { status: {} },
       "Date": { date: {} },
     },
   },

@@ -5,8 +5,8 @@
 Before ANY commit:
 
 - [ ] No hardcoded secrets (API keys, passwords, tokens)
-- [ ] No personal information (addresses, phone numbers, etc.)
-- [ ] Sensitive data belongs in Issues/comments, not in the repository
+- [ ] No exact addresses (street number, building name). Area names and store names are OK.
+- [ ] No phone numbers
 - [ ] Error messages don't leak sensitive data
 
 ## Secret Management

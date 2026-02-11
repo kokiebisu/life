@@ -4,3 +4,4 @@
 .env
 .env.local
 *.diff
+node_modules/

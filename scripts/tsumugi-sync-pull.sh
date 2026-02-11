@@ -32,7 +32,7 @@ if [ -z "$LINEAR_API_KEY" ]; then
   exit 1
 fi
 
-BEADS_FILE="$REPO_ROOT/aspects/tsumugi/.beads/issues.jsonl"
+BEADS_FILE="$REPO_ROOT/projects/tsumugi/.beads/issues.jsonl"
 if [ ! -f "$BEADS_FILE" ]; then
   echo "Error: Beads file not found at $BEADS_FILE"
   exit 1

@@ -47,6 +47,8 @@ aspects/
 ├── planning/            # ライフプランニング（横断管理）
 ├── reading/             # 読書記録（チーム対応）
 ├── study/               # 学習（起業・法律・技術）（チーム対応）
+└── tsumugi/             # tsumugi関連イベント・記録
+projects/
 └── tsumugi/             # 個人プロジェクト（サブモジュール）
 memory-bank/
 ├── project-context.md   # プロジェクト全体の背景・目的

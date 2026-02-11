@@ -9,7 +9,7 @@
 #
 # Prerequisites:
 #   - LINEAR_API_KEY in .env.local (LIFE workspace)
-#   - LINEAR_API_KEY in aspects/tsumugi/.env.local (Tsumugi workspace)
+#   - LINEAR_API_KEY in projects/tsumugi/.env.local (Tsumugi workspace)
 #   - python3 available
 
 set -eo pipefail
@@ -35,12 +35,12 @@ fi
 
 # Load Tsumugi workspace API key (extract via grep to avoid variable collision)
 TSUMUGI_API_KEY=""
-if [ -f "$REPO_ROOT/aspects/tsumugi/.env.local" ]; then
-  TSUMUGI_API_KEY=$(grep '^LINEAR_API_KEY=' "$REPO_ROOT/aspects/tsumugi/.env.local" | head -1 | cut -d= -f2- | tr -d '"')
+if [ -f "$REPO_ROOT/projects/tsumugi/.env.local" ]; then
+  TSUMUGI_API_KEY=$(grep '^LINEAR_API_KEY=' "$REPO_ROOT/projects/tsumugi/.env.local" | head -1 | cut -d= -f2- | tr -d '"')
 fi
 
 if [ -z "$TSUMUGI_API_KEY" ]; then
-  echo "Error: LINEAR_API_KEY not found in $REPO_ROOT/aspects/tsumugi/.env.local"
+  echo "Error: LINEAR_API_KEY not found in $REPO_ROOT/projects/tsumugi/.env.local"
   exit 1
 fi
 

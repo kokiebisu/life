@@ -10,7 +10,7 @@ GitHub を使った人生管理リポジトリ
 |-----------|------|----------|
 | [ダイエット](aspects/diet/) | 減量・健康管理サポートチーム | `/ask:diet` |
 | [就職活動](aspects/job/search/) | 就職・転職活動サポートチーム | `/ask:job:search` |
-| [Tsumugi](aspects/tsumugi/) | 個人プロジェクト | - |
+| [Tsumugi](projects/tsumugi/) | 個人プロジェクト | - |
 
 ## Claude Code コマンド
 

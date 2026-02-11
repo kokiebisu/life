@@ -8,12 +8,12 @@
  *   bun run scripts/notion-daily-plan.ts --json        # JSON出力
  */
 
-import { readFileSync } from "fs";
+import { readFileSync, existsSync, readdirSync } from "fs";
 import { join } from "path";
 import { getApiKey, getDbId, notionFetch, parseArgs, todayJST } from "./lib/notion";
 
 const ROOT = join(import.meta.dir, "..");
-const ROUTINE_PATH = join(ROOT, "aspects/planning/routine.md");
+const ASPECTS_DIR = join(ROOT, "aspects");
 
 const MOOD_MAP: Record<string, string> = {
   "😊 良い": "good",
@@ -47,6 +47,32 @@ interface JournalEntry {
   body: string;
 }
 
+interface LocalEvent {
+  aspect: string;
+  start: string;
+  end: string;
+  allDay: boolean;
+  title: string;
+  description: string;
+}
+
+interface TimeSlot {
+  start: string; // "09:00"
+  end: string;   // "12:00"
+  label: string;
+  source: "routine" | "event" | "notion";
+  aspect?: string;
+  notionRegistered?: boolean; // Notion登録済みフラグ
+}
+
+const ROUTINE_SLOTS: TimeSlot[] = [
+  { start: "09:00", end: "12:00", label: "tsumugi開発（集中タイム）", source: "routine" },
+  { start: "12:00", end: "14:00", label: "昼食 + ジム or 運動", source: "routine" },
+  { start: "14:00", end: "17:00", label: "tsumugi開発（続き）or 営業活動", source: "routine" },
+  { start: "17:00", end: "18:00", label: "ギター練習（1時間）", source: "routine" },
+  { start: "18:00", end: "20:00", label: "study / 読書 / 投資リサーチ / 自由時間", source: "routine" },
+];
+
 interface DailyPlanData {
   targetDate: string;
   targetWeekday: string;
@@ -55,7 +81,8 @@ interface DailyPlanData {
   journal: JournalEntry | null;
   yesterdayTasks: NotionTask[];
   todayTasks: NotionTask[];
-  routine: string;
+  localEvents: LocalEvent[];
+  schedule: { timeline: TimeSlot[]; allDay: { label: string; aspect?: string; notionRegistered?: boolean }[] };
 }
 
 function formatTime(iso: string): string {
@@ -122,12 +149,167 @@ async function fetchTasks(apiKey: string, dbId: string, date: string): Promise<N
   });
 }
 
-function loadRoutine(): string {
+function loadLocalEvents(date: string): LocalEvent[] {
+  const events: LocalEvent[] = [];
+
+  let aspects: string[];
   try {
-    return readFileSync(ROUTINE_PATH, "utf-8");
+    aspects = readdirSync(ASPECTS_DIR, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name);
   } catch {
-    return "";
+    return events;
   }
+
+  for (const aspect of aspects) {
+    const filePath = join(ASPECTS_DIR, aspect, "events", `${date}.md`);
+    if (!existsSync(filePath)) continue;
+
+    const content = readFileSync(filePath, "utf-8");
+    const lines = content.split("\n");
+
+    for (let i = 0; i < lines.length; i++) {
+      const match = lines[i].match(/^- \[[ x]\] (.+?) (.+)$/);
+      if (match) {
+        const timeStr = match[1];
+        const title = match[2];
+        let description = "";
+        if (i + 1 < lines.length && lines[i + 1].startsWith("  - ")) {
+          description = lines[i + 1].replace(/^\s+- /, "");
+        }
+
+        const timeRange = timeStr.match(/^(\d{1,2}:\d{2})-(\d{1,2}:\d{2})$/);
+        if (timeRange) {
+          events.push({ aspect, start: timeRange[1], end: timeRange[2], allDay: false, title, description });
+        } else if (timeStr === "終日") {
+          events.push({ aspect, start: "", end: "", allDay: true, title, description });
+        } else {
+          // 時間形式が不明な場合はそのまま終日扱い
+          events.push({ aspect, start: "", end: "", allDay: true, title: `${timeStr} ${title}`, description });
+        }
+      }
+    }
+  }
+
+  return events;
+}
+
+function timeToMinutes(t: string): number {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function minutesToTime(m: number): string {
+  const h = Math.floor(m / 60);
+  const min = m % 60;
+  return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+}
+
+function buildSchedule(
+  localEvents: LocalEvent[],
+  todayTasks: NotionTask[],
+): { timeline: TimeSlot[]; allDay: { label: string; aspect?: string; notionRegistered?: boolean }[] } {
+  // Start with routine slots as base
+  let slots: TimeSlot[] = ROUTINE_SLOTS.map((s) => ({ ...s }));
+
+  const allDay: { label: string; aspect?: string; notionRegistered?: boolean }[] = [];
+
+  // Collect timed events from local events
+  const timedEvents: TimeSlot[] = [];
+  for (const ev of localEvents) {
+    if (ev.allDay) {
+      const desc = ev.description ? ` — ${ev.description}` : "";
+      allDay.push({ label: `${ev.title}${desc}`, aspect: ev.aspect });
+      continue;
+    }
+    const desc = ev.description ? ` — ${ev.description}` : "";
+    timedEvents.push({
+      start: ev.start,
+      end: ev.end,
+      label: `[${ev.aspect}] ${ev.title}${desc}`,
+      source: "event",
+      aspect: ev.aspect,
+    });
+  }
+
+  // Collect timed events from Notion tasks
+  for (const t of todayTasks) {
+    if (!t.start.includes("T")) {
+      // All-day Notion task
+      allDay.push({ label: t.title, notionRegistered: true });
+      continue;
+    }
+    const start = formatTime(t.start);
+    const end = t.end ? formatTime(t.end) : "";
+    if (!end) {
+      // No end time → treat as all-day
+      allDay.push({ label: `${start}〜 ${t.title}`, notionRegistered: true });
+      continue;
+    }
+    timedEvents.push({
+      start,
+      end,
+      label: t.title,
+      source: "notion",
+      notionRegistered: true,
+    });
+  }
+
+  // Sort timed events by start time
+  timedEvents.sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
+
+  // Trim/split routine slots around each timed event
+  for (const event of timedEvents) {
+    const evStart = timeToMinutes(event.start);
+    const evEnd = timeToMinutes(event.end);
+
+    const newSlots: TimeSlot[] = [];
+    for (const slot of slots) {
+      if (slot.source !== "routine") {
+        newSlots.push(slot);
+        continue;
+      }
+
+      const slotStart = timeToMinutes(slot.start);
+      const slotEnd = timeToMinutes(slot.end);
+
+      // No overlap
+      if (evEnd <= slotStart || evStart >= slotEnd) {
+        newSlots.push(slot);
+        continue;
+      }
+
+      // Event fully covers routine → remove routine
+      if (evStart <= slotStart && evEnd >= slotEnd) {
+        continue;
+      }
+
+      // Event overlaps start of routine → trim routine start
+      if (evStart <= slotStart && evEnd < slotEnd) {
+        newSlots.push({ ...slot, start: minutesToTime(evEnd) });
+        continue;
+      }
+
+      // Event overlaps end of routine → trim routine end
+      if (evStart > slotStart && evEnd >= slotEnd) {
+        newSlots.push({ ...slot, end: minutesToTime(evStart) });
+        continue;
+      }
+
+      // Event in the middle → split routine
+      newSlots.push({ ...slot, end: minutesToTime(evStart) });
+      newSlots.push({ ...slot, start: minutesToTime(evEnd) });
+    }
+    slots = newSlots;
+  }
+
+  // Add timed events to slots
+  slots.push(...timedEvents);
+
+  // Sort all by start time
+  slots.sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
+
+  return { timeline: slots, allDay };
 }
 
 function formatMarkdown(data: DailyPlanData): string {
@@ -196,34 +378,35 @@ function formatMarkdown(data: DailyPlanData): string {
   lines.push("---");
   lines.push("");
 
-  // 今日のスケジュール
+  // 今日のスケジュール（統合タイムライン）
   lines.push("## 今日のスケジュール");
   lines.push("");
 
-  // 登録済みタスク
-  lines.push("### 登録済みタスク（※ 既存イベントは変更・削除しないこと）");
-  if (data.todayTasks.length > 0) {
-    for (const t of data.todayTasks) {
-      const time = t.start.includes("T")
-        ? `${formatTime(t.start)}${t.end ? "-" + formatTime(t.end) : ""}`
-        : "[終日]";
-      lines.push(`  ${time}  ${t.title}`);
+  const { timeline, allDay } = data.schedule;
+
+  if (timeline.length > 0) {
+    for (const slot of timeline) {
+      const icon = slot.source === "routine" ? "🔹" : "🔶";
+      const registered = slot.notionRegistered ? "（※登録済み）" : "";
+      lines.push(`${slot.start}-${slot.end}  ${icon} ${slot.label}${registered}`);
     }
-    lines.push("");
-    lines.push("  ⚠ 上記は登録済み。重複登録しないこと。空き時間にのみ新規追加する。");
   } else {
-    lines.push("  登録済みタスクなし");
+    lines.push("予定なし");
   }
 
-  // ルーティン
+  if (allDay.length > 0) {
+    lines.push("");
+    lines.push("### 終日");
+    for (const item of allDay) {
+      const prefix = item.aspect ? `[${item.aspect}] ` : "";
+      const registered = item.notionRegistered ? "（※登録済み）" : "";
+      lines.push(`- ${prefix}${item.label}${registered}`);
+    }
+  }
+
   lines.push("");
-  lines.push("### ルーティン（テンプレート）");
-  lines.push("  午前（9:00-12:00）  tsumugi開発（集中タイム）");
-  lines.push("  昼（12:00-14:00）    昼食 + ジム or 運動");
-  lines.push("  午後（14:00-17:00）  tsumugi開発（続き）or 営業活動");
-  lines.push("  夕方（17:00-18:00）  ギター練習（1時間）");
-  lines.push("  夜（18:00-20:00）    study / 読書 / 投資リサーチ / 自由時間");
-  lines.push("  就寝前              日記");
+  lines.push("> 🔶 = 確定した予定  🔹 = ルーティン（テンプレートからの提案）");
+  lines.push("> ※登録済みのタスクは重複登録しないこと。空き時間にのみ新規追加する。");
 
   lines.push("");
   lines.push("---");
@@ -291,7 +474,8 @@ async function main() {
     fetchTasks(apiKey, tasksDbId, targetDate),
   ]);
 
-  const routine = loadRoutine();
+  const localEvents = loadLocalEvents(targetDate);
+  const schedule = buildSchedule(localEvents, todayTasks);
 
   const data: DailyPlanData = {
     targetDate,
@@ -301,7 +485,8 @@ async function main() {
     journal,
     yesterdayTasks,
     todayTasks,
-    routine,
+    localEvents,
+    schedule,
   };
 
   if (json) {

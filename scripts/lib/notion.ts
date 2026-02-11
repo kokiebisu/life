@@ -101,3 +101,88 @@ export function parseArgs(argv?: string[]): { flags: Set<string>; opts: Record<s
 export function todayJST(): string {
   return new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
 }
+
+// --- Icon & Cover helpers ---
+
+const TASK_ICON_KEYWORDS: [RegExp, string][] = [
+  [/ギター|guitar/i, "🎸"],
+  [/教会|礼拝|church/i, "⛪"],
+  [/ジム|筋トレ|運動|トレーニング|gym|workout/i, "💪"],
+  [/買い物|買い出し|shopping/i, "🛒"],
+  [/料理|自炊|cook/i, "🍳"],
+  [/勉強|学習|study/i, "📖"],
+  [/読書|本|book|read/i, "📚"],
+  [/tsumugi/i, "🧶"],
+  [/面接|interview/i, "👔"],
+  [/ミーティング|会議|MTG|meeting/i, "🤝"],
+  [/医者|病院|歯医者|health/i, "🏥"],
+  [/引越|移住|fukuoka/i, "🏠"],
+  [/投資|invest/i, "📈"],
+  [/散歩|walk/i, "🚶"],
+  [/掃除|cleaning/i, "🧹"],
+  [/飲み|居酒屋|dinner|ランチ|lunch/i, "🍽️"],
+  [/旅行|trip|travel/i, "✈️"],
+  [/イベント|event/i, "🎪"],
+];
+
+const ASPECT_COVERS: Record<string, string> = {
+  tsumugi: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200",
+  diet: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=1200",
+  guitar: "https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=1200",
+  church: "https://images.unsplash.com/photo-1438032005730-c779502df39b?w=1200",
+  investment: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1200",
+  study: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=1200",
+  reading: "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=1200",
+  job: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=1200",
+  fukuoka: "https://images.unsplash.com/photo-1542051841857-5f90071e7989?w=1200",
+};
+
+const GENERAL_COVERS = [
+  "https://images.unsplash.com/photo-1557683316-973673baf926?w=1200",
+  "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=1200",
+  "https://images.unsplash.com/photo-1557682224-5b8590cd9ec5?w=1200",
+  "https://images.unsplash.com/photo-1557682260-96773eb01377?w=1200",
+  "https://images.unsplash.com/photo-1557682268-e3955ed5d83f?w=1200",
+];
+
+const SOURCE_ICONS: Record<string, string> = {
+  "Hacker News": "🟠",
+  "Zenn": "💠",
+  "note": "📝",
+  "Twitter": "🐦",
+  "Other": "🔗",
+};
+
+const MOOD_ICONS: Record<string, string> = {
+  "😊 良い": "😊",
+  "😐 普通": "😐",
+  "😞 イマイチ": "😞",
+};
+
+export function pickTaskIcon(title: string): { type: "emoji"; emoji: string } {
+  for (const [pattern, emoji] of TASK_ICON_KEYWORDS) {
+    if (pattern.test(title)) return { type: "emoji", emoji };
+  }
+  return { type: "emoji", emoji: "📌" };
+}
+
+export function pickJournalIcon(mood: string): { type: "emoji"; emoji: string } {
+  const emoji = MOOD_ICONS[mood] || "📔";
+  return { type: "emoji", emoji };
+}
+
+export function pickArticleIcon(source: string): { type: "emoji"; emoji: string } {
+  const emoji = SOURCE_ICONS[source] || "📰";
+  return { type: "emoji", emoji };
+}
+
+export function pickCover(hint?: string): { type: "external"; external: { url: string } } {
+  if (hint) {
+    const key = hint.toLowerCase();
+    for (const [aspect, url] of Object.entries(ASPECT_COVERS)) {
+      if (key.includes(aspect)) return { type: "external", external: { url } };
+    }
+  }
+  const url = GENERAL_COVERS[Math.floor(Math.random() * GENERAL_COVERS.length)];
+  return { type: "external", external: { url } };
+}

@@ -9,7 +9,7 @@
  *   bun run scripts/notion-journal.ts today
  */
 
-import { getApiKey, getDbId, notionFetch, parseArgs, todayJST } from "./lib/notion";
+import { getApiKey, getDbId, notionFetch, parseArgs, todayJST, pickJournalIcon, pickCover } from "./lib/notion";
 
 const MOOD_MAP: Record<string, string> = {
   good: "😊 良い",
@@ -44,9 +44,14 @@ async function addEntry(opts: Record<string, string>) {
     "Body": { rich_text: [{ text: { content: body } }] },
   };
 
+  const icon = pickJournalIcon(mood);
+  const cover = pickCover("journal");
+
   const data = await notionFetch(apiKey, "/pages", {
     parent: { database_id: dbId },
     properties,
+    icon,
+    cover,
   });
 
   const title = data.properties.Name.title[0].plain_text;

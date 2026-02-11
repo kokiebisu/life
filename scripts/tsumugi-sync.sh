@@ -15,6 +15,10 @@ echo "=== Pull: 大株主 tasks → LIFE Daily Tasks ==="
 "$SCRIPT_DIR/tsumugi-sync-pull.sh" $FLAG
 echo ""
 
+echo "=== Events: イベント → Local + Notion ==="
+bun run "$SCRIPT_DIR/tsumugi-sync-events.ts" $FLAG
+echo ""
+
 echo "=== Push: Done status → Tsumugi Linear ==="
 "$SCRIPT_DIR/tsumugi-sync-push.sh" $FLAG
 echo ""

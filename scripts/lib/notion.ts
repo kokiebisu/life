@@ -53,12 +53,102 @@ export function getDbIdOptional(envKey: string): string | null {
   return env[envKey] || process.env[envKey] || null;
 }
 
+// --- DB Config abstraction ---
+
+export type DbName = "routine" | "events" | "guitar" | "meals";
+
+export interface DbConfig {
+  envKey: string;
+  titleProp: string;
+  dateProp: string;
+  descProp: string;
+  statusProp: string;
+}
+
+export const DB_CONFIGS: Record<DbName, DbConfig> = {
+  routine: { envKey: "NOTION_TASKS_DB", titleProp: "Name", dateProp: "Due date", descProp: "Description", statusProp: "Status" },
+  events:  { envKey: "NOTION_EVENTS_DB", titleProp: "名前", dateProp: "Due date", descProp: "Description", statusProp: "Status" },
+  guitar:  { envKey: "NOTION_GUITAR_DB", titleProp: "名前", dateProp: "日付", descProp: "Description", statusProp: "Status" },
+  meals:   { envKey: "NOTION_MEALS_DB", titleProp: "件名", dateProp: "実施日", descProp: "Description", statusProp: "Status" },
+};
+
+export function getDbConfig(name: DbName): { apiKey: string; dbId: string; config: DbConfig } {
+  const config = DB_CONFIGS[name];
+  return { apiKey: getApiKey(), dbId: getDbId(config.envKey), config };
+}
+
+export function getDbConfigOptional(name: DbName): { apiKey: string; dbId: string; config: DbConfig } | null {
+  const config = DB_CONFIGS[name];
+  const dbId = getDbIdOptional(config.envKey);
+  if (!dbId) return null;
+  return { apiKey: getApiKey(), dbId, config };
+}
+
 export function getTasksConfig() {
   return { apiKey: getApiKey(), dbId: getDbId("NOTION_TASKS_DB") };
 }
 
-export function getShoppingConfig() {
-  return { apiKey: getApiKey(), dbId: getDbId("NOTION_SHOPPING_DB") };
+export function getMealsConfig() {
+  return getDbConfig("meals");
+}
+
+export function getEventsConfig() {
+  return getDbConfig("events");
+}
+
+export function getGuitarConfig() {
+  return getDbConfig("guitar");
+}
+
+// --- Unified DB query & normalization ---
+
+export interface NormalizedEntry {
+  id: string;
+  source: DbName;
+  title: string;
+  start: string;
+  end: string | null;
+  status: string;
+  description: string;
+  feedback: string;
+}
+
+export async function queryDbByDate(
+  apiKey: string,
+  dbId: string,
+  config: DbConfig,
+  startDate: string,
+  endDate: string,
+): Promise<any> {
+  return notionFetch(apiKey, `/databases/${dbId}/query`, {
+    filter: {
+      and: [
+        { property: config.dateProp, date: { on_or_after: startDate + "T00:00:00+09:00" } },
+        { property: config.dateProp, date: { on_or_before: endDate + "T23:59:59+09:00" } },
+      ],
+    },
+    sorts: [{ property: config.dateProp, direction: "ascending" }],
+  });
+}
+
+export function normalizePages(pages: any[], config: DbConfig, source: DbName): NormalizedEntry[] {
+  return pages.map((page: any) => {
+    const props = page.properties;
+    const titleArr = props[config.titleProp]?.title || [];
+    const dateObj = props[config.dateProp]?.date;
+    const descArr = props[config.descProp]?.rich_text || [];
+    const feedbackArr = props.Feedback?.rich_text || [];
+    return {
+      id: page.id,
+      source,
+      title: titleArr.map((t: any) => t.plain_text || "").join(""),
+      start: dateObj?.start || "",
+      end: dateObj?.end || null,
+      status: props[config.statusProp]?.status?.name || "",
+      description: descArr.map((t: any) => t.plain_text || "").join(""),
+      feedback: feedbackArr.map((t: any) => t.plain_text || "").join(""),
+    };
+  });
 }
 
 export function notionHeaders(apiKey: string) {

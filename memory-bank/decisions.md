@@ -15,6 +15,15 @@
 
 ---
 
+### [2026-02-12] Notion 4-DB リファクタ
+
+**決定:** 単一の NOTION_TASKS_DB を4つの DB（習慣・イベント・ギター・食事）に分離。各スクリプトを対応させ、イベントファイルを aspects/events/ に統合
+**理由:** Notion 側で DB が分離済み。スクリプトが単一 DB に依存していたため、プロパティ名の違い（Name vs 名前 vs 件名、Due date vs 日付 vs 実施日）を吸収する抽象化が必要だった
+**代替案:** 単一 DB のまま運用 / DB ごとに個別スクリプト作成
+**影響:** scripts/lib/notion.ts に DbConfig 抽象化追加。全スクリプト（list/add/sync/daily-plan/backfill-icons）を4-DB対応に。aspects/general/ 削除、aspects/events/ 新設。ENV: NOTION_EVENTS_DB, NOTION_GUITAR_DB, NOTION_MEALS_DB 追加
+
+---
+
 ### [2026-02-11] kawa → Notion 統合
 
 **決定:** kawa（Expo ライフジャーナルアプリ）を廃止し、Journal / Articles 機能を Notion DB + CLI スクリプトに統合

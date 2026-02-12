@@ -45,15 +45,17 @@ profile/
 aspects/
 ├── church/              # 教会関連
 ├── diary/               # 日記・振り返り
-├── diet/                # ダイエット・健康管理（チーム対応）
+├── diet/                # ダイエット・健康管理（チーム対応）→ Notion: 食事DB
+├── events/              # 全体イベント（統合）→ Notion: イベントDB
 ├── fukuoka/             # 福岡移住検討（チーム対応）
-├── guitar/              # ギター練習（チーム対応）
+├── guitar/              # ギター練習（チーム対応）→ Notion: ギターDB
 ├── investment/          # 投資（チーム対応）
 ├── job/                 # 就職・転職活動（チーム対応）
 ├── planning/            # ライフプランニング（横断管理）
 ├── reading/             # 読書記録（チーム対応）
+├── routine/             # 習慣・ルーティン → Notion: 習慣DB
 ├── study/               # 学習（起業・法律・技術）（チーム対応）
-└── tsumugi/             # tsumugi関連イベント・記録
+└── tsumugi/             # tsumugi関連記録
 projects/
 └── tsumugi/             # 個人プロジェクト（サブモジュール）
 memory-bank/

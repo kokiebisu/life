@@ -13,11 +13,13 @@
 ### 手順
 
 ```bash
-# 既存の予定を確認
+# 既存の予定を確認（全DB統合）
 bun run scripts/notion-list.ts --date YYYY-MM-DD --json
+bun run scripts/notion-list.ts --date YYYY-MM-DD --db events  # イベントDBのみ
 
-# 予定を追加
+# 予定を追加（--db で対象DB指定。デフォルト: routine）
 bun run scripts/notion-add.ts --title "タイトル" --date YYYY-MM-DD --start HH:MM --end HH:MM
+bun run scripts/notion-add.ts --title "タイトル" --date YYYY-MM-DD --start HH:MM --end HH:MM --db events
 bun run scripts/notion-add.ts --title "タイトル" --date YYYY-MM-DD --allday
 ```
 
@@ -43,7 +45,7 @@ bun run scripts/notion-add.ts --title "タイトル" --date YYYY-MM-DD --allday
 ### 手順
 
 1. 週次の献立（`aspects/diet/weekly/YYYY-MM-DD-meal-plan.md`）から買い物リストを抽出
-2. 「買い物」DB（`NOTION_SHOPPING_DB`）にページを作成し、ブロックとして買い物リストを追加
+2. 「食事」DB（`NOTION_MEALS_DB`）にページを作成し、ブロックとして買い物リストを追加
 3. デイリープランの買い出し欄に Notion ページの URL を貼る
 4. Notion Calendar の買い出しイベントの Description にも買い物リストページの URL を貼る
 

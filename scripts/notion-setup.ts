@@ -38,9 +38,9 @@ const DB_SCHEMAS: Record<string, { title: string; properties: Record<string, unk
   articles: {
     title: "Articles",
     properties: {
-      "Name": { title: {} },
+      "タイトル": { title: {} },
       "URL": { url: {} },
-      "Source": {
+      "ソース": {
         select: {
           options: [
             { name: "Hacker News", color: "orange" },
@@ -64,9 +64,9 @@ const DB_SCHEMAS: Record<string, { title: string; properties: Record<string, unk
           ],
         },
       },
-      "Summary": { rich_text: {} },
-      "Status": { status: {} },
-      "Date": { date: {} },
+      "要約": { rich_text: {} },
+      "既読": { checkbox: {} },
+      "公開日": { date: {} },
     },
   },
 };
@@ -150,7 +150,7 @@ async function main() {
   });
 
   const dbId = data.id;
-  const envKey = type === "journal" ? "NOTION_JOURNAL_DB" : "NOTION_ARTICLES_DB";
+  const envKey = `NOTION_${type.toUpperCase()}_DB`;
 
   console.log(`\n${schema.title} DB を作成しました!`);
   console.log(`  DB ID: ${dbId}`);

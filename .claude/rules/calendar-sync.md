@@ -34,15 +34,16 @@ bun run scripts/notion-add.ts --title "タイトル" --date YYYY-MM-DD --allday
 
 ### ページの形式
 
-- **タイトル:** `M/DD 買い出し — 店名`（例: `2/14 買い出し — あおば食品 + 100均`）
+- **タイトル:** `YYYY-MM-DD 買い出し`（例: `2026-02-14 買い出し`）
 - **内容:** 店舗ごとにセクション分け + カテゴリ別チェックリスト（`- [ ]`）
 - **推定合計金額** を末尾に記載
 
 ### 手順
 
-1. 週次の献立（`weekly/YYYY-Wxx-meal-plan.md`）から買い物リストを抽出
+1. 週次の献立（`aspects/diet/weekly/YYYY-MM-DD-meal-plan.md`）から買い物リストを抽出
 2. Notion「買い物」ページ（`page_id: 305ce17f-7b98-80f4-b613-fa61451e12cd`）の下に子ページとして作成
 3. デイリープランの買い出し欄に Notion ページの URL を貼る
+4. Notion Calendar の買い出しイベントの Description にも買い物リストページの URL を貼る
 
 ### カテゴリ例
 

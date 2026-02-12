@@ -8,13 +8,15 @@
 |--------|------|---------|------|
 | church | - | - | |
 | diary | - | - | |
-| diet | - | - | |
+| diet | - | - | Notion: 食事DB (NOTION_MEALS_DB) |
+| events | - | 2026-02-12 | Notion: イベントDB (NOTION_EVENTS_DB)。general/church/job/tsumugiから統合 |
 | fukuoka | - | - | |
-| guitar | - | - | |
+| guitar | - | - | Notion: ギターDB (NOTION_GUITAR_DB) |
 | investment | - | - | |
 | job | - | - | |
 | planning | - | - | |
 | reading | - | - | |
+| routine | - | - | Notion: 習慣DB (NOTION_TASKS_DB) |
 | study | - | - | |
 | tsumugi | - | - | |
 

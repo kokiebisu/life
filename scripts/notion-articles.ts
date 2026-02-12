@@ -7,6 +7,8 @@
  *   bun run scripts/notion-articles.ts add --url https://example.com --title "記事名" --source "Zenn" --aspect tsumugi,study
  *   bun run scripts/notion-articles.ts list
  *   bun run scripts/notion-articles.ts list --aspect tsumugi
+ *   bun run scripts/notion-articles.ts list --all
+ *   bun run scripts/notion-articles.ts read --title "記事名"
  */
 
 import { getApiKey, getDbId, notionFetch, parseArgs, todayJST, pickArticleIcon, pickCover } from "./lib/notion";
@@ -101,38 +103,44 @@ async function addArticle(opts: Record<string, string>) {
   if (summary) console.log(`  Summary: ${summary.slice(0, 100)}...`);
 }
 
-async function listArticles(opts: Record<string, string>) {
+async function listArticles(opts: Record<string, string>, flags: Set<string>) {
   const { apiKey, dbId } = getArticlesConfig();
+  const showAll = flags.has("all");
 
-  const filters: unknown[] = [
-    { property: "Status", status: { equals: "未読" } },
-  ];
+  const filters: unknown[] = [];
+  if (!showAll) {
+    filters.push({ property: "Status", status: { equals: "未読" } });
+  }
   if (opts.aspect) {
     filters.push({ property: "Aspect", multi_select: { contains: opts.aspect } });
   }
 
-  const filter = filters.length === 1 ? filters[0] : { and: filters };
-
-  const data = await notionFetch(apiKey, `/databases/${dbId}/query`, {
-    filter,
+  const query: Record<string, unknown> = {
     sorts: [{ property: "Date", direction: "descending" }],
-  });
+  };
+  if (filters.length === 1) query.filter = filters[0];
+  else if (filters.length > 1) query.filter = { and: filters };
+
+  const data = await notionFetch(apiKey, `/databases/${dbId}/query`, query);
 
   if (data.results.length === 0) {
-    console.log("未読記事なし");
+    console.log(showAll ? "記事なし" : "未読記事なし");
     return;
   }
 
-  console.log(`未読記事: ${data.results.length}件\n`);
+  const label = showAll ? "全記事" : "未読記事";
+  console.log(`${label}: ${data.results.length}件\n`);
   for (const page of data.results) {
     const props = page.properties;
     const title = props.Name?.title?.[0]?.plain_text || "";
     const url = props.URL?.url || "";
     const source = props.Source?.select?.name || "";
+    const status = props.Status?.status?.name || "";
     const aspects = (props.Aspect?.multi_select || []).map((s: any) => s.name).join(", ");
     const date = props.Date?.date?.start || "";
 
-    console.log(`  ${title}`);
+    const statusTag = showAll ? ` [${status}]` : "";
+    console.log(`  ${title}${statusTag}`);
     console.log(`    ${url}`);
     const meta = [source, aspects, date].filter(Boolean).join(" | ");
     if (meta) console.log(`    ${meta}`);
@@ -140,14 +148,49 @@ async function listArticles(opts: Record<string, string>) {
   }
 }
 
+async function readArticle(opts: Record<string, string>) {
+  const title = opts.title;
+  if (!title) {
+    console.error("Error: --title is required");
+    process.exit(1);
+  }
+
+  const { apiKey, dbId } = getArticlesConfig();
+
+  const data = await notionFetch(apiKey, `/databases/${dbId}/query`, {
+    filter: {
+      and: [
+        { property: "Name", title: { contains: title } },
+        { property: "Status", status: { equals: "未読" } },
+      ],
+    },
+  });
+
+  if (data.results.length === 0) {
+    console.log(`「${title}」に一致する未読記事が見つかりません`);
+    return;
+  }
+
+  for (const page of data.results) {
+    const name = page.properties.Name?.title?.[0]?.plain_text || "";
+    await notionFetch(apiKey, `/pages/${page.id}`, {
+      properties: {
+        "Status": { status: { name: "読了" } },
+      },
+    }, "PATCH");
+    console.log(`読了にしました: ${name}`);
+  }
+}
+
 async function main() {
-  const { opts, positional } = parseArgs();
+  const { flags, opts, positional } = parseArgs();
   const command = positional[0];
 
   if (!command) {
     console.error("Usage:");
     console.error("  bun run scripts/notion-articles.ts add --url <URL> [--title <title>] [--source <source>] [--aspect <a,b>]");
-    console.error("  bun run scripts/notion-articles.ts list [--aspect <aspect>]");
+    console.error("  bun run scripts/notion-articles.ts list [--aspect <aspect>] [--all]");
+    console.error("  bun run scripts/notion-articles.ts read --title <title>");
     process.exit(1);
   }
 
@@ -156,7 +199,10 @@ async function main() {
       await addArticle(opts);
       break;
     case "list":
-      await listArticles(opts);
+      await listArticles(opts, flags);
+      break;
+    case "read":
+      await readArticle(opts);
       break;
     default:
       console.error(`Unknown command: ${command}`);

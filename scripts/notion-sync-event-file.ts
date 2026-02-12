@@ -1,18 +1,26 @@
 #!/usr/bin/env bun
 /**
- * イベントファイル → Notion 同期
+ * イベントファイル → Notion 同期（4 DB対応）
  *
- * 指定されたイベントファイルをパースし、Notion Tasks DB と同期する。
+ * 指定されたイベントファイルをパースし、パスに応じた Notion DB と同期する。
  * TSU-ID（優先）またはタイトル類似度でマッチング。
  *
+ * パス → DB ルーティング:
+ *   aspects/diet/events/   → meals DB
+ *   aspects/guitar/events/ → guitar DB
+ *   それ以外               → events DB
+ *
  * 使い方:
- *   bun run scripts/notion-sync-event-file.ts --file aspects/tsumugi/events/2026-02-19.md
- *   bun run scripts/notion-sync-event-file.ts --file aspects/tsumugi/events/2026-02-19.md --dry-run
+ *   bun run scripts/notion-sync-event-file.ts --file aspects/events/2026-02-19.md
+ *   bun run scripts/notion-sync-event-file.ts --file aspects/diet/events/2026-02-14.md --dry-run
  */
 
 import { readFileSync, existsSync } from "fs";
 import { join, basename } from "path";
-import { getTasksConfig, notionFetch, parseArgs, pickTaskIcon, pickCover } from "./lib/notion";
+import {
+  type DbName, type DbConfig,
+  getDbConfig, notionFetch, parseArgs, pickTaskIcon, pickCover,
+} from "./lib/notion";
 
 const ROOT = join(import.meta.dir, "..");
 
@@ -26,6 +34,14 @@ interface ParsedEvent {
   title: string;     // "Venture Cafe Global Gathering 2026（虎ノ門ヒルズ/CIC Tokyo）"
   description: string;
   tsuId: string | null; // "TSU-241" or null
+}
+
+// --- Path-based DB routing ---
+
+function resolveDbFromPath(filePath: string): DbName {
+  if (filePath.includes("/diet/")) return "meals";
+  if (filePath.includes("/guitar/")) return "guitar";
+  return "events";
 }
 
 // --- Parsing ---
@@ -91,11 +107,12 @@ function titlesMatch(local: string, notion: string): boolean {
 function findMatchingPage(
   event: ParsedEvent,
   notionPages: any[],
+  config: DbConfig,
 ): { page: any; matchType: "tsu-id" | "title" } | null {
   // Priority 1: TSU-ID match
   if (event.tsuId) {
     for (const page of notionPages) {
-      const richText = page.properties?.Description?.rich_text || [];
+      const richText = page.properties?.[config.descProp]?.rich_text || [];
       const desc = richText.map((seg: any) => seg.plain_text || "").join("");
       if (desc.includes(event.tsuId)) {
         return { page, matchType: "tsu-id" };
@@ -105,7 +122,7 @@ function findMatchingPage(
 
   // Priority 2: Title similarity
   const notionTitle = (p: any) =>
-    (p.properties?.Name?.title || []).map((t: any) => t.plain_text || "").join("");
+    (p.properties?.[config.titleProp]?.title || []).map((t: any) => t.plain_text || "").join("");
 
   for (const page of notionPages) {
     if (titlesMatch(event.title, notionTitle(page))) {
@@ -118,13 +135,13 @@ function findMatchingPage(
 
 // --- Notion property builders ---
 
-function buildProperties(event: ParsedEvent, date: string): Record<string, unknown> {
+function buildProperties(event: ParsedEvent, date: string, config: DbConfig): Record<string, unknown> {
   const properties: Record<string, unknown> = {
-    Name: { title: [{ text: { content: event.title } }] },
+    [config.titleProp]: { title: [{ text: { content: event.title } }] },
   };
 
   if (event.allDay) {
-    properties["Due date"] = { date: { start: date } };
+    properties[config.dateProp] = { date: { start: date } };
   } else {
     const dateObj: Record<string, string> = {
       start: `${date}T${event.startTime}:00+09:00`,
@@ -132,15 +149,15 @@ function buildProperties(event: ParsedEvent, date: string): Record<string, unkno
     if (event.endTime) {
       dateObj.end = `${date}T${event.endTime}:00+09:00`;
     }
-    properties["Due date"] = { date: dateObj };
+    properties[config.dateProp] = { date: dateObj };
   }
 
   if (event.description) {
-    properties["Description"] = { rich_text: [{ text: { content: event.description } }] };
+    properties[config.descProp] = { rich_text: [{ text: { content: event.description } }] };
   }
 
   if (event.done) {
-    properties["Status"] = { status: { name: "Done" } };
+    properties[config.statusProp] = { status: { name: "Done" } };
   }
 
   return properties;
@@ -150,24 +167,25 @@ function diffProperties(
   event: ParsedEvent,
   date: string,
   existingPage: any,
+  config: DbConfig,
 ): Record<string, unknown> | null {
   const updates: Record<string, unknown> = {};
   let hasChanges = false;
 
   // Compare title
-  const existingTitle = (existingPage.properties?.Name?.title || [])
+  const existingTitle = (existingPage.properties?.[config.titleProp]?.title || [])
     .map((t: any) => t.plain_text || "").join("");
   if (existingTitle !== event.title) {
-    updates.Name = { title: [{ text: { content: event.title } }] };
+    updates[config.titleProp] = { title: [{ text: { content: event.title } }] };
     hasChanges = true;
   }
 
   // Compare date (normalize to ignore .000 milliseconds from Notion)
   const normalizeDate = (d: string | undefined) => d?.replace(/\.000\+/, "+");
-  const existingDate = existingPage.properties?.["Due date"]?.date;
+  const existingDate = existingPage.properties?.[config.dateProp]?.date;
   if (event.allDay) {
     if (existingDate?.start !== date || existingDate?.end) {
-      updates["Due date"] = { date: { start: date } };
+      updates[config.dateProp] = { date: { start: date } };
       hasChanges = true;
     }
   } else {
@@ -176,24 +194,24 @@ function diffProperties(
     if (normalizeDate(existingDate?.start) !== expectedStart || normalizeDate(existingDate?.end) !== expectedEnd) {
       const dateObj: Record<string, string> = { start: expectedStart };
       if (expectedEnd) dateObj.end = expectedEnd;
-      updates["Due date"] = { date: dateObj };
+      updates[config.dateProp] = { date: dateObj };
       hasChanges = true;
     }
   }
 
   // Compare description
-  const existingDesc = (existingPage.properties?.Description?.rich_text || [])
+  const existingDesc = (existingPage.properties?.[config.descProp]?.rich_text || [])
     .map((t: any) => t.plain_text || "").join("");
   if (event.description && existingDesc !== event.description) {
-    updates.Description = { rich_text: [{ text: { content: event.description } }] };
+    updates[config.descProp] = { rich_text: [{ text: { content: event.description } }] };
     hasChanges = true;
   }
 
   // Compare status (only set to Done, never revert)
   if (event.done) {
-    const existingStatus = existingPage.properties?.Status?.status?.name;
+    const existingStatus = existingPage.properties?.[config.statusProp]?.status?.name;
     if (existingStatus !== "Done") {
-      updates.Status = { status: { name: "Done" } };
+      updates[config.statusProp] = { status: { name: "Done" } };
       hasChanges = true;
     }
   }
@@ -229,16 +247,17 @@ async function main() {
     return;
   }
 
-  console.log(`Syncing ${events.length} event(s) from ${date} → Notion...`);
+  const dbName = resolveDbFromPath(filePath);
+  console.log(`Syncing ${events.length} event(s) from ${date} → Notion [${dbName}]...`);
 
-  const { apiKey, dbId } = getTasksConfig();
+  const { apiKey, dbId, config } = getDbConfig(dbName);
 
   // Query Notion for events on this date
   const data = await notionFetch(apiKey, `/databases/${dbId}/query`, {
     filter: {
       and: [
-        { property: "Due date", date: { on_or_after: `${date}T00:00:00+09:00` } },
-        { property: "Due date", date: { on_or_before: `${date}T23:59:59+09:00` } },
+        { property: config.dateProp, date: { on_or_after: `${date}T00:00:00+09:00` } },
+        { property: config.dateProp, date: { on_or_before: `${date}T23:59:59+09:00` } },
       ],
     },
   });
@@ -247,11 +266,11 @@ async function main() {
   let created = 0, updated = 0, skipped = 0;
 
   for (const event of events) {
-    const match = findMatchingPage(event, notionPages);
+    const match = findMatchingPage(event, notionPages, config);
 
     if (match) {
       // Existing page — check for diff
-      const diff = diffProperties(event, date, match.page);
+      const diff = diffProperties(event, date, match.page, config);
       if (diff) {
         console.log(`  UPDATE (${match.matchType}): ${event.title}`);
         if (!dryRun) {
@@ -264,9 +283,9 @@ async function main() {
       }
     } else {
       // New event — create
-      const properties = buildProperties(event, date);
+      const properties = buildProperties(event, date, config);
       const icon = pickTaskIcon(event.title);
-      const cover = pickCover("tsumugi");
+      const cover = pickCover(event.title);
       console.log(`  CREATE: ${event.title}`);
       if (!dryRun) {
         await notionFetch(apiKey, "/pages", { parent: { database_id: dbId }, properties, icon, cover });

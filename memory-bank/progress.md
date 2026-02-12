@@ -9,12 +9,12 @@
 | church | - | - | |
 | diary | - | - | |
 | diet | - | - | Notion: 食事DB (NOTION_MEALS_DB) |
-| events | - | 2026-02-12 | Notion: イベントDB (NOTION_EVENTS_DB)。general/church/job/tsumugiから統合 |
+| events | - | 2026-02-12 | planning/events/。Notion: イベントDB (NOTION_EVENTS_DB)。general/church/job/tsumugiから統合 |
 | fukuoka | - | - | |
 | guitar | - | - | Notion: ギターDB (NOTION_GUITAR_DB) |
 | investment | - | - | |
 | job | - | - | |
-| planning | - | - | |
+| planning | - | 2026-02-12 | トップレベル planning/ に移動（aspects/planning/ から） |
 | reading | - | - | |
 | routine | - | - | Notion: 習慣DB (NOTION_TASKS_DB) |
 | study | - | - | |

@@ -19,6 +19,7 @@ import {
 
 const ROOT = join(import.meta.dir, "..");
 const ASPECTS_DIR = join(ROOT, "aspects");
+const PLANNING_DIR = join(ROOT, "planning");
 
 const MOOD_MAP: Record<string, string> = {
   "😊 良い": "good",
@@ -148,13 +149,40 @@ async function fetchRoutineEntries(date: string): Promise<NormalizedEntry[]> {
 function loadLocalEvents(date: string): LocalEvent[] {
   const events: LocalEvent[] = [];
 
+  // Scan aspects/*/events/ directories
   let aspects: string[];
   try {
     aspects = readdirSync(ASPECTS_DIR, { withFileTypes: true })
       .filter((d) => d.isDirectory())
       .map((d) => d.name);
   } catch {
-    return events;
+    aspects = [];
+  }
+
+  // Also check planning/events/
+  const planningEventFile = join(PLANNING_DIR, "events", `${date}.md`);
+  if (existsSync(planningEventFile)) {
+    const content = readFileSync(planningEventFile, "utf-8");
+    const lines = content.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      const match = lines[i].match(/^- \[[ x]\] (.+?) (.+)$/);
+      if (match) {
+        const timeStr = match[1];
+        const title = match[2];
+        let description = "";
+        if (i + 1 < lines.length && lines[i + 1].startsWith("  - ")) {
+          description = lines[i + 1].replace(/^\s+- /, "");
+        }
+        const timeRange = timeStr.match(/^(\d{1,2}:\d{2})-(\d{1,2}:\d{2})$/);
+        if (timeRange) {
+          events.push({ aspect: "planning", start: timeRange[1], end: timeRange[2], allDay: false, title, description });
+        } else if (timeStr === "終日") {
+          events.push({ aspect: "planning", start: "", end: "", allDay: true, title, description });
+        } else {
+          events.push({ aspect: "planning", start: "", end: "", allDay: true, title: `${timeStr} ${title}`, description });
+        }
+      }
+    }
   }
 
   for (const aspect of aspects) {

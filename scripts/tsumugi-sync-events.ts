@@ -2,7 +2,7 @@
 /**
  * Tsumugi イベント同期
  *
- * beads の event ラベル付きタスクを aspects/events/ と Notion イベントDB に登録する。
+ * beads の event ラベル付きタスクを planning/events/ と Notion イベントDB に登録する。
  * TSU-ID をキーに冪等性を保証。
  *
  * 使い方:
@@ -16,7 +16,7 @@ import { getDbConfig, notionFetch, parseArgs } from "./lib/notion";
 
 const ROOT = join(import.meta.dir, "..");
 const BEADS_FILE = join(ROOT, "projects/tsumugi/.beads/issues.jsonl");
-const EVENTS_DIR = join(ROOT, "aspects/events");
+const EVENTS_DIR = join(ROOT, "planning/events");
 
 interface BeadsIssue {
   id: string;

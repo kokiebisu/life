@@ -12,7 +12,7 @@
  *   3. 未登録のルーティン枠を Notion に追加
  */
 
-import { getTasksConfig, notionFetch, parseArgs, todayJST, pickTaskIcon, pickCover } from "./lib/notion";
+import { getDbConfig, notionFetch, parseArgs, todayJST, pickTaskIcon, pickCover } from "./lib/notion";
 
 interface TimeSlot {
   start: string;
@@ -109,7 +109,7 @@ async function main() {
 
   console.log(`${toRegister.length} 件のルーティンを登録${dryRun ? "（dry-run）" : ""}:`);
 
-  const { apiKey, dbId } = getTasksConfig();
+  const { apiKey, dbId, config } = getDbConfig("routine");
 
   for (const slot of toRegister) {
     console.log(`  ${slot.start}-${slot.end}  ${slot.label}`);
@@ -117,8 +117,8 @@ async function main() {
     if (dryRun) continue;
 
     const properties: Record<string, unknown> = {
-      Name: { title: [{ text: { content: slot.label } }] },
-      "Due date": {
+      [config.titleProp]: { title: [{ text: { content: slot.label } }] },
+      [config.dateProp]: {
         date: {
           start: `${date}T${slot.start}:00+09:00`,
           end: `${date}T${slot.end}:00+09:00`,

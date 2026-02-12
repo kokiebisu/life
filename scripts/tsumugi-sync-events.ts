@@ -2,7 +2,7 @@
 /**
  * Tsumugi イベント同期
  *
- * beads の event ラベル付きタスクを aspects/tsumugi/events/ と Notion に登録する。
+ * beads の event ラベル付きタスクを aspects/events/ と Notion イベントDB に登録する。
  * TSU-ID をキーに冪等性を保証。
  *
  * 使い方:
@@ -12,11 +12,11 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
-import { getTasksConfig, notionFetch, parseArgs } from "./lib/notion";
+import { getDbConfig, notionFetch, parseArgs } from "./lib/notion";
 
 const ROOT = join(import.meta.dir, "..");
 const BEADS_FILE = join(ROOT, "projects/tsumugi/.beads/issues.jsonl");
-const EVENTS_DIR = join(ROOT, "aspects/tsumugi/events");
+const EVENTS_DIR = join(ROOT, "aspects/events");
 
 interface BeadsIssue {
   id: string;
@@ -163,21 +163,22 @@ async function syncNotion(
   event: EventInfo,
   apiKey: string,
   dbId: string,
+  config: { titleProp: string; dateProp: string; descProp: string },
   dryRun: boolean,
 ): Promise<"created" | "skipped"> {
   // Query Notion for events on this date
   const data = await notionFetch(apiKey, `/databases/${dbId}/query`, {
     filter: {
       and: [
-        { property: "Due date", date: { on_or_after: event.date + "T00:00:00+09:00" } },
-        { property: "Due date", date: { on_or_before: event.date + "T23:59:59+09:00" } },
+        { property: config.dateProp, date: { on_or_after: event.date + "T00:00:00+09:00" } },
+        { property: config.dateProp, date: { on_or_before: event.date + "T23:59:59+09:00" } },
       ],
     },
   });
 
   // Check if TSU-ID already exists in any event's description
   for (const page of data.results) {
-    const richText = page.properties?.Description?.rich_text || [];
+    const richText = page.properties?.[config.descProp]?.rich_text || [];
     const desc = richText.map((seg: any) => seg.plain_text || "").join("");
     if (desc.includes(event.tsuId)) {
       return "skipped";
@@ -188,11 +189,11 @@ async function syncNotion(
 
   // Create in Notion
   const properties: Record<string, unknown> = {
-    Name: { title: [{ text: { content: event.title } }] },
+    [config.titleProp]: { title: [{ text: { content: event.title } }] },
   };
 
   if (event.allDay) {
-    properties["Due date"] = { date: { start: event.date } };
+    properties[config.dateProp] = { date: { start: event.date } };
   } else {
     const dateObj: Record<string, string> = {
       start: `${event.date}T${event.startTime}:00+09:00`,
@@ -200,11 +201,11 @@ async function syncNotion(
     if (event.endTime) {
       dateObj.end = `${event.date}T${event.endTime}:00+09:00`;
     }
-    properties["Due date"] = { date: dateObj };
+    properties[config.dateProp] = { date: dateObj };
   }
 
   const descParts = [event.location, event.tsuId].filter(Boolean).join("。");
-  properties["Description"] = { rich_text: [{ text: { content: descParts } }] };
+  properties[config.descProp] = { rich_text: [{ text: { content: descParts } }] };
 
   await notionFetch(apiKey, "/pages", { parent: { database_id: dbId }, properties });
 
@@ -232,7 +233,7 @@ async function main() {
 
   console.log(`Found ${events.length} event task(s)`);
 
-  const { apiKey, dbId } = getTasksConfig();
+  const { apiKey, dbId, config } = getDbConfig("events");
 
   let localCreated = 0, localSkipped = 0;
   let notionCreated = 0, notionSkipped = 0;
@@ -247,7 +248,7 @@ async function main() {
       console.log(`  Skip local: ${event.date} ${event.tsuId} already exists`);
     }
 
-    const notionResult = await syncNotion(event, apiKey, dbId, dryRun);
+    const notionResult = await syncNotion(event, apiKey, dbId, config, dryRun);
     if (notionResult === "created") {
       notionCreated++;
       console.log(`  ${dryRun ? "[DRY RUN] Would create" : "Created"} Notion: ${event.date} ${event.title} (${event.tsuId})`);

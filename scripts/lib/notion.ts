@@ -125,16 +125,44 @@ const TASK_ICON_KEYWORDS: [RegExp, string][] = [
   [/イベント|event/i, "🎪"],
 ];
 
-const ASPECT_COVERS: Record<string, string> = {
-  tsumugi: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200",
-  diet: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=1200",
-  guitar: "https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=1200",
-  church: "https://images.unsplash.com/photo-1438032005730-c779502df39b?w=1200",
-  investment: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1200",
-  study: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=1200",
-  reading: "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=1200",
-  job: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=1200",
-  fukuoka: "https://images.unsplash.com/photo-1542051841857-5f90071e7989?w=1200",
+const ASPECT_COVERS: Record<string, string[]> = {
+  tsumugi: [
+    "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200",
+    "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=1200",
+    "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=1200",
+  ],
+  diet: [
+    "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=1200",
+    "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=1200",
+    "https://images.unsplash.com/photo-1547592180-85f173990554?w=1200",
+  ],
+  guitar: [
+    "https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=1200",
+    "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200",
+    "https://images.unsplash.com/photo-1525201548942-d8732f6617a0?w=1200",
+  ],
+  church: [
+    "https://images.unsplash.com/photo-1438032005730-c779502df39b?w=1200",
+  ],
+  investment: [
+    "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1200",
+    "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1200",
+  ],
+  study: [
+    "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=1200",
+    "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=1200",
+    "https://images.unsplash.com/photo-1488190211105-8b0e65b80b4e?w=1200",
+  ],
+  reading: [
+    "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=1200",
+    "https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=1200",
+  ],
+  job: [
+    "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=1200",
+  ],
+  fukuoka: [
+    "https://images.unsplash.com/photo-1542051841857-5f90071e7989?w=1200",
+  ],
 };
 
 const GENERAL_COVERS = [
@@ -143,15 +171,10 @@ const GENERAL_COVERS = [
   "https://images.unsplash.com/photo-1557682224-5b8590cd9ec5?w=1200",
   "https://images.unsplash.com/photo-1557682260-96773eb01377?w=1200",
   "https://images.unsplash.com/photo-1557682268-e3955ed5d83f?w=1200",
+  "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1200",
+  "https://images.unsplash.com/photo-1476820865390-c52aeebb9891?w=1200",
+  "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1200",
 ];
-
-const SOURCE_ICONS: Record<string, string> = {
-  "Hacker News": "🟠",
-  "Zenn": "💠",
-  "note": "📝",
-  "Twitter": "🐦",
-  "Other": "🔗",
-};
 
 const MOOD_ICONS: Record<string, string> = {
   "😊 良い": "😊",
@@ -171,16 +194,14 @@ export function pickJournalIcon(mood: string): { type: "emoji"; emoji: string } 
   return { type: "emoji", emoji };
 }
 
-export function pickArticleIcon(source: string): { type: "emoji"; emoji: string } {
-  const emoji = SOURCE_ICONS[source] || "📰";
-  return { type: "emoji", emoji };
-}
-
 export function pickCover(hint?: string): { type: "external"; external: { url: string } } {
   if (hint) {
     const key = hint.toLowerCase();
-    for (const [aspect, url] of Object.entries(ASPECT_COVERS)) {
-      if (key.includes(aspect)) return { type: "external", external: { url } };
+    for (const [aspect, urls] of Object.entries(ASPECT_COVERS)) {
+      if (key.includes(aspect)) {
+        const url = urls[Math.floor(Math.random() * urls.length)];
+        return { type: "external", external: { url } };
+      }
     }
   }
   const url = GENERAL_COVERS[Math.floor(Math.random() * GENERAL_COVERS.length)];

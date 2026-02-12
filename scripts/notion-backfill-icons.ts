@@ -10,13 +10,12 @@
  *   bun run scripts/notion-backfill-icons.ts --dry-run    # プレビューのみ
  *   bun run scripts/notion-backfill-icons.ts --db tasks   # タスクDBのみ
  *   bun run scripts/notion-backfill-icons.ts --db journal # ジャーナルDBのみ
- *   bun run scripts/notion-backfill-icons.ts --db articles # 記事DBのみ
  *   bun run scripts/notion-backfill-icons.ts --force      # 設定済みも上書き
  */
 
 import {
   getApiKey, getDbId, notionFetch, parseArgs,
-  pickTaskIcon, pickJournalIcon, pickArticleIcon, pickCover,
+  pickTaskIcon, pickJournalIcon, pickCover,
 } from "./lib/notion";
 
 const apiKey = getApiKey();
@@ -105,8 +104,8 @@ async function backfillArticles(dryRun: boolean, force: boolean) {
   let updated = 0;
   for (const page of pages) {
     if (!force && page.icon && page.cover) continue;
-    const title = page.properties.Name?.title?.[0]?.plain_text || "";
-    const source = page.properties.Source?.select?.name || "";
+    const title = page.properties["タイトル"]?.title?.[0]?.plain_text || "";
+    const source = page.properties["ソース"]?.select?.name || "";
     const aspects = (page.properties.Aspect?.multi_select || []).map((s: any) => s.name).join(",");
     const icon = pickArticleIcon(source);
     const cover = pickCover(aspects);

@@ -1,0 +1,23 @@
+name: Article Replenishment
+on:
+  schedule:
+    - cron: '0 20 * * *' # 05:00 JST (20:00 UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  replenish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+
+      - name: Replenish articles
+        env:
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          NOTION_ARTICLES_DB: ${{ secrets.NOTION_ARTICLES_DB }}
+        run: bun run scripts/notion-articles.ts replenish

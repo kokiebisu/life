@@ -36,6 +36,7 @@
     "GITHUB_PERSONAL_ACCESS_TOKEN": "${localEnv:GITHUB_PERSONAL_ACCESS_TOKEN}"
   },
   "containerEnv": {
-    "CLAUDE_CONFIG_DIR": "/home/node/.claude"
+    "CLAUDE_CONFIG_DIR": "/home/node/.claude",
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   }
 }

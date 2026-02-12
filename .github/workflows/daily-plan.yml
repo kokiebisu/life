@@ -27,6 +27,15 @@ jobs:
           mkdir -p aspects/planning/daily
           bun run scripts/notion-daily-plan.ts --date "$DATE" > "$OUTPUT"
 
+      - name: Sync schedule to Notion Calendar
+        env:
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          NOTION_TASKS_DB: ${{ secrets.NOTION_TASKS_DB }}
+          NOTION_JOURNAL_DB: ${{ secrets.NOTION_JOURNAL_DB }}
+        run: |
+          DATE=$(TZ=Asia/Tokyo date +%Y-%m-%d)
+          bun run scripts/notion-sync-schedule.ts --date "$DATE"
+
       - name: Commit and push
         run: |
           DATE=$(TZ=Asia/Tokyo date +%Y-%m-%d)

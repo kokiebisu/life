@@ -46,7 +46,7 @@
 
 - `aspects/planning/goals.md` - 目標一覧
 - `aspects/planning/roadmap.md` - 3ヶ月ロードマップ
-- `.claude/rules/profile.md` - ユーザープロフィール・優先度
+- `profile/` - ユーザープロフィール（basic, health, career, love, personality）
 
 ## 注意
 

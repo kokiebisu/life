@@ -1,15 +1,21 @@
 #!/usr/bin/env bun
 /**
- * Notion タスク・イベント一覧取得
+ * Notion タスク・イベント一覧取得（全4 DB対応）
  *
  * 使い方:
- *   bun run scripts/notion-list.ts                    # 今日のタスク
+ *   bun run scripts/notion-list.ts                    # 今日のタスク（全DB）
  *   bun run scripts/notion-list.ts --date 2026-02-14  # 指定日のタスク
  *   bun run scripts/notion-list.ts --days 7           # 今後7日間
  *   bun run scripts/notion-list.ts --json             # JSON出力
+ *   bun run scripts/notion-list.ts --db guitar        # ギターDBのみ
+ *   bun run scripts/notion-list.ts --db routine       # 習慣DBのみ
  */
 
-import { getTasksConfig, notionFetch, parseArgs, todayJST } from "./lib/notion";
+import {
+  type DbName, type NormalizedEntry, DB_CONFIGS,
+  getDbConfigOptional, queryDbByDate, normalizePages,
+  parseArgs, todayJST,
+} from "./lib/notion";
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleString("ja-JP", {
@@ -19,23 +25,19 @@ function formatTime(iso: string): string {
   });
 }
 
-interface NotionTask {
-  id: string;
-  title: string;
-  start: string;
-  end: string | null;
-  status: string;
-  description: string;
-  feedback: string;
-}
+const DB_LABEL: Record<DbName, string> = {
+  routine: "習慣",
+  events: "イベント",
+  guitar: "ギター",
+  meals: "食事",
+};
 
 async function main() {
   const { flags, opts } = parseArgs();
   const days = opts.days ? parseInt(opts.days, 10) : 1;
   const date = opts.date || null;
   const json = flags.has("json");
-
-  const { apiKey, dbId } = getTasksConfig();
+  const dbFilter = opts.db as DbName | undefined;
 
   let startDate: string, endDate: string;
   if (date) {
@@ -48,52 +50,43 @@ async function main() {
     endDate = end.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
   }
 
-  const filter = {
-    and: [
-      { property: "Due date", date: { on_or_after: startDate + "T00:00:00+09:00" } },
-      { property: "Due date", date: { on_or_before: endDate + "T23:59:59+09:00" } },
-    ],
-  };
+  const dbNames: DbName[] = dbFilter ? [dbFilter] : (Object.keys(DB_CONFIGS) as DbName[]);
 
-  const data = await notionFetch(apiKey, `/databases/${dbId}/query`, {
-    filter,
-    sorts: [{ property: "Due date", direction: "ascending" }],
+  // Query all configured DBs in parallel
+  const allEntries: NormalizedEntry[] = [];
+  const queries = dbNames.map(async (name) => {
+    const dbConf = getDbConfigOptional(name);
+    if (!dbConf) return;
+    const { apiKey, dbId, config } = dbConf;
+    const data = await queryDbByDate(apiKey, dbId, config, startDate, endDate);
+    allEntries.push(...normalizePages(data.results, config, name));
   });
+  await Promise.all(queries);
 
-  const tasks: NotionTask[] = data.results.map((page: any) => {
-    const props = page.properties;
-    return {
-      id: page.id,
-      title: props.Name?.title?.[0]?.plain_text || "",
-      start: props["Due date"]?.date?.start || "",
-      end: props["Due date"]?.date?.end || null,
-      status: props.Status?.status?.name || "",
-      description: props.Description?.rich_text?.[0]?.plain_text || "",
-      feedback: props.Feedback?.rich_text?.[0]?.plain_text || "",
-    };
-  });
+  // Sort by start time
+  allEntries.sort((a, b) => (a.start || "").localeCompare(b.start || ""));
 
   if (json) {
-    console.log(JSON.stringify(tasks, null, 2));
+    console.log(JSON.stringify(allEntries, null, 2));
     return;
   }
 
-  if (tasks.length === 0) {
+  if (allEntries.length === 0) {
     console.log("タスクなし");
     return;
   }
 
   // Group by date
-  const byDate = new Map<string, NotionTask[]>();
-  for (const task of tasks) {
-    const dateKey = task.start.includes("T")
-      ? new Date(task.start).toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" })
-      : task.start;
+  const byDate = new Map<string, NormalizedEntry[]>();
+  for (const entry of allEntries) {
+    const dateKey = entry.start.includes("T")
+      ? new Date(entry.start).toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" })
+      : entry.start;
     if (!byDate.has(dateKey)) byDate.set(dateKey, []);
-    byDate.get(dateKey)!.push(task);
+    byDate.get(dateKey)!.push(entry);
   }
 
-  for (const [dateKey, dayTasks] of byDate) {
+  for (const [dateKey, dayEntries] of byDate) {
     const dateObj = new Date(dateKey + "T12:00:00+09:00");
     const label = dateObj.toLocaleDateString("ja-JP", {
       timeZone: "Asia/Tokyo",
@@ -103,13 +96,14 @@ async function main() {
       weekday: "short",
     });
     console.log(`\n${label}`);
-    for (const task of dayTasks) {
-      const check = task.status === "Done" ? "✅" : "⬜";
-      const time = task.start.includes("T")
-        ? `${formatTime(task.start)}${task.end ? "-" + formatTime(task.end) : ""}`
+    for (const entry of dayEntries) {
+      const check = entry.status === "Done" ? "✅" : "⬜";
+      const time = entry.start.includes("T")
+        ? `${formatTime(entry.start)}${entry.end ? "-" + formatTime(entry.end) : ""}`
         : "[終日]";
-      const fb = task.feedback ? ` 💬 ${task.feedback}` : "";
-      console.log(`  ${check} ${time}  ${task.title}${fb}`);
+      const dbTag = `[${DB_LABEL[entry.source]}]`;
+      const fb = entry.feedback ? ` 💬 ${entry.feedback}` : "";
+      console.log(`  ${check} ${time}  ${dbTag} ${entry.title}${fb}`);
     }
   }
   console.log("");

@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * デイリープラン生成
+ * デイリープラン生成（全4 DB対応）
  *
  * 使い方:
  *   bun run scripts/notion-daily-plan.ts              # 今日のプラン
@@ -10,7 +10,12 @@
 
 import { readFileSync, existsSync, readdirSync } from "fs";
 import { join } from "path";
-import { getApiKey, getDbId, getDbIdOptional, notionFetch, parseArgs, todayJST } from "./lib/notion";
+import {
+  type DbName, type NormalizedEntry, type DbConfig,
+  getApiKey, getDbId, getDbIdOptional, getDbConfigOptional,
+  notionFetch, queryDbByDate, normalizePages,
+  parseArgs, todayJST,
+} from "./lib/notion";
 
 const ROOT = join(import.meta.dir, "..");
 const ASPECTS_DIR = join(ROOT, "aspects");
@@ -30,16 +35,6 @@ const WEEKDAY_NOTES: Record<string, string> = {
   "土": "土曜: tsumugi開発は午前のみ。午後は自由時間",
   "日": "日曜: 教会 → ゆっくり過ごす日。ギターと読書中心",
 };
-
-interface NotionTask {
-  id: string;
-  title: string;
-  start: string;
-  end: string | null;
-  status: string;
-  description: string;
-  feedback: string;
-}
 
 interface JournalEntry {
   date: string;
@@ -62,6 +57,7 @@ interface TimeSlot {
   label: string;
   source: "routine" | "event" | "notion";
   aspect?: string;
+  dbSource?: DbName;
   notionRegistered?: boolean; // Notion登録済みフラグ
 }
 
@@ -79,10 +75,10 @@ interface DailyPlanData {
   yesterdayDate: string;
   yesterdayWeekday: string;
   journal: JournalEntry | null;
-  yesterdayTasks: NotionTask[];
-  todayTasks: NotionTask[];
+  yesterdayTasks: NormalizedEntry[];
+  todayTasks: NormalizedEntry[];
   localEvents: LocalEvent[];
-  schedule: { timeline: TimeSlot[]; allDay: { label: string; aspect?: string; notionRegistered?: boolean }[] };
+  schedule: { timeline: TimeSlot[]; allDay: { label: string; aspect?: string; dbSource?: DbName; notionRegistered?: boolean }[] };
 }
 
 function formatTime(iso: string): string {
@@ -124,29 +120,29 @@ async function fetchJournal(apiKey: string, dbId: string, date: string): Promise
   };
 }
 
-async function fetchTasks(apiKey: string, dbId: string, date: string): Promise<NotionTask[]> {
-  const data = await notionFetch(apiKey, `/databases/${dbId}/query`, {
-    filter: {
-      and: [
-        { property: "Due date", date: { on_or_after: date + "T00:00:00+09:00" } },
-        { property: "Due date", date: { on_or_before: date + "T23:59:59+09:00" } },
-      ],
-    },
-    sorts: [{ property: "Due date", direction: "ascending" }],
-  });
+async function fetchAllDbEntries(date: string): Promise<NormalizedEntry[]> {
+  const dbNames: DbName[] = ["routine", "events", "guitar", "meals"];
+  const allEntries: NormalizedEntry[] = [];
 
-  return data.results.map((page: any) => {
-    const props = page.properties;
-    return {
-      id: page.id,
-      title: richTextToString(props.Name?.title),
-      start: props["Due date"]?.date?.start || "",
-      end: props["Due date"]?.date?.end || null,
-      status: props.Status?.status?.name || "",
-      description: richTextToString(props.Description?.rich_text),
-      feedback: richTextToString(props.Feedback?.rich_text),
-    };
+  const queries = dbNames.map(async (name) => {
+    const dbConf = getDbConfigOptional(name);
+    if (!dbConf) return;
+    const { apiKey, dbId, config } = dbConf;
+    const data = await queryDbByDate(apiKey, dbId, config, date, date);
+    allEntries.push(...normalizePages(data.results, config, name));
   });
+  await Promise.all(queries);
+
+  allEntries.sort((a, b) => (a.start || "").localeCompare(b.start || ""));
+  return allEntries;
+}
+
+async function fetchRoutineEntries(date: string): Promise<NormalizedEntry[]> {
+  const dbConf = getDbConfigOptional("routine");
+  if (!dbConf) return [];
+  const { apiKey, dbId, config } = dbConf;
+  const data = await queryDbByDate(apiKey, dbId, config, date, date);
+  return normalizePages(data.results, config, "routine");
 }
 
 function loadLocalEvents(date: string): LocalEvent[] {
@@ -207,12 +203,12 @@ function minutesToTime(m: number): string {
 
 function buildSchedule(
   localEvents: LocalEvent[],
-  todayTasks: NotionTask[],
-): { timeline: TimeSlot[]; allDay: { label: string; aspect?: string; notionRegistered?: boolean }[] } {
+  todayTasks: NormalizedEntry[],
+): { timeline: TimeSlot[]; allDay: { label: string; aspect?: string; dbSource?: DbName; notionRegistered?: boolean }[] } {
   // Start with routine slots as base
   let slots: TimeSlot[] = ROUTINE_SLOTS.map((s) => ({ ...s }));
 
-  const allDay: { label: string; aspect?: string; notionRegistered?: boolean }[] = [];
+  const allDay: { label: string; aspect?: string; dbSource?: DbName; notionRegistered?: boolean }[] = [];
 
   // Collect timed events from local events
   const timedEvents: TimeSlot[] = [];
@@ -236,14 +232,14 @@ function buildSchedule(
   for (const t of todayTasks) {
     if (!t.start.includes("T")) {
       // All-day Notion task
-      allDay.push({ label: t.title, notionRegistered: true });
+      allDay.push({ label: t.title, dbSource: t.source, notionRegistered: true });
       continue;
     }
     const start = formatTime(t.start);
     const end = t.end ? formatTime(t.end) : "";
     if (!end) {
       // No end time → treat as all-day
-      allDay.push({ label: `${start}〜 ${t.title}`, notionRegistered: true });
+      allDay.push({ label: `${start}〜 ${t.title}`, dbSource: t.source, notionRegistered: true });
       continue;
     }
     timedEvents.push({
@@ -251,6 +247,7 @@ function buildSchedule(
       end,
       label: t.title,
       source: "notion",
+      dbSource: t.source,
       notionRegistered: true,
     });
   }
@@ -463,15 +460,14 @@ async function main() {
   const json = flags.has("json");
 
   const apiKey = getApiKey();
-  const tasksDbId = getDbId("NOTION_TASKS_DB");
   const journalDbId = getDbIdOptional("NOTION_JOURNAL_DB");
 
   const yesterdayDate = getYesterday(targetDate);
 
   const [journal, yesterdayTasks, todayTasks] = await Promise.all([
     journalDbId ? fetchJournal(apiKey, journalDbId, yesterdayDate) : Promise.resolve(null),
-    fetchTasks(apiKey, tasksDbId, yesterdayDate),
-    fetchTasks(apiKey, tasksDbId, targetDate),
+    fetchRoutineEntries(yesterdayDate),
+    fetchAllDbEntries(targetDate),
   ]);
 
   const localEvents = loadLocalEvents(targetDate);

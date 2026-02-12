@@ -48,8 +48,17 @@ export function getDbId(envKey: string): string {
   return dbId;
 }
 
+export function getDbIdOptional(envKey: string): string | null {
+  const env = loadEnv();
+  return env[envKey] || process.env[envKey] || null;
+}
+
 export function getTasksConfig() {
   return { apiKey: getApiKey(), dbId: getDbId("NOTION_TASKS_DB") };
+}
+
+export function getShoppingConfig() {
+  return { apiKey: getApiKey(), dbId: getDbId("NOTION_SHOPPING_DB") };
 }
 
 export function notionHeaders(apiKey: string) {
@@ -181,6 +190,16 @@ const MOOD_ICONS: Record<string, string> = {
   "😐 普通": "😐",
   "😞 イマイチ": "😞",
 };
+
+export function pickArticleIcon(source: string): { type: "emoji"; emoji: string } {
+  const map: Record<string, string> = {
+    "Hacker News": "🟠",
+    "Zenn": "💠",
+    "note": "📝",
+    "Twitter": "🐦",
+  };
+  return { type: "emoji", emoji: map[source] || "📰" };
+}
 
 export function pickTaskIcon(title: string): { type: "emoji"; emoji: string } {
   for (const [pattern, emoji] of TASK_ICON_KEYWORDS) {

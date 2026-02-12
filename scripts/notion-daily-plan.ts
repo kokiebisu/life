@@ -10,7 +10,7 @@
 
 import { readFileSync, existsSync, readdirSync } from "fs";
 import { join } from "path";
-import { getApiKey, getDbId, notionFetch, parseArgs, todayJST } from "./lib/notion";
+import { getApiKey, getDbId, getDbIdOptional, notionFetch, parseArgs, todayJST } from "./lib/notion";
 
 const ROOT = join(import.meta.dir, "..");
 const ASPECTS_DIR = join(ROOT, "aspects");
@@ -464,12 +464,12 @@ async function main() {
 
   const apiKey = getApiKey();
   const tasksDbId = getDbId("NOTION_TASKS_DB");
-  const journalDbId = getDbId("NOTION_JOURNAL_DB");
+  const journalDbId = getDbIdOptional("NOTION_JOURNAL_DB");
 
   const yesterdayDate = getYesterday(targetDate);
 
   const [journal, yesterdayTasks, todayTasks] = await Promise.all([
-    fetchJournal(apiKey, journalDbId, yesterdayDate),
+    journalDbId ? fetchJournal(apiKey, journalDbId, yesterdayDate) : Promise.resolve(null),
     fetchTasks(apiKey, tasksDbId, yesterdayDate),
     fetchTasks(apiKey, tasksDbId, targetDate),
   ]);

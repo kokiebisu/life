@@ -9,7 +9,7 @@
  *   bun run scripts/notion-journal.ts today
  */
 
-import { getApiKey, getDbId, notionFetch, parseArgs, todayJST, pickJournalIcon, pickCover } from "./lib/notion";
+import { getApiKey, getDbIdOptional, notionFetch, parseArgs, todayJST, pickJournalIcon, pickCover } from "./lib/notion";
 
 const MOOD_MAP: Record<string, string> = {
   good: "😊 良い",
@@ -18,7 +18,12 @@ const MOOD_MAP: Record<string, string> = {
 };
 
 function getJournalConfig() {
-  return { apiKey: getApiKey(), dbId: getDbId("NOTION_JOURNAL_DB") };
+  const dbId = getDbIdOptional("NOTION_JOURNAL_DB");
+  if (!dbId) {
+    console.error("NOTION_JOURNAL_DB が未設定です。.env.local に設定してください。");
+    process.exit(1);
+  }
+  return { apiKey: getApiKey(), dbId };
 }
 
 async function addEntry(opts: Record<string, string>) {

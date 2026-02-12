@@ -14,8 +14,8 @@
  */
 
 import {
-  getApiKey, getDbId, notionFetch, parseArgs,
-  pickTaskIcon, pickJournalIcon, pickCover,
+  getApiKey, getDbId, getDbIdOptional, notionFetch, parseArgs,
+  pickTaskIcon, pickJournalIcon, pickArticleIcon, pickCover,
 } from "./lib/notion";
 
 const apiKey = getApiKey();
@@ -73,7 +73,8 @@ async function backfillTasks(dryRun: boolean, force: boolean) {
 }
 
 async function backfillJournal(dryRun: boolean, force: boolean) {
-  const dbId = getDbId("NOTION_JOURNAL_DB");
+  const dbId = getDbIdOptional("NOTION_JOURNAL_DB");
+  if (!dbId) { console.log("\n📔 Journal: スキップ（DB未設定）"); return; }
   const pages = await queryAll(dbId);
   console.log(`\n📔 Journal: ${pages.length} pages`);
 
@@ -97,7 +98,8 @@ async function backfillJournal(dryRun: boolean, force: boolean) {
 }
 
 async function backfillArticles(dryRun: boolean, force: boolean) {
-  const dbId = getDbId("NOTION_ARTICLES_DB");
+  const dbId = getDbIdOptional("NOTION_ARTICLES_DB");
+  if (!dbId) { console.log("\n📰 Articles: スキップ（DB未設定）"); return; }
   const pages = await queryAll(dbId);
   console.log(`\n📰 Articles: ${pages.length} pages`);
 

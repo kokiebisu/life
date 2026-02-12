@@ -12,7 +12,7 @@
  *   bun run scripts/notion-articles.ts replenish [--dry-run]
  */
 
-import { getApiKey, getDbId, notionFetch, parseArgs, todayJST, pickArticleIcon, pickCover } from "./lib/notion";
+import { getApiKey, getDbIdOptional, notionFetch, parseArgs, todayJST, pickArticleIcon, pickCover } from "./lib/notion";
 
 const KNOWN_SOURCES: Record<string, string> = {
   "news.ycombinator.com": "Hacker News",
@@ -31,7 +31,12 @@ const ASPECT_KEYWORDS: Record<string, RegExp> = {
 };
 
 function getArticlesConfig() {
-  return { apiKey: getApiKey(), dbId: getDbId("NOTION_ARTICLES_DB") };
+  const dbId = getDbIdOptional("NOTION_ARTICLES_DB");
+  if (!dbId) {
+    console.error("NOTION_ARTICLES_DB が未設定です。.env.local に設定してください。");
+    process.exit(1);
+  }
+  return { apiKey: getApiKey(), dbId };
 }
 
 function detectSource(url: string): string {

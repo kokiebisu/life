@@ -66,7 +66,7 @@ Before creating any PRs, verify the full codebase passes:
 2. **Run type check**:
 
    ```bash
-   bunx tsc --noEmit
+   bun run typecheck
    ```
 
 3. **Run linter**:
@@ -226,7 +226,7 @@ Groups:
 #### Teammate Prompt
 
 ````
-You are creating a PR for one group of changes in the tsumugi project (Next.js/TypeScript/Bun).
+You are creating a PR for one group of changes in the sumitsugi project (Next.js/TypeScript/Bun).
 
 ## Your Group
 **Title:** {type}: {description}
@@ -242,7 +242,7 @@ cd /workspace/.worktrees/pr-group-{n}
 2. Run verification in your worktree:
    - `bun run test:run`
    - `bun run lint`
-   - `bunx tsc --noEmit`
+   - `bun run typecheck`
    - `bun run build`
    If any fail, message the lead with the error.
 3. Stage explicitly: `git add <files>` (NEVER `git add .` or `-A`)

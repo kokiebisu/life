@@ -1,6 +1,9 @@
 {
   "name": "life",
   "module": "index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },

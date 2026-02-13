@@ -1,3 +1,3 @@
-[submodule "tsumugi"]
-	path = projects/tsumugi
-	url = https://github.com/kokiebisu/tsumugi
+[submodule "sumitsugi"]
+	path = projects/sumitsugi
+	url = https://github.com/kokiebisu/sumitsugi

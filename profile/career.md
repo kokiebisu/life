@@ -14,16 +14,16 @@
 ## 技術スキル
 
 - メイン言語: TypeScript, Ruby
-- tsumugiスタック: Next.js 16 / Bun / PostgreSQL / Drizzle ORM / Stripe / Cloudflare R2 / shadcn/ui
+- sumitsugiスタック: Next.js 16 / Bun / PostgreSQL / Drizzle ORM / Stripe / Cloudflare R2 / shadcn/ui
 - 強み: フルスタック（バックエンド・インフラ寄り）
 
 ## 仕事
 
 - 2026-02-13 最終出社（freee、2/28正式退職）
-- 2/14以降: tsumugi（個人プロダクト）を本業として2-3ヶ月集中
+- 2/14以降: sumitsugi（個人プロダクト）を本業として2-3ヶ月集中
 - 在宅開発メイン。起業イベント参加や営業は不定期
 
-## tsumugi（紡ぎ）
+## sumitsugi（紡ぎ）
 
 - コンセプト: 住人の暮らしを引き継ぐプラットフォーム
 - 前の住人と次の住人をつなぎ、家具・地域の知識・生活ルーティンごと引き継ぐ

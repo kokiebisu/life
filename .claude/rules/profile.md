@@ -7,7 +7,7 @@
 |---------|------|-----------|
 | `profile/basic.md` | 基本情報・居住・生活リズム・信仰・趣味 | 全チーム |
 | `profile/health.md` | 身体・ダイエット・ジム・食事 | diet チーム |
-| `profile/career.md` | 職歴・スキル・tsumugi・財務 | job チーム、planning |
+| `profile/career.md` | 職歴・スキル・sumitsugi・財務 | job チーム、planning |
 | `profile/love.md` | 恋愛・結婚・ラブタイプ分析 | 恋愛相談時 |
 | `profile/personality.md` | 価値観・人生の軸・ビジョン | goal、planning |
 

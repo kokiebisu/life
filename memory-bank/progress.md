@@ -9,7 +9,7 @@
 | church | - | - | |
 | diary | - | - | |
 | diet | - | - | Notion: 食事DB (NOTION_MEALS_DB) |
-| events | - | 2026-02-12 | planning/events/。Notion: イベントDB (NOTION_EVENTS_DB)。general/church/job/tsumugiから統合 |
+| events | - | 2026-02-12 | planning/events/。Notion: イベントDB (NOTION_EVENTS_DB)。general/church/job/sumitsugiから統合 |
 | fukuoka | - | - | |
 | guitar | - | - | Notion: ギターDB (NOTION_GUITAR_DB) |
 | investment | - | - | |
@@ -18,7 +18,7 @@
 | reading | - | - | |
 | routine | - | - | Notion: 習慣DB (NOTION_TASKS_DB) |
 | study | - | - | |
-| tsumugi | - | - | |
+| sumitsugi | - | - | |
 
 ## マイルストーン
 

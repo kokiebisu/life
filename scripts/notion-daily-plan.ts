@@ -6,6 +6,7 @@
  *   bun run scripts/notion-daily-plan.ts              # 今日のプラン
  *   bun run scripts/notion-daily-plan.ts --date 2026-02-15  # 指定日
  *   bun run scripts/notion-daily-plan.ts --json        # JSON出力
+ *   bun run scripts/notion-daily-plan.ts --ai          # AI最適化プラン
  */
 
 import { readFileSync, existsSync, readdirSync } from "fs";
@@ -16,6 +17,7 @@ import {
   queryDbByDate, normalizePages,
   parseArgs, todayJST,
 } from "./lib/notion";
+import { callClaude } from "./lib/claude";
 
 const ROOT = join(import.meta.dir, "..");
 const ASPECTS_DIR = join(ROOT, "aspects");
@@ -421,15 +423,149 @@ function formatMarkdown(data: DailyPlanData): string {
   return lines.join("\n");
 }
 
+const SYSTEM_PROMPT = `あなたは松本あかり、ライフコーチです。ユーザーの1日のスケジュールを最適化します。
+
+ルール:
+1. 確定済み予定（🔶マーク / Notion登録済み）は時間を変更しない
+2. ルーティン枠（🔹）のみ調整可能
+3. 優先順位: sumitsugi > 運動/減量 > ギター > 投資 > study > 読書
+4. フィードバックに基づいて時間配分・運動強度・休息を調整
+5. 未完了タスクは可能な範囲で今日に組み込む
+6. 出力はマークダウンのみ。説明文不要
+
+フィードバック解釈:
+- 「疲れた」「だるい」→ 運動軽め、休憩増
+- 「進捗遅れ」「終わらなかった」→ 該当aspectの時間延長
+- 「楽しかった」「調子いい」→ 継続or負荷UP
+- 「サボった」→ ハードル下げ（時間短縮）
+- 未完了多い → 今日は重要タスクに絞る`;
+
+function buildUserPrompt(data: DailyPlanData): string {
+  const sections: string[] = [];
+
+  // 日付・曜日
+  sections.push(`## 対象日: ${data.targetDate}（${data.targetWeekday}）`);
+  const weekdayNote = WEEKDAY_NOTES[data.targetWeekday];
+  if (weekdayNote) {
+    sections.push(`曜日ルール: ${weekdayNote}`);
+  }
+
+  // 昨日の完了/未完了
+  const done = data.yesterdayTasks.filter((t) => t.status === "Done");
+  const incomplete = data.yesterdayTasks.filter((t) => t.status !== "Done");
+
+  if (done.length > 0) {
+    sections.push(`\n## 昨日の完了タスク（${data.yesterdayDate}）`);
+    for (const t of done) {
+      sections.push(`- ✅ [${t.source}] ${t.title}`);
+    }
+  }
+
+  if (incomplete.length > 0) {
+    sections.push(`\n## 昨日の未完了タスク`);
+    for (const t of incomplete) {
+      sections.push(`- ⬜ [${t.source}] ${t.title}`);
+    }
+  }
+
+  // フィードバック
+  const feedbackTasks = data.yesterdayTasks.filter((t) => t.feedback);
+  if (feedbackTasks.length > 0) {
+    sections.push(`\n## 昨日のフィードバック`);
+    for (const t of feedbackTasks) {
+      sections.push(`- [${t.source}] ${t.title}: 「${t.feedback}」`);
+    }
+  }
+
+  // 今日の確定予定
+  const { timeline, allDay } = data.schedule;
+  const confirmedSlots = timeline.filter((s) => s.source !== "routine");
+  if (confirmedSlots.length > 0) {
+    sections.push(`\n## 今日の確定予定（変更不可）`);
+    for (const s of confirmedSlots) {
+      sections.push(`- ${s.start}-${s.end} 🔶 ${s.label}`);
+    }
+  }
+
+  if (allDay.length > 0) {
+    sections.push(`\n## 今日の終日予定`);
+    for (const item of allDay) {
+      const prefix = item.aspect ? `[${item.aspect}] ` : "";
+      sections.push(`- ${prefix}${item.label}`);
+    }
+  }
+
+  // ルーティンテンプレート
+  const routineSlots = timeline.filter((s) => s.source === "routine");
+  if (routineSlots.length > 0) {
+    sections.push(`\n## ルーティン枠（調整可能）`);
+    for (const s of routineSlots) {
+      sections.push(`- ${s.start}-${s.end} 🔹 ${s.label}`);
+    }
+  }
+
+  // 出力フォーマット
+  sections.push(`\n## 出力フォーマット
+
+以下の形式でマークダウンを出力してください:
+
+# デイリープラン: ${data.targetDate}（${data.targetWeekday}）
+
+## 昨日の振り返り（${data.yesterdayDate}）
+
+タスク: X/Y 完了
+
+### 完了
+  ✅ タスク名
+
+### 未完了（持ち越し候補）
+  ⬜ タスク名
+
+### フィードバック
+  💬 タスク名 → フィードバック内容
+
+---
+
+## 今日のスケジュール
+
+HH:MM-HH:MM  🔶/🔹 タスク名
+
+### 終日
+- タスク名
+
+> 🔶 = 確定した予定  🔹 = ルーティン（テンプレートからの提案）
+> ※登録済みのタスクは重複登録しないこと。空き時間にのみ新規追加する。
+
+---
+
+## 今日のポイント
+
+- フィードバックに基づく調整理由
+- 曜日メモ
+`);
+
+  return sections.join("\n");
+}
+
+async function generateAIPlan(data: DailyPlanData): Promise<string> {
+  const userPrompt = buildUserPrompt(data);
+  const result = await callClaude(
+    [{ role: "user", content: userPrompt }],
+    { system: SYSTEM_PROMPT, maxTokens: 4096 },
+  );
+  return result.trim();
+}
+
 async function main() {
   const { flags, opts } = parseArgs();
   const targetDate = opts.date || todayJST();
   const json = flags.has("json");
+  const ai = flags.has("ai");
 
   const yesterdayDate = getYesterday(targetDate);
 
   const [yesterdayTasks, todayTasks] = await Promise.all([
-    fetchRoutineEntries(yesterdayDate),
+    fetchAllDbEntries(yesterdayDate),
     fetchAllDbEntries(targetDate),
   ]);
 
@@ -449,6 +585,17 @@ async function main() {
 
   if (json) {
     console.log(JSON.stringify(data, null, 2));
+    return;
+  }
+
+  if (ai) {
+    try {
+      console.log(await generateAIPlan(data));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`AI generation failed, using template: ${msg}`);
+      console.log(formatMarkdown(data));
+    }
     return;
   }
 

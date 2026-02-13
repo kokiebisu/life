@@ -19,8 +19,8 @@
 import { readFileSync, existsSync } from "fs";
 import { join, basename } from "path";
 import {
-  type DbName, type DbConfig,
-  getDbConfig, notionFetch, parseArgs, pickTaskIcon, pickCover,
+  type ScheduleDbName, type ScheduleDbConfig,
+  getScheduleDbConfig, notionFetch, parseArgs, pickTaskIcon, pickCover,
 } from "./lib/notion";
 
 const ROOT = join(import.meta.dir, "..");
@@ -39,7 +39,7 @@ interface ParsedEvent {
 
 // --- Path-based DB routing ---
 
-function resolveDbFromPath(filePath: string): DbName {
+function resolveDbFromPath(filePath: string): ScheduleDbName {
   if (filePath.includes("/diet/")) return "meals";
   if (filePath.includes("/guitar/")) return "guitar";
   return "events";
@@ -108,7 +108,7 @@ function titlesMatch(local: string, notion: string): boolean {
 function findMatchingPage(
   event: ParsedEvent,
   notionPages: any[],
-  config: DbConfig,
+  config: ScheduleDbConfig,
 ): { page: any; matchType: "tsu-id" | "title" } | null {
   // Priority 1: TSU-ID match
   if (event.tsuId) {
@@ -136,7 +136,7 @@ function findMatchingPage(
 
 // --- Notion property builders ---
 
-function buildProperties(event: ParsedEvent, date: string, config: DbConfig): Record<string, unknown> {
+function buildProperties(event: ParsedEvent, date: string, config: ScheduleDbConfig): Record<string, unknown> {
   const properties: Record<string, unknown> = {
     [config.titleProp]: { title: [{ text: { content: event.title } }] },
   };
@@ -168,7 +168,7 @@ function diffProperties(
   event: ParsedEvent,
   date: string,
   existingPage: any,
-  config: DbConfig,
+  config: ScheduleDbConfig,
 ): Record<string, unknown> | null {
   const updates: Record<string, unknown> = {};
   let hasChanges = false;
@@ -251,7 +251,7 @@ async function main() {
   const dbName = resolveDbFromPath(filePath);
   console.log(`Syncing ${events.length} event(s) from ${date} → Notion [${dbName}]...`);
 
-  const { apiKey, dbId, config } = getDbConfig(dbName);
+  const { apiKey, dbId, config } = getScheduleDbConfig(dbName);
 
   // Query Notion for events on this date
   const data = await notionFetch(apiKey, `/databases/${dbId}/query`, {

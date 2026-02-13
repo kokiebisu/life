@@ -4,9 +4,9 @@
  *
  * 使い方:
  *   bun run scripts/notion-articles.ts add --url https://example.com/article
- *   bun run scripts/notion-articles.ts add --url https://example.com --title "記事名" --source "Zenn" --aspect tsumugi,study
+ *   bun run scripts/notion-articles.ts add --url https://example.com --title "記事名" --source "Zenn" --aspect sumitsugi,study
  *   bun run scripts/notion-articles.ts list
- *   bun run scripts/notion-articles.ts list --aspect tsumugi
+ *   bun run scripts/notion-articles.ts list --aspect sumitsugi
  *   bun run scripts/notion-articles.ts list --all
  *   bun run scripts/notion-articles.ts read --title "記事名"
  *   bun run scripts/notion-articles.ts replenish [--dry-run]
@@ -23,7 +23,7 @@ const KNOWN_SOURCES: Record<string, string> = {
 };
 
 const ASPECT_KEYWORDS: Record<string, RegExp> = {
-  tsumugi: /saas|startup|indie|solo.?dev|ship|mvp|bootstrap|claude|ai.?agent|llm|gpt|anthropic/i,
+  sumitsugi: /saas|startup|indie|solo.?dev|ship|mvp|bootstrap|claude|ai.?agent|llm|gpt|anthropic/i,
   study: /typescript|react|next\.?js|bun|hono|architecture|design.?pattern|system.?design/i,
   investment: /invest|stock|crypto|fintech|market|portfolio|vc|funding|ipo/i,
   diet: /health|nutrition|diet|fitness|workout|exercise|wellness/i,

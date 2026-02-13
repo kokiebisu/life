@@ -10,7 +10,7 @@
  *   bun run scripts/notion-add.ts --title "ギター練習" --date 2026-02-14 --start 17:00 --end 18:00 --db guitar
  */
 
-import { type DbName, getDbConfig, notionFetch, parseArgs, pickTaskIcon, pickCover } from "./lib/notion";
+import { type ScheduleDbName, getScheduleDbConfig, notionFetch, parseArgs, pickTaskIcon, pickCover } from "./lib/notion";
 
 function main() {
   const { flags, opts } = parseArgs();
@@ -22,8 +22,8 @@ function main() {
     process.exit(1);
   }
 
-  const dbName = (opts.db || "routine") as DbName;
-  const { apiKey, dbId, config } = getDbConfig(dbName);
+  const dbName = (opts.db || "routine") as ScheduleDbName;
+  const { apiKey, dbId, config } = getScheduleDbConfig(dbName);
 
   const properties: Record<string, unknown> = {
     [config.titleProp]: { title: [{ text: { content: opts.title } }] },

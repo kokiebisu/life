@@ -12,8 +12,8 @@
  */
 
 import {
-  type DbName, type NormalizedEntry, DB_CONFIGS,
-  getDbConfigOptional, queryDbByDate, normalizePages,
+  type ScheduleDbName, type NormalizedEntry, SCHEDULE_DB_CONFIGS,
+  getScheduleDbConfigOptional, queryDbByDate, normalizePages,
   parseArgs, todayJST,
 } from "./lib/notion";
 
@@ -25,7 +25,7 @@ function formatTime(iso: string): string {
   });
 }
 
-const DB_LABEL: Record<DbName, string> = {
+const DB_LABEL: Record<ScheduleDbName, string> = {
   routine: "習慣",
   events: "イベント",
   guitar: "ギター",
@@ -37,7 +37,7 @@ async function main() {
   const days = opts.days ? parseInt(opts.days, 10) : 1;
   const date = opts.date || null;
   const json = flags.has("json");
-  const dbFilter = opts.db as DbName | undefined;
+  const dbFilter = opts.db as ScheduleDbName | undefined;
 
   let startDate: string, endDate: string;
   if (date) {
@@ -50,12 +50,12 @@ async function main() {
     endDate = end.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
   }
 
-  const dbNames: DbName[] = dbFilter ? [dbFilter] : (Object.keys(DB_CONFIGS) as DbName[]);
+  const dbNames: ScheduleDbName[] = dbFilter ? [dbFilter] : (Object.keys(SCHEDULE_DB_CONFIGS) as ScheduleDbName[]);
 
   // Query all configured DBs in parallel
   const allEntries: NormalizedEntry[] = [];
   const queries = dbNames.map(async (name) => {
-    const dbConf = getDbConfigOptional(name);
+    const dbConf = getScheduleDbConfigOptional(name);
     if (!dbConf) return;
     const { apiKey, dbId, config } = dbConf;
     const data = await queryDbByDate(apiKey, dbId, config, startDate, endDate);

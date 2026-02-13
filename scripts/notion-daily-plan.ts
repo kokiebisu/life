@@ -11,9 +11,9 @@
 import { readFileSync, existsSync, readdirSync } from "fs";
 import { join } from "path";
 import {
-  type DbName, type NormalizedEntry, type DbConfig,
-  getApiKey, getDbId, getDbIdOptional, getDbConfigOptional,
-  notionFetch, queryDbByDate, normalizePages,
+  type ScheduleDbName, type NormalizedEntry,
+  getScheduleDbConfigOptional,
+  queryDbByDate, normalizePages,
   parseArgs, todayJST,
 } from "./lib/notion";
 
@@ -21,27 +21,15 @@ const ROOT = join(import.meta.dir, "..");
 const ASPECTS_DIR = join(ROOT, "aspects");
 const PLANNING_DIR = join(ROOT, "planning");
 
-const MOOD_MAP: Record<string, string> = {
-  "😊 良い": "good",
-  "😐 普通": "ok",
-  "😞 イマイチ": "bad",
-};
-
 const WEEKDAY_NAMES = ["日", "月", "火", "水", "木", "金", "土"];
 
 const WEEKDAY_NOTES: Record<string, string> = {
   "月": "月曜: 週次プラン作成（朝30分）→ 通常スケジュール",
   "水": "水曜: ジムの日。昼の運動を重めに",
   "金": "金曜: ジムの日。昼の運動を重めに",
-  "土": "土曜: tsumugi開発は午前のみ。午後は自由時間",
+  "土": "土曜: sumitsugi開発は午前のみ。午後は自由時間",
   "日": "日曜: 教会 → ゆっくり過ごす日。ギターと読書中心",
 };
-
-interface JournalEntry {
-  date: string;
-  mood: string;
-  body: string;
-}
 
 interface LocalEvent {
   aspect: string;
@@ -58,14 +46,14 @@ interface TimeSlot {
   label: string;
   source: "routine" | "event" | "notion";
   aspect?: string;
-  dbSource?: DbName;
+  dbSource?: ScheduleDbName;
   notionRegistered?: boolean; // Notion登録済みフラグ
 }
 
 const ROUTINE_SLOTS: TimeSlot[] = [
-  { start: "09:00", end: "12:00", label: "tsumugi開発（集中タイム）", source: "routine" },
+  { start: "09:00", end: "12:00", label: "sumitsugi開発（集中タイム）", source: "routine" },
   { start: "12:00", end: "14:00", label: "昼食 + ジム or 運動", source: "routine" },
-  { start: "14:00", end: "17:00", label: "tsumugi開発（続き）or 営業活動", source: "routine" },
+  { start: "14:00", end: "17:00", label: "sumitsugi開発（続き）or 営業活動", source: "routine" },
   { start: "17:00", end: "18:00", label: "ギター練習（1時間）", source: "routine" },
   { start: "18:00", end: "20:00", label: "study / 読書 / 投資リサーチ / 自由時間", source: "routine" },
 ];
@@ -75,11 +63,10 @@ interface DailyPlanData {
   targetWeekday: string;
   yesterdayDate: string;
   yesterdayWeekday: string;
-  journal: JournalEntry | null;
   yesterdayTasks: NormalizedEntry[];
   todayTasks: NormalizedEntry[];
   localEvents: LocalEvent[];
-  schedule: { timeline: TimeSlot[]; allDay: { label: string; aspect?: string; dbSource?: DbName; notionRegistered?: boolean }[] };
+  schedule: { timeline: TimeSlot[]; allDay: { label: string; aspect?: string; dbSource?: ScheduleDbName; notionRegistered?: boolean }[] };
 }
 
 function formatTime(iso: string): string {
@@ -88,11 +75,6 @@ function formatTime(iso: string): string {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
-
-function richTextToString(richText: any[]): string {
-  if (!richText || richText.length === 0) return "";
-  return richText.map((seg: any) => seg.plain_text || "").join("");
 }
 
 function getYesterday(dateStr: string): string {
@@ -106,27 +88,12 @@ function getWeekday(dateStr: string): string {
   return WEEKDAY_NAMES[d.getDay()];
 }
 
-async function fetchJournal(apiKey: string, dbId: string, date: string): Promise<JournalEntry | null> {
-  const data = await notionFetch(apiKey, `/databases/${dbId}/query`, {
-    filter: { property: "Date", date: { equals: date } },
-  });
-
-  if (data.results.length === 0) return null;
-
-  const props = data.results[0].properties;
-  return {
-    date,
-    mood: props.Mood?.select?.name || "",
-    body: richTextToString(props.Body?.rich_text),
-  };
-}
-
 async function fetchAllDbEntries(date: string): Promise<NormalizedEntry[]> {
-  const dbNames: DbName[] = ["routine", "events", "guitar", "meals"];
+  const dbNames: ScheduleDbName[] = ["routine", "events", "guitar", "meals"];
   const allEntries: NormalizedEntry[] = [];
 
   const queries = dbNames.map(async (name) => {
-    const dbConf = getDbConfigOptional(name);
+    const dbConf = getScheduleDbConfigOptional(name);
     if (!dbConf) return;
     const { apiKey, dbId, config } = dbConf;
     const data = await queryDbByDate(apiKey, dbId, config, date, date);
@@ -139,7 +106,7 @@ async function fetchAllDbEntries(date: string): Promise<NormalizedEntry[]> {
 }
 
 async function fetchRoutineEntries(date: string): Promise<NormalizedEntry[]> {
-  const dbConf = getDbConfigOptional("routine");
+  const dbConf = getScheduleDbConfigOptional("routine");
   if (!dbConf) return [];
   const { apiKey, dbId, config } = dbConf;
   const data = await queryDbByDate(apiKey, dbId, config, date, date);
@@ -232,11 +199,11 @@ function minutesToTime(m: number): string {
 function buildSchedule(
   localEvents: LocalEvent[],
   todayTasks: NormalizedEntry[],
-): { timeline: TimeSlot[]; allDay: { label: string; aspect?: string; dbSource?: DbName; notionRegistered?: boolean }[] } {
+): { timeline: TimeSlot[]; allDay: { label: string; aspect?: string; dbSource?: ScheduleDbName; notionRegistered?: boolean }[] } {
   // Start with routine slots as base
   let slots: TimeSlot[] = ROUTINE_SLOTS.map((s) => ({ ...s }));
 
-  const allDay: { label: string; aspect?: string; dbSource?: DbName; notionRegistered?: boolean }[] = [];
+  const allDay: { label: string; aspect?: string; dbSource?: ScheduleDbName; notionRegistered?: boolean }[] = [];
 
   // Collect timed events from local events
   const timedEvents: TimeSlot[] = [];
@@ -347,12 +314,6 @@ function formatMarkdown(data: DailyPlanData): string {
   lines.push(`## 昨日の振り返り（${data.yesterdayDate}）`);
   lines.push("");
 
-  if (data.journal) {
-    lines.push(`気分: ${data.journal.mood || "未記入"}`);
-  } else {
-    lines.push("気分: 未記入");
-  }
-
   if (data.yesterdayTasks.length > 0) {
     const done = data.yesterdayTasks.filter((t) => t.status === "Done");
     lines.push(`タスク: ${done.length}/${data.yesterdayTasks.length} 完了`);
@@ -388,15 +349,6 @@ function formatMarkdown(data: DailyPlanData): string {
     for (const t of feedbackTasks) {
       lines.push(`  💬 ${t.title} → ${t.feedback}`);
     }
-  }
-
-  // 日記
-  lines.push("");
-  lines.push("### 日記");
-  if (data.journal?.body) {
-    lines.push(`  ${data.journal.body}`);
-  } else {
-    lines.push("  昨日の日記が未記入です");
   }
 
   lines.push("");
@@ -453,19 +405,6 @@ function formatMarkdown(data: DailyPlanData): string {
     points.push(`- 💬 ${t.title} → ${t.feedback}`);
   }
 
-  // 気分ベース
-  if (data.journal?.mood) {
-    const moodKey = MOOD_MAP[data.journal.mood];
-    if (moodKey === "bad") {
-      points.push("- 昨日は調子がイマイチ。無理しない1日に");
-    }
-  }
-
-  // 日記未記入
-  if (!data.journal?.body) {
-    points.push("- 昨日の日記が未記入です");
-  }
-
   // 曜日メモ
   const weekdayNote = WEEKDAY_NOTES[data.targetWeekday];
   if (weekdayNote) {
@@ -487,13 +426,9 @@ async function main() {
   const targetDate = opts.date || todayJST();
   const json = flags.has("json");
 
-  const apiKey = getApiKey();
-  const journalDbId = getDbIdOptional("NOTION_JOURNAL_DB");
-
   const yesterdayDate = getYesterday(targetDate);
 
-  const [journal, yesterdayTasks, todayTasks] = await Promise.all([
-    journalDbId ? fetchJournal(apiKey, journalDbId, yesterdayDate) : Promise.resolve(null),
+  const [yesterdayTasks, todayTasks] = await Promise.all([
     fetchRoutineEntries(yesterdayDate),
     fetchAllDbEntries(targetDate),
   ]);
@@ -506,7 +441,6 @@ async function main() {
     targetWeekday: getWeekday(targetDate),
     yesterdayDate,
     yesterdayWeekday: getWeekday(yesterdayDate),
-    journal,
     yesterdayTasks,
     todayTasks,
     localEvents,

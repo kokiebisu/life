@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # PostToolUse hook: イベントファイル編集時に Notion へ自動同期
 #
-# stdin から JSON を受け取り、file_path が aspects/*/events/YYYY-MM-DD.md に
+# stdin から JSON を受け取り、file_path が planning/events/YYYY-MM-DD.md に
 # マッチする場合のみ同期スクリプトを実行する。
 # 同期失敗時は exit 0 で Claude のワークフローをブロックしない。
 
@@ -20,16 +20,13 @@ if [ -z "$FILE_PATH" ]; then
   exit 0
 fi
 
-# Match aspects/*/events/YYYY-MM-DD.md pattern (events, diet/events, guitar/events, etc.)
-if ! echo "$FILE_PATH" | grep -qE 'aspects/[^/]+/events/[0-9]{4}-[0-9]{2}-[0-9]{2}\.md$'; then
-  # Also match aspects/events/YYYY-MM-DD.md (top-level events dir)
-  if ! echo "$FILE_PATH" | grep -qE 'aspects/events/[0-9]{4}-[0-9]{2}-[0-9]{2}\.md$'; then
-    exit 0
-  fi
+# Match planning/events/YYYY-MM-DD.md or aspects/*/events/YYYY-MM-DD.md
+if ! echo "$FILE_PATH" | grep -qE '(planning|aspects/[^/]+)/events/[0-9]{4}-[0-9]{2}-[0-9]{2}\.md$'; then
+  exit 0
 fi
 
 # Make path relative to project root for the sync script
-REL_PATH=$(echo "$FILE_PATH" | grep -oE 'aspects/[^ ]*events/[0-9]{4}-[0-9]{2}-[0-9]{2}\.md$')
+REL_PATH=$(echo "$FILE_PATH" | grep -oE '(planning|aspects/[^/]+)/events/[0-9]{4}-[0-9]{2}-[0-9]{2}\.md$')
 
 echo "Syncing event file to Notion: $REL_PATH" >&2
 

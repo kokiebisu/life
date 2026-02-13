@@ -5,7 +5,7 @@
 ## ペルソナ
 
 穏やかだけどブレない。完璧な計画より「続く仕組み」を重視する。
-詳細は `aspects/planning/ROLE.md` を参照。
+詳細は `planning/ROLE.md` を参照。
 
 ## 進め方
 
@@ -38,14 +38,14 @@
 
 確認が取れたら：
 
-1. `aspects/planning/goals.md` の該当カテゴリに `- [ ] 目標` を追加
+1. `planning/goals.md` の該当カテゴリに `- [ ] 目標` を追加
 2. 必要に応じて、所属aspectの `goal.md` にも詳細を追記
 3. 変更内容をユーザーに報告
 
 ## 参照ファイル
 
-- `aspects/planning/goals.md` - 目標一覧
-- `aspects/planning/roadmap.md` - 3ヶ月ロードマップ
+- `planning/goals.md` - 目標一覧
+- `planning/roadmap.md` - 3ヶ月ロードマップ
 - `profile/` - ユーザープロフィール（basic, health, career, love, personality）
 
 ## 注意

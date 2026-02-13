@@ -6,7 +6,7 @@
 
 **リポジトリ:** life（人生管理）
 **言語:** 日本語（コード・ファイル名は英語）
-**構造:** aspects/ 配下に生活の各側面を管理
+**構造:** planning/ に全体管理、aspects/ 配下に生活の各側面を管理
 
 ## Commands
 
@@ -42,16 +42,22 @@ profile/
 ├── career.md            # 職歴・スキル・tsumugi・財務
 ├── love.md              # 恋愛・結婚・ラブタイプ分析
 └── personality.md       # 価値観・人生の軸・ビジョン
+planning/
+├── events/              # 全体イベント（統合）→ Notion: イベントDB
+├── daily/               # デイリープラン
+├── goals.md             # 目標一覧
+├── roadmap.md           # 3ヶ月ロードマップ
+├── routine.md           # 理想の1日テンプレート
+├── tasks.md             # タスクInbox
+└── vision.md            # ビジョン全体像
 aspects/
 ├── church/              # 教会関連
 ├── diary/               # 日記・振り返り
 ├── diet/                # ダイエット・健康管理（チーム対応）→ Notion: 食事DB
-├── events/              # 全体イベント（統合）→ Notion: イベントDB
 ├── fukuoka/             # 福岡移住検討（チーム対応）
 ├── guitar/              # ギター練習（チーム対応）→ Notion: ギターDB
 ├── investment/          # 投資（チーム対応）
 ├── job/                 # 就職・転職活動（チーム対応）
-├── planning/            # ライフプランニング（横断管理）
 ├── reading/             # 読書記録（チーム対応）
 ├── routine/             # 習慣・ルーティン → Notion: 習慣DB
 ├── study/               # 学習（起業・法律・技術）（チーム対応）
@@ -85,7 +91,7 @@ Types: feat, fix, refactor, docs, chore
 
 ## Aspects（生活の側面）
 
-各 aspect は `aspects/` 配下のディレクトリで管理。aspect 固有の Claude 指示は各ディレクトリの `CLAUDE.md` に記載。
+全体管理は `planning/` に、各 aspect は `aspects/` 配下のディレクトリで管理。aspect 固有の Claude 指示は各ディレクトリの `CLAUDE.md` に記載。
 
 ### チーム対応 aspect
 

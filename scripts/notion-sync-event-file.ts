@@ -6,12 +6,13 @@
  * TSU-ID（優先）またはタイトル類似度でマッチング。
  *
  * パス → DB ルーティング:
- *   aspects/diet/events/   → meals DB
- *   aspects/guitar/events/ → guitar DB
- *   それ以外               → events DB
+ *   aspects/diet/events/    → meals DB
+ *   aspects/guitar/events/  → guitar DB
+ *   planning/events/        → events DB
+ *   それ以外                → events DB
  *
  * 使い方:
- *   bun run scripts/notion-sync-event-file.ts --file aspects/events/2026-02-19.md
+ *   bun run scripts/notion-sync-event-file.ts --file planning/events/2026-02-19.md
  *   bun run scripts/notion-sync-event-file.ts --file aspects/diet/events/2026-02-14.md --dry-run
  */
 

@@ -2,7 +2,12 @@ name: Daily Plan
 on:
   schedule:
     - cron: '0 19 * * *' # 04:00 JST (19:00 UTC)
-  workflow_dispatch: # 手動トリガー
+  workflow_dispatch:
+    inputs:
+      date:
+        description: '対象日 (YYYY-MM-DD)。空欄なら今日(JST)'
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -26,7 +31,8 @@ jobs:
           NOTION_GROCERIES_DB: ${{ secrets.NOTION_GROCERIES_DB }}
           NOTION_TODO_DB: ${{ secrets.NOTION_TODO_DB }}
         run: |
-          DATE=$(TZ=Asia/Tokyo date +%Y-%m-%d)
+          DATE="${{ inputs.date || '' }}"
+          if [ -z "$DATE" ]; then DATE=$(TZ=Asia/Tokyo date +%Y-%m-%d); fi
           OUTPUT="planning/daily/${DATE}.md"
           mkdir -p planning/daily
           bun run scripts/notion-daily-plan.ts --date "$DATE" > "$OUTPUT"
@@ -41,12 +47,14 @@ jobs:
           NOTION_GROCERIES_DB: ${{ secrets.NOTION_GROCERIES_DB }}
           NOTION_TODO_DB: ${{ secrets.NOTION_TODO_DB }}
         run: |
-          DATE=$(TZ=Asia/Tokyo date +%Y-%m-%d)
+          DATE="${{ inputs.date || '' }}"
+          if [ -z "$DATE" ]; then DATE=$(TZ=Asia/Tokyo date +%Y-%m-%d); fi
           bun run scripts/notion-sync-schedule.ts --date "$DATE"
 
       - name: Commit and push
         run: |
-          DATE=$(TZ=Asia/Tokyo date +%Y-%m-%d)
+          DATE="${{ inputs.date || '' }}"
+          if [ -z "$DATE" ]; then DATE=$(TZ=Asia/Tokyo date +%Y-%m-%d); fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add planning/daily/

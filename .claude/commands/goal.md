@@ -38,13 +38,13 @@
 
 確認が取れたら：
 
-1. `planning/goals.md` の該当カテゴリに `- [ ] 目標` を追加
+1. `profile/goals.md` の該当カテゴリに `- [ ] 目標` を追加
 2. 必要に応じて、所属aspectの `goal.md` にも詳細を追記
 3. 変更内容をユーザーに報告
 
 ## 参照ファイル
 
-- `planning/goals.md` - 目標一覧
+- `profile/goals.md` - 目標一覧
 - `planning/roadmap.md` - 3ヶ月ロードマップ
 - `profile/` - ユーザープロフィール（basic, health, career, love, personality）
 

@@ -89,7 +89,7 @@ function getWeekday(dateStr: string): string {
 }
 
 async function fetchAllDbEntries(date: string): Promise<NormalizedEntry[]> {
-  const dbNames: ScheduleDbName[] = ["routine", "events", "guitar", "meals"];
+  const dbNames: ScheduleDbName[] = ["routine", "events", "guitar", "meals", "todo"];
   const allEntries: NormalizedEntry[] = [];
 
   const queries = dbNames.map(async (name) => {

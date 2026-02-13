@@ -20,6 +20,11 @@ jobs:
         env:
           NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
           NOTION_TASKS_DB: ${{ secrets.NOTION_TASKS_DB }}
+          NOTION_EVENTS_DB: ${{ secrets.NOTION_EVENTS_DB }}
+          NOTION_GUITAR_DB: ${{ secrets.NOTION_GUITAR_DB }}
+          NOTION_MEALS_DB: ${{ secrets.NOTION_MEALS_DB }}
+          NOTION_GROCERIES_DB: ${{ secrets.NOTION_GROCERIES_DB }}
+          NOTION_TODO_DB: ${{ secrets.NOTION_TODO_DB }}
         run: |
           DATE=$(TZ=Asia/Tokyo date +%Y-%m-%d)
           OUTPUT="planning/daily/${DATE}.md"
@@ -30,6 +35,11 @@ jobs:
         env:
           NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
           NOTION_TASKS_DB: ${{ secrets.NOTION_TASKS_DB }}
+          NOTION_EVENTS_DB: ${{ secrets.NOTION_EVENTS_DB }}
+          NOTION_GUITAR_DB: ${{ secrets.NOTION_GUITAR_DB }}
+          NOTION_MEALS_DB: ${{ secrets.NOTION_MEALS_DB }}
+          NOTION_GROCERIES_DB: ${{ secrets.NOTION_GROCERIES_DB }}
+          NOTION_TODO_DB: ${{ secrets.NOTION_TODO_DB }}
         run: |
           DATE=$(TZ=Asia/Tokyo date +%Y-%m-%d)
           bun run scripts/notion-sync-schedule.ts --date "$DATE"

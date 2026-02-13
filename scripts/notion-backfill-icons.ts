@@ -150,6 +150,31 @@ async function backfillMeals(dryRun: boolean, force: boolean) {
   console.log(`  → ${dryRun ? "would update" : "updated"} ${updated}/${pages.length}`);
 }
 
+async function backfillTodo(dryRun: boolean, force: boolean) {
+  const dbConf = getScheduleDbConfigOptional("todo");
+  if (!dbConf) { console.log("\n✅ Todo (やること): スキップ（DB未設定）"); return; }
+  const pages = await queryAll(dbConf.dbId);
+  console.log(`\n✅ Todo (やること): ${pages.length} pages`);
+
+  let updated = 0;
+  for (const page of pages) {
+    if (!force && page.icon && page.cover) continue;
+    const title = (page.properties[dbConf.config.titleProp]?.title || [])
+      .map((t: any) => t.plain_text || "").join("");
+    const icon = pickTaskIcon(title);
+    const cover = pickCover(title);
+
+    updated++;
+    if (dryRun) {
+      console.log(`  [DRY] ${icon.emoji} ${title}`);
+    } else {
+      await updatePage(page.id, icon, cover);
+      console.log(`  ${icon.emoji} ${title}`);
+    }
+  }
+  console.log(`  → ${dryRun ? "would update" : "updated"} ${updated}/${pages.length}`);
+}
+
 async function backfillArticles(dryRun: boolean, force: boolean) {
   const dbId = getDbIdOptional("NOTION_ARTICLES_DB");
   if (!dbId) { console.log("\n📰 Articles: スキップ（DB未設定）"); return; }
@@ -185,7 +210,7 @@ async function main() {
   if (dryRun) console.log("🔍 Dry run mode - no changes will be made\n");
   if (force) console.log("⚡ Force mode - overwriting existing icons/covers\n");
 
-  const targets = db ? [db] : ["tasks", "events", "guitar", "meals", "articles"];
+  const targets = db ? [db] : ["tasks", "events", "guitar", "meals", "todo", "articles"];
 
   for (const target of targets) {
     switch (target) {
@@ -193,6 +218,7 @@ async function main() {
       case "events": await backfillEvents(dryRun, force); break;
       case "guitar": await backfillGuitar(dryRun, force); break;
       case "meals": await backfillMeals(dryRun, force); break;
+      case "todo": await backfillTodo(dryRun, force); break;
       case "articles": await backfillArticles(dryRun, force); break;
       default: console.error(`Unknown db: ${target}`); process.exit(1);
     }

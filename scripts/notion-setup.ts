@@ -3,38 +3,19 @@
  * Notion データベースセットアップ
  *
  * 使い方:
- *   bun run scripts/notion-setup.ts --type journal --parent <PAGE_ID>
  *   bun run scripts/notion-setup.ts --type articles --parent <PAGE_ID>
- *   bun run scripts/notion-setup.ts --type journal --create-parent "Life Hub"
+ *   bun run scripts/notion-setup.ts --type articles --create-parent "Life Hub"
  *
  * --create-parent: 親ページを新規作成してその下に DB を作成
  *   (Notion API integration がアクセスできるページ配下に作成されます)
  *
  * 作成後、.env.local に DB ID を追加してください:
- *   NOTION_JOURNAL_DB=xxx
  *   NOTION_ARTICLES_DB=xxx
  */
 
 import { getApiKey, notionFetch, parseArgs } from "./lib/notion";
 
 const DB_SCHEMAS: Record<string, { title: string; properties: Record<string, unknown> }> = {
-  journal: {
-    title: "Journal",
-    properties: {
-      "Name": { title: {} },
-      "Date": { date: {} },
-      "Mood": {
-        select: {
-          options: [
-            { name: "😊 良い", color: "green" },
-            { name: "😐 普通", color: "yellow" },
-            { name: "😞 イマイチ", color: "red" },
-          ],
-        },
-      },
-      "Body": { rich_text: {} },
-    },
-  },
   articles: {
     title: "Articles",
     properties: {
@@ -54,7 +35,7 @@ const DB_SCHEMAS: Record<string, { title: string; properties: Record<string, unk
       "Aspect": {
         multi_select: {
           options: [
-            { name: "tsumugi", color: "purple" },
+            { name: "sumitsugi", color: "purple" },
             { name: "diet", color: "green" },
             { name: "guitar", color: "orange" },
             { name: "investment", color: "blue" },
@@ -123,9 +104,8 @@ async function main() {
 
   if (!type || !DB_SCHEMAS[type]) {
     console.error("Usage:");
-    console.error("  bun run scripts/notion-setup.ts --type journal --parent <PAGE_ID>");
     console.error("  bun run scripts/notion-setup.ts --type articles --parent <PAGE_ID>");
-    console.error('  bun run scripts/notion-setup.ts --type journal --create-parent "Life Hub"');
+    console.error('  bun run scripts/notion-setup.ts --type articles --create-parent "Life Hub"');
     process.exit(1);
   }
 

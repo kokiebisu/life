@@ -16,9 +16,9 @@
  */
 
 import {
-  getApiKey, getDbId, getDbIdOptional, getDbConfigOptional,
+  getApiKey, getDbId, getDbIdOptional, getScheduleDbConfigOptional,
   notionFetch, parseArgs,
-  pickTaskIcon, pickJournalIcon, pickArticleIcon, pickCover,
+  pickTaskIcon, pickArticleIcon, pickCover,
 } from "./lib/notion";
 
 const apiKey = getApiKey();
@@ -76,7 +76,7 @@ async function backfillTasks(dryRun: boolean, force: boolean) {
 }
 
 async function backfillEvents(dryRun: boolean, force: boolean) {
-  const dbConf = getDbConfigOptional("events");
+  const dbConf = getScheduleDbConfigOptional("events");
   if (!dbConf) { console.log("\n📅 Events (イベント): スキップ（DB未設定）"); return; }
   const pages = await queryAll(dbConf.dbId);
   console.log(`\n📅 Events (イベント): ${pages.length} pages`);
@@ -101,7 +101,7 @@ async function backfillEvents(dryRun: boolean, force: boolean) {
 }
 
 async function backfillGuitar(dryRun: boolean, force: boolean) {
-  const dbConf = getDbConfigOptional("guitar");
+  const dbConf = getScheduleDbConfigOptional("guitar");
   if (!dbConf) { console.log("\n🎸 Guitar (ギター): スキップ（DB未設定）"); return; }
   const pages = await queryAll(dbConf.dbId);
   console.log(`\n🎸 Guitar (ギター): ${pages.length} pages`);
@@ -126,7 +126,7 @@ async function backfillGuitar(dryRun: boolean, force: boolean) {
 }
 
 async function backfillMeals(dryRun: boolean, force: boolean) {
-  const dbConf = getDbConfigOptional("meals");
+  const dbConf = getScheduleDbConfigOptional("meals");
   if (!dbConf) { console.log("\n🍽️ Meals (食事): スキップ（DB未設定）"); return; }
   const pages = await queryAll(dbConf.dbId);
   console.log(`\n🍽️ Meals (食事): ${pages.length} pages`);
@@ -145,31 +145,6 @@ async function backfillMeals(dryRun: boolean, force: boolean) {
     } else {
       await updatePage(page.id, icon, cover);
       console.log(`  ${icon.emoji} ${title}`);
-    }
-  }
-  console.log(`  → ${dryRun ? "would update" : "updated"} ${updated}/${pages.length}`);
-}
-
-async function backfillJournal(dryRun: boolean, force: boolean) {
-  const dbId = getDbIdOptional("NOTION_JOURNAL_DB");
-  if (!dbId) { console.log("\n📔 Journal: スキップ（DB未設定）"); return; }
-  const pages = await queryAll(dbId);
-  console.log(`\n📔 Journal: ${pages.length} pages`);
-
-  let updated = 0;
-  for (const page of pages) {
-    if (!force && page.icon && page.cover) continue;
-    const mood = page.properties.Mood?.select?.name || "";
-    const date = page.properties.Date?.date?.start || "";
-    const icon = pickJournalIcon(mood);
-    const cover = pickCover("journal");
-
-    updated++;
-    if (dryRun) {
-      console.log(`  [DRY] ${icon.emoji} ${date} ${mood}`);
-    } else {
-      await updatePage(page.id, icon, cover);
-      console.log(`  ${icon.emoji} ${date} ${mood}`);
     }
   }
   console.log(`  → ${dryRun ? "would update" : "updated"} ${updated}/${pages.length}`);
@@ -210,7 +185,7 @@ async function main() {
   if (dryRun) console.log("🔍 Dry run mode - no changes will be made\n");
   if (force) console.log("⚡ Force mode - overwriting existing icons/covers\n");
 
-  const targets = db ? [db] : ["tasks", "events", "guitar", "meals", "journal", "articles"];
+  const targets = db ? [db] : ["tasks", "events", "guitar", "meals", "articles"];
 
   for (const target of targets) {
     switch (target) {
@@ -218,7 +193,6 @@ async function main() {
       case "events": await backfillEvents(dryRun, force); break;
       case "guitar": await backfillGuitar(dryRun, force); break;
       case "meals": await backfillMeals(dryRun, force); break;
-      case "journal": await backfillJournal(dryRun, force); break;
       case "articles": await backfillArticles(dryRun, force); break;
       default: console.error(`Unknown db: ${target}`); process.exit(1);
     }

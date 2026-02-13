@@ -53,11 +53,11 @@ export function getDbIdOptional(envKey: string): string | null {
   return env[envKey] || process.env[envKey] || null;
 }
 
-// --- DB Config abstraction ---
+// --- Schedule DB Config (calendar-based DBs) ---
 
-export type DbName = "routine" | "events" | "guitar" | "meals";
+export type ScheduleDbName = "routine" | "events" | "guitar" | "meals";
 
-export interface DbConfig {
+export interface ScheduleDbConfig {
   envKey: string;
   titleProp: string;
   dateProp: string;
@@ -65,23 +65,81 @@ export interface DbConfig {
   statusProp: string;
 }
 
-export const DB_CONFIGS: Record<DbName, DbConfig> = {
+export const SCHEDULE_DB_CONFIGS: Record<ScheduleDbName, ScheduleDbConfig> = {
   routine: { envKey: "NOTION_TASKS_DB", titleProp: "Name", dateProp: "Due date", descProp: "Description", statusProp: "Status" },
   events:  { envKey: "NOTION_EVENTS_DB", titleProp: "名前", dateProp: "Due date", descProp: "Description", statusProp: "Status" },
   guitar:  { envKey: "NOTION_GUITAR_DB", titleProp: "名前", dateProp: "日付", descProp: "Description", statusProp: "Status" },
   meals:   { envKey: "NOTION_MEALS_DB", titleProp: "件名", dateProp: "実施日", descProp: "Description", statusProp: "Status" },
 };
 
-export function getDbConfig(name: DbName): { apiKey: string; dbId: string; config: DbConfig } {
-  const config = DB_CONFIGS[name];
+export function getScheduleDbConfig(name: ScheduleDbName): { apiKey: string; dbId: string; config: ScheduleDbConfig } {
+  const config = SCHEDULE_DB_CONFIGS[name];
   return { apiKey: getApiKey(), dbId: getDbId(config.envKey), config };
 }
 
-export function getDbConfigOptional(name: DbName): { apiKey: string; dbId: string; config: DbConfig } | null {
-  const config = DB_CONFIGS[name];
+export function getScheduleDbConfigOptional(name: ScheduleDbName): { apiKey: string; dbId: string; config: ScheduleDbConfig } | null {
+  const config = SCHEDULE_DB_CONFIGS[name];
   const dbId = getDbIdOptional(config.envKey);
   if (!dbId) return null;
   return { apiKey: getApiKey(), dbId, config };
+}
+
+// --- Article DB Config ---
+
+export type ArticleDbName = "articles";
+
+export interface ArticleDbConfig {
+  envKey: string;
+  titleProp: string;
+  sourceProp: string;
+  urlProp: string;
+  aspectProp: string;
+  statusProp: string;
+}
+
+export const ARTICLE_DB_CONFIGS: Record<ArticleDbName, ArticleDbConfig> = {
+  articles: {
+    envKey: "NOTION_ARTICLES_DB",
+    titleProp: "タイトル",
+    sourceProp: "ソース",
+    urlProp: "URL",
+    aspectProp: "Aspect",
+    statusProp: "Status",
+  },
+};
+
+export function getArticleDbConfig(name: ArticleDbName): { apiKey: string; dbId: string; config: ArticleDbConfig } {
+  const config = ARTICLE_DB_CONFIGS[name];
+  return { apiKey: getApiKey(), dbId: getDbId(config.envKey), config };
+}
+
+// --- Investment DB Config ---
+
+export type InvestmentDbName = "investment";
+
+export interface InvestmentDbConfig {
+  envKey: string;
+  titleProp: string;
+  dateProp: string;
+  statusProp: string;
+  typeProp: string;
+  notesProp: string;
+}
+
+export const INVESTMENT_DB_CONFIGS: Record<InvestmentDbName, InvestmentDbConfig> = {
+  investment: {
+    envKey: "NOTION_INVESTMENT_DB",
+    titleProp: "Investment ",  // trailing space (Notion property名そのまま)
+    dateProp: "Buy Date",
+    statusProp: "Status",
+    typeProp: "Type",
+    notesProp: "Notes",
+  },
+};
+
+export function getInvestmentDbConfig(name: InvestmentDbName): { apiKey: string; dbId: string; config: InvestmentDbConfig } {
+  const config = INVESTMENT_DB_CONFIGS[name];
+  return { apiKey: getApiKey(), dbId: getDbId(config.envKey), config };
 }
 
 export function getTasksConfig() {
@@ -89,22 +147,22 @@ export function getTasksConfig() {
 }
 
 export function getMealsConfig() {
-  return getDbConfig("meals");
+  return getScheduleDbConfig("meals");
 }
 
 export function getEventsConfig() {
-  return getDbConfig("events");
+  return getScheduleDbConfig("events");
 }
 
 export function getGuitarConfig() {
-  return getDbConfig("guitar");
+  return getScheduleDbConfig("guitar");
 }
 
 // --- Unified DB query & normalization ---
 
 export interface NormalizedEntry {
   id: string;
-  source: DbName;
+  source: ScheduleDbName;
   title: string;
   start: string;
   end: string | null;
@@ -116,7 +174,7 @@ export interface NormalizedEntry {
 export async function queryDbByDate(
   apiKey: string,
   dbId: string,
-  config: DbConfig,
+  config: ScheduleDbConfig,
   startDate: string,
   endDate: string,
 ): Promise<any> {
@@ -131,7 +189,7 @@ export async function queryDbByDate(
   });
 }
 
-export function normalizePages(pages: any[], config: DbConfig, source: DbName): NormalizedEntry[] {
+export function normalizePages(pages: any[], config: ScheduleDbConfig, source: ScheduleDbName): NormalizedEntry[] {
   return pages.map((page: any) => {
     const props = page.properties;
     const titleArr = props[config.titleProp]?.title || [];
@@ -211,7 +269,7 @@ const TASK_ICON_KEYWORDS: [RegExp, string][] = [
   [/料理|自炊|cook/i, "🍳"],
   [/勉強|学習|study/i, "📖"],
   [/読書|本|book|read/i, "📚"],
-  [/tsumugi/i, "🧶"],
+  [/sumitsugi/i, "🧶"],
   [/面接|interview/i, "👔"],
   [/ミーティング|会議|MTG|meeting/i, "🤝"],
   [/医者|病院|歯医者|health/i, "🏥"],
@@ -225,7 +283,7 @@ const TASK_ICON_KEYWORDS: [RegExp, string][] = [
 ];
 
 const ASPECT_COVERS: Record<string, string[]> = {
-  tsumugi: [
+  sumitsugi: [
     "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200",
     "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=1200",
     "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=1200",
@@ -275,12 +333,6 @@ const GENERAL_COVERS = [
   "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1200",
 ];
 
-const MOOD_ICONS: Record<string, string> = {
-  "😊 良い": "😊",
-  "😐 普通": "😐",
-  "😞 イマイチ": "😞",
-};
-
 export function pickArticleIcon(source: string): { type: "emoji"; emoji: string } {
   const map: Record<string, string> = {
     "Hacker News": "🟠",
@@ -296,11 +348,6 @@ export function pickTaskIcon(title: string): { type: "emoji"; emoji: string } {
     if (pattern.test(title)) return { type: "emoji", emoji };
   }
   return { type: "emoji", emoji: "📌" };
-}
-
-export function pickJournalIcon(mood: string): { type: "emoji"; emoji: string } {
-  const emoji = MOOD_ICONS[mood] || "📔";
-  return { type: "emoji", emoji };
 }
 
 export function pickCover(hint?: string): { type: "external"; external: { url: string } } {

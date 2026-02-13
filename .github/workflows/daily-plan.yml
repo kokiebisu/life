@@ -30,12 +30,13 @@ jobs:
           NOTION_MEALS_DB: ${{ secrets.NOTION_MEALS_DB }}
           NOTION_GROCERIES_DB: ${{ secrets.NOTION_GROCERIES_DB }}
           NOTION_TODO_DB: ${{ secrets.NOTION_TODO_DB }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           DATE="${{ inputs.date || '' }}"
           if [ -z "$DATE" ]; then DATE=$(TZ=Asia/Tokyo date +%Y-%m-%d); fi
           OUTPUT="planning/daily/${DATE}.md"
           mkdir -p planning/daily
-          bun run scripts/notion-daily-plan.ts --date "$DATE" > "$OUTPUT"
+          bun run scripts/notion-daily-plan.ts --date "$DATE" --ai > "$OUTPUT"
 
       - name: Sync event files to Notion
         env:

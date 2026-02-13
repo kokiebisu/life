@@ -16,7 +16,7 @@
 - **開発環境:** Devcontainer（Node.js 20, Bun）
 - **AI ツール:** Claude Code CLI
 - **CI/CD:** GitHub Actions
-- **タスク管理:** Linear（tsumugi プロジェクト連携）
+- **タスク管理:** Linear（sumitsugi プロジェクト連携）
 
 ## 現在の aspects
 
@@ -32,4 +32,4 @@
 | planning | ライフプランニング | 松本あかり |
 | reading | 読書記録 | 村上葉月 |
 | study | 学習（起業・法律・技術） | 9人チーム |
-| tsumugi | 個人プロジェクト（本業） | サブモジュール |
+| sumitsugi | 個人プロジェクト（本業） | サブモジュール |

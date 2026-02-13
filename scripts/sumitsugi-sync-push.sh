@@ -1,15 +1,15 @@
 #!/bin/bash
-# LIFE Daily Tasks → Tsumugi Linear Sync (Push Done status back)
-# When a tsumugi-labeled issue is marked Done in LIFE, this syncs that
-# status to the corresponding TSU issue in the tsumugi Linear workspace.
+# LIFE Daily Tasks → Sumitsugi Linear Sync (Push Done status back)
+# When a sumitsugi-labeled issue is marked Done in LIFE, this syncs that
+# status to the corresponding TSU issue in the sumitsugi Linear workspace.
 #
 # Usage:
-#   ./scripts/tsumugi-sync-push.sh            # Sync Done status
-#   ./scripts/tsumugi-sync-push.sh --dry-run   # Preview without changes
+#   ./scripts/sumitsugi-sync-push.sh            # Sync Done status
+#   ./scripts/sumitsugi-sync-push.sh --dry-run   # Preview without changes
 #
 # Prerequisites:
 #   - LINEAR_API_KEY in .env.local (LIFE workspace)
-#   - LINEAR_API_KEY in projects/tsumugi/.env.local (Tsumugi workspace)
+#   - LINEAR_API_KEY in projects/sumitsugi/.env.local (Sumitsugi workspace)
 #   - python3 available
 
 set -eo pipefail
@@ -33,14 +33,14 @@ if [ -z "$LIFE_API_KEY" ]; then
   exit 1
 fi
 
-# Load Tsumugi workspace API key (extract via grep to avoid variable collision)
+# Load Sumitsugi workspace API key (extract via grep to avoid variable collision)
 TSUMUGI_API_KEY=""
-if [ -f "$REPO_ROOT/projects/tsumugi/.env.local" ]; then
-  TSUMUGI_API_KEY=$(grep '^LINEAR_API_KEY=' "$REPO_ROOT/projects/tsumugi/.env.local" | head -1 | cut -d= -f2- | tr -d '"')
+if [ -f "$REPO_ROOT/projects/sumitsugi/.env.local" ]; then
+  TSUMUGI_API_KEY=$(grep '^LINEAR_API_KEY=' "$REPO_ROOT/projects/sumitsugi/.env.local" | head -1 | cut -d= -f2- | tr -d '"')
 fi
 
 if [ -z "$TSUMUGI_API_KEY" ]; then
-  echo "Error: LINEAR_API_KEY not found in $REPO_ROOT/projects/tsumugi/.env.local"
+  echo "Error: LINEAR_API_KEY not found in $REPO_ROOT/projects/sumitsugi/.env.local"
   exit 1
 fi
 
@@ -50,7 +50,7 @@ python3 << 'PYEOF'
 import urllib.request, json, os, sys, re
 
 life_api_key = os.environ['LIFE_API_KEY']
-tsumugi_api_key = os.environ['TSUMUGI_API_KEY']
+sumitsugi_api_key = os.environ['TSUMUGI_API_KEY']
 dry_run = os.environ.get('DRY_RUN', 'false') == 'true'
 
 LIFE_TEAM_ID = "20330fb2-9672-4a8a-89dd-86f9f9c17d78"
@@ -61,7 +61,7 @@ if dry_run:
     print("[DRY RUN] Preview mode - no changes will be made")
     print("")
 
-print("Pushing Done status from LIFE Daily Tasks → Tsumugi Linear...")
+print("Pushing Done status from LIFE Daily Tasks → Sumitsugi Linear...")
 print("")
 
 def graphql(api_key, query):
@@ -71,7 +71,7 @@ def graphql(api_key, query):
     resp = urllib.request.urlopen(req)
     return json.loads(resp.read())
 
-# Step 1: Get Done issues from LIFE with tsumugi label
+# Step 1: Get Done issues from LIFE with sumitsugi label
 result = graphql(life_api_key, '''
 query {
   issues(filter: {
@@ -87,7 +87,7 @@ query {
 done_issues = []
 for node in result['data']['issues']['nodes']:
     desc = node.get('description') or ''
-    m = re.search(r'<!-- tsumugi:(TSU-\d+) -->', desc)
+    m = re.search(r'<!-- sumitsugi:(TSU-\d+) -->', desc)
     if m:
         done_issues.append({
             'life_id': node['identifier'],
@@ -96,13 +96,13 @@ for node in result['data']['issues']['nodes']:
         })
 
 if not done_issues:
-    print("No Done tsumugi issues to sync back.")
+    print("No Done sumitsugi issues to sync back.")
     sys.exit(0)
 
-print(f"Found {len(done_issues)} Done tsumugi issue(s) in LIFE")
+print(f"Found {len(done_issues)} Done sumitsugi issue(s) in LIFE")
 
-# Step 2: Get tsumugi's Done state ID
-result = graphql(tsumugi_api_key, '''
+# Step 2: Get sumitsugi's Done state ID
+result = graphql(sumitsugi_api_key, '''
 query {
   workflowStates(filter: { team: { id: { eq: "%s" } } }) {
     nodes { id name type }
@@ -117,7 +117,7 @@ for s in result['data']['workflowStates']['nodes']:
         break
 
 if not tsu_done_state:
-    print("Error: Could not find Done state in tsumugi workspace")
+    print("Error: Could not find Done state in sumitsugi workspace")
     sys.exit(1)
 
 # Step 3: Update each TSU issue
@@ -127,17 +127,17 @@ skipped = 0
 for item in done_issues:
     tsu_id = item['tsu_id']
 
-    # Get current state from tsumugi Linear
-    result = graphql(tsumugi_api_key,
+    # Get current state from sumitsugi Linear
+    result = graphql(sumitsugi_api_key,
         'query { issue(id: "%s") { id state { name } } }' % tsu_id)
     issue = result.get('data', {}).get('issue')
 
     if not issue:
-        print(f"  ! {tsu_id}: Not found in tsumugi Linear")
+        print(f"  ! {tsu_id}: Not found in sumitsugi Linear")
         continue
 
     if issue['state']['name'] == 'Done':
-        print(f"  Skip {tsu_id}: already Done in tsumugi")
+        print(f"  Skip {tsu_id}: already Done in sumitsugi")
         skipped += 1
         continue
 
@@ -146,7 +146,7 @@ for item in done_issues:
         updated += 1
         continue
 
-    result = graphql(tsumugi_api_key,
+    result = graphql(sumitsugi_api_key,
         'mutation { issueUpdate(id: "%s", input: { stateId: "%s" }) '
         '{ success issue { identifier title state { name } } } }'
         % (issue['id'], tsu_done_state))

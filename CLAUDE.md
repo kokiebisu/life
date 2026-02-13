@@ -14,8 +14,8 @@
 
 ```bash
 ./dev                    # devcontainer を起動して Claude Code を開く
-./scripts/tsumugi-sync.sh            # tsumugi ↔ LIFE タスク同期
-./scripts/tsumugi-sync.sh --dry-run  # 同期プレビュー（変更なし）
+./scripts/sumitsugi-sync.sh            # sumitsugi ↔ LIFE タスク同期
+./scripts/sumitsugi-sync.sh --dry-run  # 同期プレビュー（変更なし）
 ```
 
 ### Claude Code コマンド
@@ -26,7 +26,7 @@
 /ask:job:search          # 就職活動チームに相談
 
 # タスク同期
-/sync:tsumugi            # tsumugi ↔ LIFE Linear タスク同期
+/sync:sumitsugi            # sumitsugi ↔ LIFE Linear タスク同期
 
 # 目標管理
 /goal                    # 壁打ちして新しい目標を追加
@@ -41,7 +41,7 @@
 profile/
 ├── basic.md             # 基本情報・居住・生活リズム・信仰・趣味
 ├── health.md            # 身体・ダイエット・ジム・食事
-├── career.md            # 職歴・スキル・tsumugi・財務
+├── career.md            # 職歴・スキル・sumitsugi・財務
 ├── love.md              # 恋愛・結婚・ラブタイプ分析
 └── personality.md       # 価値観・人生の軸・ビジョン
 planning/
@@ -63,9 +63,9 @@ aspects/
 ├── reading/             # 読書記録（チーム対応）
 ├── routine/             # 習慣・ルーティン → Notion: 習慣DB
 ├── study/               # 学習（起業・法律・技術）（チーム対応）
-└── tsumugi/             # tsumugi関連記録
+└── sumitsugi/             # sumitsugi関連記録
 projects/
-└── tsumugi/             # 個人プロジェクト（サブモジュール）
+└── sumitsugi/             # 個人プロジェクト（サブモジュール）
 memory-bank/
 ├── project-context.md   # プロジェクト全体の背景・目的
 ├── active-context.md    # 現在進行中の作業・フォーカス
@@ -108,7 +108,7 @@ Types: feat, fix, refactor, docs, chore
 
 ### サブモジュール
 
-- **tsumugi** - 個人プロジェクト（本業。開発+営業。独立した git リポジトリ）
+- **sumitsugi** - 個人プロジェクト（本業。開発+営業。独立した git リポジトリ）
 
 ## Claude Code & Devcontainer
 

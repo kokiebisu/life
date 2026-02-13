@@ -1,10 +1,10 @@
 #!/bin/bash
-# Tsumugi → LIFE Daily Tasks Sync (Pull)
-# Reads 大株主-assigned tasks from tsumugi beads and creates them in LIFE's Linear.
+# Sumitsugi → LIFE Daily Tasks Sync (Pull)
+# Reads 大株主-assigned tasks from sumitsugi beads and creates them in LIFE's Linear.
 #
 # Usage:
-#   ./scripts/tsumugi-sync-pull.sh            # Sync tasks
-#   ./scripts/tsumugi-sync-pull.sh --dry-run   # Preview without changes
+#   ./scripts/sumitsugi-sync-pull.sh            # Sync tasks
+#   ./scripts/sumitsugi-sync-pull.sh --dry-run   # Preview without changes
 #
 # Prerequisites:
 #   - LINEAR_API_KEY in .env.local (LIFE workspace)
@@ -32,7 +32,7 @@ if [ -z "$LINEAR_API_KEY" ]; then
   exit 1
 fi
 
-BEADS_FILE="$REPO_ROOT/projects/tsumugi/.beads/issues.jsonl"
+BEADS_FILE="$REPO_ROOT/projects/sumitsugi/.beads/issues.jsonl"
 if [ ! -f "$BEADS_FILE" ]; then
   echo "Error: Beads file not found at $BEADS_FILE"
   exit 1
@@ -56,7 +56,7 @@ if dry_run:
     print("[DRY RUN] Preview mode - no changes will be made")
     print("")
 
-print("Pulling 大株主 tasks from tsumugi into LIFE Daily Tasks...")
+print("Pulling 大株主 tasks from sumitsugi into LIFE Daily Tasks...")
 print("")
 
 def graphql(query):
@@ -96,7 +96,7 @@ if not tasks:
 
 print(f"Found {len(tasks)} open 大株主 task(s)")
 
-# Step 2: Get existing LIFE issues with tsumugi label
+# Step 2: Get existing LIFE issues with sumitsugi label
 result = graphql('''
 query {
   issues(filter: {
@@ -112,7 +112,7 @@ query {
 existing = set()
 for node in result['data']['issues']['nodes']:
     desc = node.get('description') or ''
-    m = re.search(r'<!-- tsumugi:(TSU-\d+) -->', desc)
+    m = re.search(r'<!-- sumitsugi:(TSU-\d+) -->', desc)
     if m:
         existing.add(m.group(1))
 
@@ -127,8 +127,8 @@ for task in tasks:
         continue
 
     desc_text = (
-        f"<!-- tsumugi:{task['tsu_id']} -->\n"
-        f"[{task['tsu_id']}](https://linear.app/tsumugi/issue/{task['tsu_id']})\n\n"
+        f"<!-- sumitsugi:{task['tsu_id']} -->\n"
+        f"[{task['tsu_id']}](https://linear.app/sumitsugi/issue/{task['tsu_id']})\n\n"
         f"{task['description'] or ''}"
     ).strip()
 

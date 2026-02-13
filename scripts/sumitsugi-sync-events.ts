@@ -1,21 +1,21 @@
 #!/usr/bin/env bun
 /**
- * Tsumugi イベント同期
+ * Sumitsugi イベント同期
  *
  * beads の event ラベル付きタスクを planning/events/ と Notion イベントDB に登録する。
  * TSU-ID をキーに冪等性を保証。
  *
  * 使い方:
- *   bun run scripts/tsumugi-sync-events.ts            # 実行
- *   bun run scripts/tsumugi-sync-events.ts --dry-run   # プレビュー
+ *   bun run scripts/sumitsugi-sync-events.ts            # 実行
+ *   bun run scripts/sumitsugi-sync-events.ts --dry-run   # プレビュー
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
-import { getDbConfig, notionFetch, parseArgs } from "./lib/notion";
+import { getScheduleDbConfig, notionFetch, parseArgs } from "./lib/notion";
 
 const ROOT = join(import.meta.dir, "..");
-const BEADS_FILE = join(ROOT, "projects/tsumugi/.beads/issues.jsonl");
+const BEADS_FILE = join(ROOT, "projects/sumitsugi/.beads/issues.jsonl");
 const EVENTS_DIR = join(ROOT, "planning/events");
 
 interface BeadsIssue {
@@ -221,7 +221,7 @@ async function main() {
     console.log("");
   }
 
-  console.log("Syncing tsumugi events → Local + Notion...");
+  console.log("Syncing sumitsugi events → Local + Notion...");
   console.log("");
 
   const events = parseEvents();
@@ -233,7 +233,7 @@ async function main() {
 
   console.log(`Found ${events.length} event task(s)`);
 
-  const { apiKey, dbId, config } = getDbConfig("events");
+  const { apiKey, dbId, config } = getScheduleDbConfig("events");
 
   let localCreated = 0, localSkipped = 0;
   let notionCreated = 0, notionSkipped = 0;

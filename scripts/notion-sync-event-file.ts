@@ -20,7 +20,8 @@ import { readFileSync, existsSync } from "fs";
 import { join, basename } from "path";
 import {
   type ScheduleDbName, type ScheduleDbConfig,
-  getScheduleDbConfig, notionFetch, parseArgs, pickTaskIcon, pickCover,
+  SCHEDULE_DB_CONFIGS, getScheduleDbConfig, queryDbByDate, normalizePages,
+  notionFetch, parseArgs, pickTaskIcon, pickCover,
 } from "./lib/notion";
 
 const ROOT = join(import.meta.dir, "..");
@@ -35,6 +36,7 @@ interface ParsedEvent {
   title: string;     // "Venture Cafe Global Gathering 2026（虎ノ門ヒルズ/CIC Tokyo）"
   description: string;
   tsuId: string | null; // "TSU-241" or null
+  dbOverride: ScheduleDbName | null; // per-item #db tag override
 }
 
 // --- Path-based DB routing ---
@@ -84,7 +86,16 @@ function parseEventFile(filePath: string): { date: string; events: ParsedEvent[]
     const tsuMatch = description.match(/\b(TSU-\d+)\b/);
     const tsuId = tsuMatch ? tsuMatch[1] : null;
 
-    events.push({ done, startTime, endTime, allDay, title, description, tsuId });
+    // Extract #dbname tag for per-item DB routing
+    const dbTagMatch = title.match(/\s+#(\w+)$/);
+    let dbOverride: ScheduleDbName | null = null;
+    let cleanTitle = title;
+    if (dbTagMatch && dbTagMatch[1] in SCHEDULE_DB_CONFIGS) {
+      dbOverride = dbTagMatch[1] as ScheduleDbName;
+      cleanTitle = title.replace(/\s+#\w+$/, "");
+    }
+
+    events.push({ done, startTime, endTime, allDay, title: cleanTitle, description, tsuId, dbOverride });
   }
 
   return { date, events };
@@ -111,7 +122,7 @@ function findMatchingPage(
   config: ScheduleDbConfig,
 ): { page: any; matchType: "tsu-id" | "title" } | null {
   // Priority 1: TSU-ID match
-  if (event.tsuId) {
+  if (event.tsuId && config.descProp) {
     for (const page of notionPages) {
       const richText = page.properties?.[config.descProp]?.rich_text || [];
       const desc = richText.map((seg: any) => seg.plain_text || "").join("");
@@ -153,11 +164,11 @@ function buildProperties(event: ParsedEvent, date: string, config: ScheduleDbCon
     properties[config.dateProp] = { date: dateObj };
   }
 
-  if (event.description) {
+  if (event.description && config.descProp) {
     properties[config.descProp] = { rich_text: [{ text: { content: event.description } }] };
   }
 
-  if (event.done) {
+  if (event.done && config.statusProp) {
     properties[config.statusProp] = { status: { name: "Done" } };
   }
 
@@ -201,15 +212,17 @@ function diffProperties(
   }
 
   // Compare description
-  const existingDesc = (existingPage.properties?.[config.descProp]?.rich_text || [])
-    .map((t: any) => t.plain_text || "").join("");
-  if (event.description && existingDesc !== event.description) {
-    updates[config.descProp] = { rich_text: [{ text: { content: event.description } }] };
-    hasChanges = true;
+  if (config.descProp) {
+    const existingDesc = (existingPage.properties?.[config.descProp]?.rich_text || [])
+      .map((t: any) => t.plain_text || "").join("");
+    if (event.description && existingDesc !== event.description) {
+      updates[config.descProp] = { rich_text: [{ text: { content: event.description } }] };
+      hasChanges = true;
+    }
   }
 
   // Compare status (only set to Done, never revert)
-  if (event.done) {
+  if (event.done && config.statusProp) {
     const existingStatus = existingPage.properties?.[config.statusProp]?.status?.name;
     if (existingStatus !== "Done") {
       updates[config.statusProp] = { status: { name: "Done" } };
@@ -248,50 +261,76 @@ async function main() {
     return;
   }
 
-  const dbName = resolveDbFromPath(filePath);
-  console.log(`Syncing ${events.length} event(s) from ${date} → Notion [${dbName}]...`);
+  const defaultDbName = resolveDbFromPath(filePath);
 
-  const { apiKey, dbId, config } = getScheduleDbConfig(dbName);
+  // Group events by target DB (per-item #db tag overrides path-based default)
+  const grouped = new Map<ScheduleDbName, ParsedEvent[]>();
+  for (const event of events) {
+    const db = event.dbOverride || defaultDbName;
+    if (!grouped.has(db)) grouped.set(db, []);
+    grouped.get(db)!.push(event);
+  }
 
-  // Query Notion for events on this date
-  const data = await notionFetch(apiKey, `/databases/${dbId}/query`, {
-    filter: {
-      and: [
-        { property: config.dateProp, date: { on_or_after: `${date}T00:00:00+09:00` } },
-        { property: config.dateProp, date: { on_or_before: `${date}T23:59:59+09:00` } },
-      ],
-    },
-  });
-  const notionPages: any[] = data.results || [];
+  // Fetch all schedule DB entries for cross-DB duplicate checking
+  const allExistingTitles = new Set<string>();
+  const dbNames = Object.keys(SCHEDULE_DB_CONFIGS) as ScheduleDbName[];
+  await Promise.all(dbNames.map(async (name) => {
+    const conf = getScheduleDbConfig(name);
+    try {
+      const data = await queryDbByDate(conf.apiKey, conf.dbId, conf.config, date, date);
+      const entries = normalizePages(data.results, conf.config, name);
+      for (const e of entries) allExistingTitles.add(normalizeTitle(e.title));
+    } catch { /* DB may not exist */ }
+  }));
 
   let created = 0, updated = 0, skipped = 0;
 
-  for (const event of events) {
-    const match = findMatchingPage(event, notionPages, config);
+  for (const [dbName, dbEvents] of grouped) {
+    const { apiKey, dbId, config } = getScheduleDbConfig(dbName);
+    console.log(`Syncing ${dbEvents.length} event(s) from ${date} → Notion [${dbName}]...`);
 
-    if (match) {
-      // Existing page — check for diff
-      const diff = diffProperties(event, date, match.page, config);
-      if (diff) {
-        console.log(`  UPDATE (${match.matchType}): ${event.title}`);
-        if (!dryRun) {
-          await notionFetch(apiKey, `/pages/${match.page.id}`, { properties: diff }, "PATCH");
+    // Query target DB for matching
+    const data = await notionFetch(apiKey, `/databases/${dbId}/query`, {
+      filter: {
+        and: [
+          { property: config.dateProp, date: { on_or_after: `${date}T00:00:00+09:00` } },
+          { property: config.dateProp, date: { on_or_before: `${date}T23:59:59+09:00` } },
+        ],
+      },
+    });
+    const notionPages: any[] = data.results || [];
+
+    for (const event of dbEvents) {
+      const match = findMatchingPage(event, notionPages, config);
+
+      if (match) {
+        // Existing page in target DB — check for diff
+        const diff = diffProperties(event, date, match.page, config);
+        if (diff) {
+          console.log(`  UPDATE (${match.matchType}): ${event.title}`);
+          if (!dryRun) {
+            await notionFetch(apiKey, `/pages/${match.page.id}`, { properties: diff }, "PATCH");
+          }
+          updated++;
+        } else {
+          console.log(`  SKIP: ${event.title} (no changes)`);
+          skipped++;
         }
-        updated++;
-      } else {
-        console.log(`  SKIP: ${event.title} (no changes)`);
+      } else if (allExistingTitles.has(normalizeTitle(event.title))) {
+        // Exists in another DB — skip to avoid cross-DB duplicates
+        console.log(`  SKIP: ${event.title} (exists in another DB)`);
         skipped++;
+      } else {
+        // New event — create
+        const properties = buildProperties(event, date, config);
+        const icon = pickTaskIcon(event.title);
+        const cover = pickCover(event.title);
+        console.log(`  CREATE: ${event.title}`);
+        if (!dryRun) {
+          await notionFetch(apiKey, "/pages", { parent: { database_id: dbId }, properties, icon, cover });
+        }
+        created++;
       }
-    } else {
-      // New event — create
-      const properties = buildProperties(event, date, config);
-      const icon = pickTaskIcon(event.title);
-      const cover = pickCover(event.title);
-      console.log(`  CREATE: ${event.title}`);
-      if (!dryRun) {
-        await notionFetch(apiKey, "/pages", { parent: { database_id: dbId }, properties, icon, cover });
-      }
-      created++;
     }
   }
 

@@ -25,9 +25,9 @@ bun run scripts/notion-add.ts --title "タイトル" --date YYYY-MM-DD --allday
 
 ### 注意
 
-- 既存イベントは上書き・削除しない（新規追加のみ）
+- **スケジュール変更時は既存の Notion エントリを更新する**（Notion MCP `notion-update-page` で日時プロパティを変更）。同じ目的の予定を二重登録しない
 - マークダウンだけ更新して Notion を更新し忘れないこと
-- 重複登録を避けるため、登録前に必ず既存の予定を確認する
+- 登録前に必ず `notion-list.ts --json` で既存の予定を確認し、重複や時間ズレがないか確かめる
 
 ## 必須: 週次の買い物リストを Notion に作成する
 

@@ -1,16 +1,25 @@
 /**
  * Claude API 共通ヘルパー
+ *
+ * 認証優先順位:
+ *   1. CLAUDE_CODE_OAUTH_TOKEN (Bearer auth) — Claude Code CLI OAuth トークン
+ *   2. ANTHROPIC_API_KEY (x-api-key auth) — API キー
  */
 
 import { loadEnv } from "./notion";
 
-export function getAnthropicApiKey(): string {
+function getAuthHeaders(): Record<string, string> {
   const env = loadEnv();
+  const oauthToken = env["CLAUDE_CODE_OAUTH_TOKEN"] || process.env.CLAUDE_CODE_OAUTH_TOKEN;
   const apiKey = env["ANTHROPIC_API_KEY"] || process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    throw new Error("ANTHROPIC_API_KEY must be set in .env.local or environment");
+
+  if (oauthToken) {
+    return { "Authorization": `Bearer ${oauthToken}` };
   }
-  return apiKey;
+  if (apiKey) {
+    return { "x-api-key": apiKey };
+  }
+  throw new Error("CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY must be set");
 }
 
 interface ClaudeMessage {
@@ -32,7 +41,7 @@ export async function callClaude(
   messages: ClaudeMessage[],
   options: ClaudeOptions = {},
 ): Promise<string> {
-  const apiKey = getAnthropicApiKey();
+  const authHeaders = getAuthHeaders();
   const model = options.model || "claude-haiku-4-5-20251001";
   const maxTokens = options.maxTokens || 4096;
 
@@ -49,8 +58,8 @@ export async function callClaude(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": apiKey,
       "anthropic-version": "2023-06-01",
+      ...authHeaders,
     },
     body: JSON.stringify(body),
   });

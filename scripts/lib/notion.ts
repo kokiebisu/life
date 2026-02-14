@@ -201,7 +201,7 @@ export function normalizePages(pages: any[], config: ScheduleDbConfig, source: S
     const titleArr = props[config.titleProp]?.title || [];
     const dateObj = props[config.dateProp]?.date;
     const descArr = props[config.descProp]?.rich_text || [];
-    const feedbackArr = props.Feedback?.rich_text || [];
+    const feedbackArr = props.フィードバック?.rich_text || [];
     return {
       id: page.id,
       source,

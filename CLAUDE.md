@@ -2,7 +2,6 @@
 
 > GitHub を使った人生管理リポジトリ
 > 日記を読んで、チームが理解して、明日のタスクが進化する。
-> 静的なチェックリストではなく、自分と一緒に成長する生きたシステム。
 
 ## Quick Reference
 
@@ -21,133 +20,56 @@
 ### Claude Code コマンド
 
 ```bash
-# チーム相談
 /ask:diet                # ダイエットチームに相談
 /ask:job:search          # 就職活動チームに相談
-
-# タスク同期
-/sync:sumitsugi            # sumitsugi ↔ LIFE Linear タスク同期
-
-# 目標管理
+/sync:sumitsugi          # sumitsugi ↔ LIFE Linear タスク同期
 /goal                    # 壁打ちして新しい目標を追加
-
-# 開発ワークフロー
 /pr                      # 変更をグループ化してPR作成
+/tidy                    # 指示ファイルの重複・配置を整理
+/calendar                # Notion カレンダー操作
+/event                   # イベント登録
 ```
 
 ## Directory Structure
 
 ```
-profile/
-├── basic.md             # 基本情報・居住・生活リズム・信仰・趣味
-├── health.md            # 身体・ダイエット・ジム・食事
-├── career.md            # 職歴・スキル・sumitsugi・財務
-├── love.md              # 恋愛・結婚・ラブタイプ分析
-└── personality.md       # 価値観・人生の軸・ビジョン
-planning/
-├── events/              # 全体イベント（統合）→ Notion: イベントDB
-├── daily/               # デイリープラン
-├── goals.md             # 目標一覧
-├── roadmap.md           # 3ヶ月ロードマップ
-├── routine.md           # 理想の1日テンプレート
-├── tasks.md             # タスクInbox
-└── vision.md            # ビジョン全体像
-aspects/
-├── church/              # 教会関連
-├── diary/               # 日記・振り返り
-├── diet/                # ダイエット・健康管理（チーム対応）→ Notion: 食事DB
-├── fukuoka/             # 福岡移住検討（チーム対応）
-├── guitar/              # ギター練習（チーム対応）→ Notion: ギターDB
-├── investment/          # 投資（チーム対応）
-├── job/                 # 就職・転職活動（チーム対応）
-├── reading/             # 読書記録（チーム対応）
-├── routine/             # 習慣・ルーティン → Notion: 習慣DB
-├── study/               # 学習（起業・法律・技術）（チーム対応）
-└── sumitsugi/             # sumitsugi関連記録
-projects/
-└── sumitsugi/             # 個人プロジェクト（サブモジュール）
-memory-bank/
-├── project-context.md   # プロジェクト全体の背景・目的
-├── active-context.md    # 現在進行中の作業・フォーカス
-├── decisions.md         # 設計判断とその理由の記録
-├── patterns.md          # うまくいったパターン・避けるべきパターン
-└── progress.md          # 各 aspect の進捗・状態
+profile/                 # ユーザープロフィール（basic/health/career/love/personality）
+planning/                # 全体管理（events/, daily/, goals.md, roadmap.md, tasks.md）
+aspects/                 # 生活の各側面（各ディレクトリに CLAUDE.md あり）
+projects/sumitsugi/      # 個人プロジェクト（サブモジュール）
+memory-bank/             # セッション間の記憶（decisions.md）
 ```
 
-## Git Workflow
+## Git & Security
 
-### Commit Message Format
-
-```
-<type>: <description>
-```
-
-Types: feat, fix, refactor, docs, chore
-
-### PR 作成
-
-- `/pr` コマンドで論理的にグループ化されたPRを作成
-- 1つの論理的変更につき1つのPR
-- Conventional Commits 形式のタイトルを使用
-- 詳細は `.claude/rules/git-workflow.md` を参照
+- コミット形式・PR ワークフロー → `.claude/rules/git-workflow.md`
+- セキュリティガイドライン → `.claude/rules/security.md`
 
 ## Aspects（生活の側面）
 
-全体管理は `planning/` に、各 aspect は `aspects/` 配下のディレクトリで管理。aspect 固有の Claude 指示は各ディレクトリの `CLAUDE.md` に記載。
+各 aspect は `aspects/` 配下。固有の指示は各 `CLAUDE.md` に記載。
 
-### チーム対応 aspect
+| Aspect | チーム | 概要 |
+|--------|--------|------|
+| diet | 6人チーム | ダイエット・健康管理 → Notion: 食事DB |
+| guitar | 3人チーム | ギター練習 → Notion: ギターDB |
+| investment | 8人チーム | 投資 |
+| study | 9人チーム | 学習（起業・法律・技術） |
+| job/search | 6人チーム | 就職活動 |
+| fukuoka | 田中誠 | 福岡移住検討 |
+| reading | 村上葉月 | 読書記録 |
+| planning | 松本あかり | 全aspect横断管理 |
+| routine | - | 習慣・ルーティン → Notion: 習慣DB |
+| church | - | 教会関連 |
+| diary | - | 日記・振り返り |
+| sumitsugi | サブモジュール | 個人プロジェクト（本業） |
 
-- **diet** - ダイエットサポートチーム（栄養士、トレーナー、心理学者など6人）
-- **guitar** - ギターチーム（瀬戸涼介、黒田奏、橋本海の3人）
-- **investment** - 投資チーム（Buffett, Munger, Thiel, Wood, Dalio, Soros, Fisher, Marks の8人）
-- **study** - 学習チーム（起業メンター5人 + 法律メンター1人 + 技術メンター3人）
-- **job/search** - 就職活動サポートチーム（履歴書、面接、交渉など）
-- **fukuoka** - 福岡移住アドバイザー（田中誠）
-- **reading** - 読書ナビゲーター（村上葉月）
-- **planning** - ライフコーチ（松本あかり）- 全aspect横断管理
-
-### サブモジュール
-
-- **sumitsugi** - 個人プロジェクト（本業。開発+営業。独立した git リポジトリ）
-
-## Claude Code & Devcontainer
-
-### Devcontainer
+## Devcontainer
 
 - **ランタイム:** Node.js 20, Bun
-- **ツール:** Claude Code CLI, GitHub CLI, Starship prompt
-- **認証:** `~/.claude`, `~/.ssh`, `~/.config/gh` がホストからマウントされ永続化
+- **ツール:** Claude Code CLI, GitHub CLI
 - **起動:** `./dev` スクリプトで devcontainer 起動 + Claude Code 自動開始
-
-### 新しい aspect の追加
-
-1. `aspects/<name>/` ディレクトリを作成
-2. 必要に応じて `CLAUDE.md` を追加（チーム構成、対応方針など）
-3. 必要に応じて `.claude/commands/ask:<name>.md` にスキルを追加
-4. `README.md` のテーブルを更新
 
 ## Memory Bank
 
-`memory-bank/` はセッション間で文脈を引き継ぐための記憶システム。
-
-### 運用ルール
-
-- **セッション開始時:** `memory-bank/` のファイルを読んで現在の文脈を把握する
-- **セッション中:** 重要な決定や発見があれば該当ファイルに追記する
-- **セッション終了時:** `active-context.md` を更新して次回に引き継ぐ
-
-### ファイルの役割
-
-| ファイル | 更新タイミング | 内容 |
-|---------|--------------|------|
-| `project-context.md` | 構造変更時 | プロジェクト背景・ユーザー情報 |
-| `active-context.md` | 毎セッション | 現在の作業・次にやること |
-| `decisions.md` | 判断時 | 設計判断と理由 |
-| `patterns.md` | 発見時 | 効果的/非効果的なパターン |
-| `progress.md` | 進捗時 | aspect ごとの進捗状態 |
-
-## Security
-
-- `.env` ファイルや認証情報をコミットしない
-- 個人情報（住所、電話番号など）は Issue やコメントで管理し、リポジトリにはコミットしない
-- 詳細は `.claude/rules/security.md` を参照
+`memory-bank/decisions.md` に設計判断とその理由を記録する。重要な判断をしたら追記すること。

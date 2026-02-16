@@ -4,58 +4,34 @@
 
 デイリープラン・週次プラン・ルーティンなどスケジュールに関わるマークダウンファイルを作成・変更したら、**必ず Notion Calendar も同期する。**
 
-### 具体的に
-
 1. **新しいデイリープランを作成した場合** → プラン内のタスク・イベントを Notion に登録
 2. **既存のスケジュールを変更した場合** → 変更内容を Notion に反映（追加・時間変更）
 3. **イベントを別の日に移動した場合** → 移動先に新規登録
 
-### 手順
-
-```bash
-# 既存の予定を確認（全DB統合）
-bun run scripts/notion-list.ts --date YYYY-MM-DD --json
-bun run scripts/notion-list.ts --date YYYY-MM-DD --db events  # イベントDBのみ
-
-# 予定を追加（--db で対象DB指定。デフォルト: routine）
-bun run scripts/notion-add.ts --title "タイトル" --date YYYY-MM-DD --start HH:MM --end HH:MM
-bun run scripts/notion-add.ts --title "タイトル" --date YYYY-MM-DD --start HH:MM --end HH:MM --db events
-bun run scripts/notion-add.ts --title "タイトル" --date YYYY-MM-DD --allday
-```
+CLI コマンドは `/calendar` コマンドを参照。
 
 ### 注意
 
-- **スケジュール変更時は既存の Notion エントリを更新する**（Notion MCP `notion-update-page` で日時プロパティを変更）。同じ目的の予定を二重登録しない
+- **スケジュール変更時は既存の Notion エントリを更新する**（Notion MCP `notion-update-page` で日時プロパティを変更）。二重登録しない
 - マークダウンだけ更新して Notion を更新し忘れないこと
-- 登録前に必ず `notion-list.ts --json` で既存の予定を確認し、重複や時間ズレがないか確かめる
+- 登録前に必ず `notion-list.ts --json` で既存の予定を確認する
 
-## 必須: 週次の買い物リストを Notion に作成する
+## ファイルの使い分け: events/ vs daily/
 
-週次プラン・献立を作成したら、**買い出し用の Notion ページも作る。**
-スマホから直接チェックしながら買い物できるようにする。
+- **`planning/events/`** — 未来の予定。スケジュール管理用
+- **`planning/daily/`** — その日の実績・記録用（完了タスク、持ち越し、Feedback 転記）
 
-### ページの形式
+## Notion ページへのコンテンツ反映
 
-- **件名:** `YYYY-MM-DD`（例: `2026-02-14`）
-- **実施日:** 買い出し日
-- **種類:** `買い出し`
-- **内容（ブロック）:** 店舗ごとにセクション分け + カテゴリ別チェックリスト（to_do ブロック）
-- **推定合計金額** を callout ブロックに記載
+コンテンツを持つタスク（ギターレッスン等）を Notion に登録するときは、**ページ本文にも内容を書き込む。**
 
-### 手順
+- `notion-add.ts` でページ作成後、Notion MCP `notion-update-page` の `replace_content` で内容を書き込む
+- 詳細な TAB 譜等はリポジトリファイルへの参照リンクを末尾に入れる
 
-1. 週次の献立（`aspects/diet/weekly/YYYY-MM-DD-meal-plan.md`）から買い物リストを抽出
-2. 「食事」DB（`NOTION_MEALS_DB`）にページを作成し、ブロックとして買い物リストを追加
-3. デイリープランの買い出し欄に Notion ページの URL を貼る
-4. Notion Calendar の買い出しイベントの Description にも買い物リストページの URL を貼る
+## Feedback の永続反映
 
-### カテゴリ例
+Notion タスクに Feedback がある場合、**次回同種のタスク作成時に必ず反映する。**
 
-- 肉・魚
-- 卵・乳製品
-- 野菜・果物
-- 主食
-- 豆腐・納豆
-- おやつ
-- 調味料（なければ）
-- その他（100均など別店舗）
+1. タスク完了時に Feedback を確認
+2. 該当 aspect の `CLAUDE.md` に学びとして蓄積
+3. 次回同じタスクを立てるとき、過去の Feedback を踏まえた内容にする

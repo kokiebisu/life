@@ -1,4 +1,4 @@
-# Sync Tsumugi Tasks
+# Sync Sumitsugi Tasks
 
 Sync 大株主-assigned tasks between sumitsugi and LIFE Daily Tasks in Linear.
 

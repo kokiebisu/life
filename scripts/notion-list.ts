@@ -63,7 +63,7 @@ async function main() {
     const { apiKey, dbId, config } = dbConf;
     // todo DB: default to status-based query (show all open items)
     const data = name === "todo" && useTodoStatusQuery
-      ? await queryDbByStatus(apiKey, dbId, config, ["未着手", "進行中"])
+      ? await queryDbByStatus(apiKey, dbId, config, ["未着手"])
       : await queryDbByDate(apiKey, dbId, config, startDate, endDate);
     allEntries.push(...normalizePages(data.results, config, name));
   });

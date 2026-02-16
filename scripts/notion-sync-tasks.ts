@@ -3,7 +3,7 @@
  * tasks.md ↔ Notion やることDB 同期
  *
  * Notion が source of truth。
- * - Notion 未着手/進行中 → tasks.md Inbox に反映
+ * - Notion 未着手 → tasks.md Inbox に反映
  * - Notion 完了 → tasks.md で [x] にして Archive へ
  * - tasks.md にあって Notion にないもの → Notion に新規作成
  *
@@ -35,7 +35,7 @@ interface TaskLine {
 interface NotionTodo {
   id: string;
   title: string;
-  status: string;           // "未着手" | "進行中" | "完了"
+  status: string;           // "未着手" | "完了"
   deadline: string | null;  // "2026-02-13" (date only)
   description: string;
   createdTime: string;      // ISO string
@@ -240,7 +240,7 @@ async function main() {
         matchedNotionIds.add(todo.id);
       }
     } else {
-      // 未着手 or 進行中 → should be in inbox
+      // 未着手 → should be in inbox
       matchedNotionIds.add(todo.id);
       if (matchIdx !== -1) {
         // Already in inbox — keep it (update deadline if changed)

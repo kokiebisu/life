@@ -120,7 +120,7 @@ async function fetchAllTodos(apiKey: string, dbId: string): Promise<NotionTodo[]
 
   do {
     const body: Record<string, unknown> = {
-      sorts: [{ property: "期日", direction: "ascending" }],
+      sorts: [{ property: "日付", direction: "ascending" }],
       page_size: 100,
     };
     if (cursor) body.start_cursor = cursor;
@@ -129,7 +129,7 @@ async function fetchAllTodos(apiKey: string, dbId: string): Promise<NotionTodo[]
 
     for (const page of data.results) {
       const titleArr = page.properties["タスク名"]?.title || [];
-      const dateObj = page.properties["期日"]?.date;
+      const dateObj = page.properties["日付"]?.date;
       const descArr = page.properties["説明"]?.rich_text || [];
       const status = page.properties["ステータス"]?.status?.name || "";
 
@@ -287,7 +287,7 @@ async function main() {
           "タスク名": { title: [{ text: { content: task.title } }] },
         };
         if (task.deadline) {
-          properties["期日"] = { date: { start: task.deadline } };
+          properties["日付"] = { date: { start: task.deadline } };
         }
         if (task.aspect) {
           properties["説明"] = { rich_text: [{ text: { content: `#${task.aspect}` } }] };

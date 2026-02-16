@@ -16,7 +16,7 @@
 
 - 飲み会・会議・予定など「日時が決まっているスケジュール」はイベント
 - `planning/events/YYYY-MM-DD.md` に追加
-- **Notion events DB にも必ず登録する**（`notion-add.ts --db events --start HH:MM --end HH:MM --desc "説明"`）
+- **Notion events DB にも必ず登録する**（`notion-add.ts --db events --start HH:MM --end HH:MM`）。説明が必要なら作成後に `notion-update-page` の `replace_content` でページ本文に書き込む
 - `planning/tasks.md` には入れない
 
 ### タスクと判断しないもの
@@ -45,7 +45,7 @@
 ### 動作
 
 1. タスクを検出したら `planning/tasks.md` の `## Inbox` セクション末尾に追加
-2. **Notion todo DB にも登録する**（`notion-add.ts --db todo --allday --desc "説明"`)
+2. **Notion todo DB にも登録する**（`notion-add.ts --db todo --allday`）。説明が必要なら作成後に `notion-update-page` の `replace_content` でページ本文に書く
 3. ユーザーに「タスクに追加しておいた」と軽く報告（1行で十分）
 4. 会話の流れを止めない。メインの話題を優先する
 

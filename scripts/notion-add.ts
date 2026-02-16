@@ -10,9 +10,29 @@
  *   bun run scripts/notion-add.ts --title "ギター練習" --date 2026-02-14 --start 17:00 --end 18:00 --db guitar
  */
 
-import { type ScheduleDbName, getScheduleDbConfig, notionFetch, parseArgs, pickTaskIcon, pickCover } from "./lib/notion";
+import { type ScheduleDbName, getScheduleDbConfig, notionFetch, queryDbByDate, parseArgs, pickTaskIcon, pickCover } from "./lib/notion";
 
-function main() {
+function normalizeTitle(title: string): string {
+  return title.replace(/[（）()]/g, "").replace(/\s+/g, "").toLowerCase();
+}
+
+async function checkDuplicate(apiKey: string, dbId: string, config: any, date: string, title: string): Promise<boolean> {
+  const data = await queryDbByDate(apiKey, dbId, config, date, date);
+  const pages: any[] = data.results || [];
+  const normalizedNew = normalizeTitle(title);
+  for (const page of pages) {
+    const existingTitle = (page.properties?.[config.titleProp]?.title || [])
+      .map((t: any) => t.plain_text || "").join("");
+    const normalizedExisting = normalizeTitle(existingTitle);
+    if (normalizedNew.includes(normalizedExisting) || normalizedExisting.includes(normalizedNew)) {
+      console.error(`重複検出: "${existingTitle}" が既に存在します。スキップします。`);
+      return true;
+    }
+  }
+  return false;
+}
+
+async function main() {
   const { flags, opts } = parseArgs();
   if (!opts.title || !opts.date) {
     console.error("Usage:");
@@ -47,6 +67,12 @@ function main() {
 
   if (opts.desc) {
     properties[config.descProp] = { rich_text: [{ text: { content: opts.desc } }] };
+  }
+
+  // 重複チェック
+  const isDuplicate = await checkDuplicate(apiKey, dbId, config, opts.date, opts.title);
+  if (isDuplicate) {
+    process.exit(0);
   }
 
   const icon = pickTaskIcon(opts.title);

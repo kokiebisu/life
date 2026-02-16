@@ -1,5 +1,10 @@
 # Notion ワークフロー
 
+## Notion MCP サーバー名
+
+- `ReadMcpResourceTool` のサーバー名は **`claude.ai Notion`**（スペース・ドット入り）
+- ツール名の `mcp__claude_ai_Notion__*` と混同しないこと
+
 ## 基本方針
 
 - **全イベント・タスクを Notion データベースで管理**

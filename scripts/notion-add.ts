@@ -13,7 +13,28 @@
 import { type ScheduleDbName, getScheduleDbConfig, notionFetch, queryDbByDate, parseArgs, pickTaskIcon, pickCover } from "./lib/notion";
 
 function normalizeTitle(title: string): string {
-  return title.replace(/[（）()]/g, "").replace(/\s+/g, "").toLowerCase();
+  return title.replace(/[（）()]/g, "").replace(/\s+/g, "").replace(/ー/g, "").toLowerCase();
+}
+
+async function aiIsDuplicate(newTitle: string, existingTitle: string): Promise<boolean> {
+  const prompt = `同じ予定かどうか判定してください。表記揺れ（長音、括弧、スペース等）は同一とみなします。ただし「買い出し」と「パーティ」のように活動内容が異なるものは別の予定です。
+
+新規: "${newTitle}"
+既存: "${existingTitle}"
+
+同じ予定なら "yes"、別の予定なら "no" とだけ答えてください。`;
+  try {
+    const proc = Bun.spawn(["claude", "-p", prompt, "--model", "haiku"], {
+      env: { ...process.env, CLAUDECODE: "" },
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const output = await new Response(proc.stdout).text();
+    await proc.exited;
+    return output.trim().toLowerCase().includes("yes");
+  } catch {
+    return false;
+  }
 }
 
 async function checkDuplicate(apiKey: string, dbId: string, config: any, date: string, title: string): Promise<boolean> {
@@ -24,9 +45,18 @@ async function checkDuplicate(apiKey: string, dbId: string, config: any, date: s
     const existingTitle = (page.properties?.[config.titleProp]?.title || [])
       .map((t: any) => t.plain_text || "").join("");
     const normalizedExisting = normalizeTitle(existingTitle);
-    if (normalizedNew.includes(normalizedExisting) || normalizedExisting.includes(normalizedNew)) {
+    // 正規化で完全一致 → 重複
+    if (normalizedNew === normalizedExisting) {
       console.error(`重複検出: "${existingTitle}" が既に存在します。スキップします。`);
       return true;
+    }
+    // 部分的に似ている場合 → AI で判定
+    if (normalizedNew.includes(normalizedExisting) || normalizedExisting.includes(normalizedNew)) {
+      const isDup = await aiIsDuplicate(title, existingTitle);
+      if (isDup) {
+        console.error(`重複検出（AI判定）: "${existingTitle}" と同一の予定です。スキップします。`);
+        return true;
+      }
     }
   }
   return false;

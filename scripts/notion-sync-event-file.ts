@@ -324,7 +324,7 @@ async function main() {
         // New event — create
         const properties = buildProperties(event, date, config);
         const icon = pickTaskIcon(event.title);
-        const cover = pickCover(event.title);
+        const cover = pickCover();
         console.log(`  CREATE: ${event.title}`);
         if (!dryRun) {
           await notionFetch(apiKey, "/pages", { parent: { database_id: dbId }, properties, icon, cover });

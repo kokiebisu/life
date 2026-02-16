@@ -62,7 +62,7 @@ async function backfillTasks(dryRun: boolean, force: boolean) {
     if (!force && page.icon && page.cover) continue;
     const title = page.properties.Name?.title?.[0]?.plain_text || "";
     const icon = pickTaskIcon(title);
-    const cover = pickCover(title);
+    const cover = pickCover();
 
     updated++;
     if (dryRun) {
@@ -87,7 +87,7 @@ async function backfillEvents(dryRun: boolean, force: boolean) {
     const title = (page.properties[dbConf.config.titleProp]?.title || [])
       .map((t: any) => t.plain_text || "").join("");
     const icon = pickTaskIcon(title);
-    const cover = pickCover(title);
+    const cover = pickCover();
 
     updated++;
     if (dryRun) {
@@ -112,7 +112,7 @@ async function backfillGuitar(dryRun: boolean, force: boolean) {
     const title = (page.properties[dbConf.config.titleProp]?.title || [])
       .map((t: any) => t.plain_text || "").join("");
     const icon = pickTaskIcon(title);
-    const cover = pickCover("guitar");
+    const cover = pickCover();
 
     updated++;
     if (dryRun) {
@@ -137,7 +137,7 @@ async function backfillMeals(dryRun: boolean, force: boolean) {
     const title = (page.properties[dbConf.config.titleProp]?.title || [])
       .map((t: any) => t.plain_text || "").join("");
     const icon = pickTaskIcon(title);
-    const cover = pickCover("diet");
+    const cover = pickCover();
 
     updated++;
     if (dryRun) {
@@ -162,7 +162,7 @@ async function backfillTodo(dryRun: boolean, force: boolean) {
     const title = (page.properties[dbConf.config.titleProp]?.title || [])
       .map((t: any) => t.plain_text || "").join("");
     const icon = pickTaskIcon(title);
-    const cover = pickCover(title);
+    const cover = pickCover();
 
     updated++;
     if (dryRun) {
@@ -188,7 +188,7 @@ async function backfillArticles(dryRun: boolean, force: boolean) {
     const source = page.properties["ソース"]?.select?.name || "";
     const aspects = (page.properties.Aspect?.multi_select || []).map((s: any) => s.name).join(",");
     const icon = pickArticleIcon(source);
-    const cover = pickCover(aspects);
+    const cover = pickCover();
 
     updated++;
     if (dryRun) {

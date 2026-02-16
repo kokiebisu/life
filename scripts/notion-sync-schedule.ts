@@ -85,9 +85,10 @@ async function main() {
   await listProc.exited;
   const existing: ExistingTask[] = JSON.parse(listOutput || "[]");
 
-  // 3. Find routine slots not yet registered
+  // 3. Find routine slots not yet registered (skip fragments < 30 min)
   const routineSlots = planData.schedule.timeline.filter(
-    (s) => s.source === "routine" && !s.notionRegistered,
+    (s) => s.source === "routine" && !s.notionRegistered &&
+      timeToMinutes(s.end) - timeToMinutes(s.start) >= 30,
   );
 
   const toRegister: TimeSlot[] = [];

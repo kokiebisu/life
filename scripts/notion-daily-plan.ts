@@ -53,11 +53,12 @@ interface TimeSlot {
 }
 
 const ROUTINE_SLOTS: TimeSlot[] = [
-  { start: "09:00", end: "12:00", label: "sumitsugi開発（集中タイム）", source: "routine" },
-  { start: "12:00", end: "14:00", label: "昼食 + ジム or 運動", source: "routine" },
-  { start: "14:00", end: "17:00", label: "sumitsugi開発（続き）or 営業活動", source: "routine" },
-  { start: "17:00", end: "18:00", label: "ギター練習（1時間）", source: "routine" },
-  { start: "18:00", end: "20:00", label: "study / 読書 / 投資リサーチ / 自由時間", source: "routine" },
+  { start: "09:00", end: "12:00", label: "sumitsugi開発", source: "routine" },
+  { start: "12:00", end: "13:00", label: "昼食", source: "routine" },
+  { start: "13:00", end: "14:00", label: "運動", source: "routine" },
+  { start: "14:00", end: "17:00", label: "sumitsugi開発", source: "routine" },
+  { start: "17:00", end: "18:00", label: "ギター練習", source: "routine" },
+  { start: "18:00", end: "20:00", label: "自由時間", source: "routine" },
 ];
 
 interface DailyPlanData {
@@ -198,6 +199,15 @@ function minutesToTime(m: number): string {
   return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
 }
 
+/** 2つの時間帯が重なっているか */
+function overlaps(aStart: string, aEnd: string, bStart: string, bEnd: string): boolean {
+  const a0 = timeToMinutes(aStart);
+  const a1 = timeToMinutes(aEnd);
+  const b0 = timeToMinutes(bStart);
+  const b1 = timeToMinutes(bEnd);
+  return a0 < b1 && b0 < a1;
+}
+
 function buildSchedule(
   localEvents: LocalEvent[],
   todayTasks: NormalizedEntry[],
@@ -249,11 +259,27 @@ function buildSchedule(
     });
   }
 
+  // Bug 1: Deduplicate local events vs Notion entries
+  // Notion entries take priority; remove local events that overlap with a similar Notion entry
+  const notionEvents = timedEvents.filter((e) => e.source === "notion");
+  const deduped = timedEvents.filter((e) => {
+    if (e.source !== "event") return true;
+    // Normalize label: strip "[aspect] " prefix for comparison
+    const normalizedLocal = e.label.replace(/^\[[^\]]+\]\s*/, "").toLowerCase();
+    return !notionEvents.some((n) => {
+      const normalizedNotion = n.label.toLowerCase();
+      return (
+        overlaps(e.start, e.end, n.start, n.end) &&
+        (normalizedNotion.includes(normalizedLocal) || normalizedLocal.includes(normalizedNotion))
+      );
+    });
+  });
+
   // Sort timed events by start time
-  timedEvents.sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
+  deduped.sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
 
   // Trim/split routine slots around each timed event
-  for (const event of timedEvents) {
+  for (const event of deduped) {
     const evStart = timeToMinutes(event.start);
     const evEnd = timeToMinutes(event.end);
 
@@ -297,8 +323,14 @@ function buildSchedule(
     slots = newSlots;
   }
 
+  // Bug 2: Remove routine fragments shorter than 30 minutes after carving
+  slots = slots.filter((s) => {
+    if (s.source !== "routine") return true;
+    return timeToMinutes(s.end) - timeToMinutes(s.start) >= 30;
+  });
+
   // Add timed events to slots
-  slots.push(...timedEvents);
+  slots.push(...deduped);
 
   // Sort all by start time
   slots.sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
@@ -316,15 +348,20 @@ function formatMarkdown(data: DailyPlanData): string {
   lines.push(`## 昨日の振り返り（${data.yesterdayDate}）`);
   lines.push("");
 
-  if (data.yesterdayTasks.length > 0) {
-    const done = data.yesterdayTasks.filter((t) => t.status === "Done");
-    lines.push(`タスク: ${done.length}/${data.yesterdayTasks.length} 完了`);
+  // 振り返り対象は todo と events のみ（routine/meals/guitar はアクション不要）
+  const actionableTasks = data.yesterdayTasks.filter(
+    (t) => t.source === "todo" || t.source === "events",
+  );
+
+  if (actionableTasks.length > 0) {
+    const done = actionableTasks.filter((t) => t.status === "Done");
+    lines.push(`タスク: ${done.length}/${actionableTasks.length} 完了`);
   } else {
     lines.push("タスク: 登録なし");
   }
 
   // 完了タスク
-  const doneTasks = data.yesterdayTasks.filter((t) => t.status === "Done");
+  const doneTasks = actionableTasks.filter((t) => t.status === "Done");
   if (doneTasks.length > 0) {
     lines.push("");
     lines.push("### 完了");
@@ -334,7 +371,7 @@ function formatMarkdown(data: DailyPlanData): string {
   }
 
   // 未完了タスク
-  const incompleteTasks = data.yesterdayTasks.filter((t) => t.status !== "Done");
+  const incompleteTasks = actionableTasks.filter((t) => t.status !== "Done");
   if (incompleteTasks.length > 0) {
     lines.push("");
     lines.push("### 未完了（持ち越し候補）");
@@ -450,9 +487,12 @@ function buildUserPrompt(data: DailyPlanData): string {
     sections.push(`曜日ルール: ${weekdayNote}`);
   }
 
-  // 昨日の完了/未完了
-  const done = data.yesterdayTasks.filter((t) => t.status === "Done");
-  const incomplete = data.yesterdayTasks.filter((t) => t.status !== "Done");
+  // 昨日の完了/未完了（todo と events のみ）
+  const actionableForAI = data.yesterdayTasks.filter(
+    (t) => t.source === "todo" || t.source === "events",
+  );
+  const done = actionableForAI.filter((t) => t.status === "Done");
+  const incomplete = actionableForAI.filter((t) => t.status !== "Done");
 
   if (done.length > 0) {
     sections.push(`\n## 昨日の完了タスク（${data.yesterdayDate}）`);

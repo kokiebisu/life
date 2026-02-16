@@ -13,7 +13,7 @@
 
 import {
   type ScheduleDbName, type NormalizedEntry, SCHEDULE_DB_CONFIGS,
-  getScheduleDbConfigOptional, queryDbByDate, normalizePages,
+  getScheduleDbConfigOptional, queryDbByDate, queryDbByStatus, normalizePages,
   parseArgs, todayJST,
 } from "./lib/notion";
 
@@ -56,11 +56,15 @@ async function main() {
 
   // Query all configured DBs in parallel
   const allEntries: NormalizedEntry[] = [];
+  const useTodoStatusQuery = !date && !opts.days;
   const queries = dbNames.map(async (name) => {
     const dbConf = getScheduleDbConfigOptional(name);
     if (!dbConf) return;
     const { apiKey, dbId, config } = dbConf;
-    const data = await queryDbByDate(apiKey, dbId, config, startDate, endDate);
+    // todo DB: default to status-based query (show all open items)
+    const data = name === "todo" && useTodoStatusQuery
+      ? await queryDbByStatus(apiKey, dbId, config, ["未着手", "進行中"])
+      : await queryDbByDate(apiKey, dbId, config, startDate, endDate);
     allEntries.push(...normalizePages(data.results, config, name));
   });
   await Promise.all(queries);
@@ -89,14 +93,19 @@ async function main() {
   }
 
   for (const [dateKey, dayEntries] of byDate) {
-    const dateObj = new Date(dateKey + "T12:00:00+09:00");
-    const label = dateObj.toLocaleDateString("ja-JP", {
-      timeZone: "Asia/Tokyo",
-      year: "numeric",
-      month: "numeric",
-      day: "numeric",
-      weekday: "short",
-    });
+    let label: string;
+    if (!dateKey) {
+      label = "日付なし";
+    } else {
+      const dateObj = new Date(dateKey + "T12:00:00+09:00");
+      label = dateObj.toLocaleDateString("ja-JP", {
+        timeZone: "Asia/Tokyo",
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+        weekday: "short",
+      });
+    }
     console.log(`\n${label}`);
     for (const entry of dayEntries) {
       const check = entry.status === "Done" ? "✅" : "⬜";

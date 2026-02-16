@@ -195,6 +195,23 @@ export async function queryDbByDate(
   });
 }
 
+export async function queryDbByStatus(
+  apiKey: string,
+  dbId: string,
+  config: ScheduleDbConfig,
+  statuses: string[],
+): Promise<any> {
+  return notionFetch(apiKey, `/databases/${dbId}/query`, {
+    filter: {
+      or: statuses.map((s) => ({
+        property: config.statusProp,
+        status: { equals: s },
+      })),
+    },
+    sorts: [{ property: config.dateProp, direction: "ascending" }],
+  });
+}
+
 export function normalizePages(pages: any[], config: ScheduleDbConfig, source: ScheduleDbName): NormalizedEntry[] {
   return pages.map((page: any) => {
     const props = page.properties;

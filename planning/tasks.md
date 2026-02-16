@@ -33,6 +33,12 @@
 - [ ] Linear同期の全aspect拡張 (2026-02-14) #planning
 - [ ] テックブログ自動生成ツール: コミット履歴からブログ記事を自動作成 (2026-02-14) #sumitsugi
 - [ ] Life OS フレームワークのオープンソース化・ビジネス化を検討する (2026-02-14) #planning
+- [ ] TIBアプリをダウンロードしてメンバー登録する (2026-02-16) #sumitsugi 📅 2026-02-17
+- [ ] TIB壁打ち会（2/23）に申し込む: peatix (2026-02-16) #sumitsugi 📅 2026-02-17
+- [ ] TIB STUDIO にエントリーする（MVP改善・資金調達フェーズから） (2026-02-16) #sumitsugi 📅 2026-02-20
+- [ ] sumitsugi ピッチデッキ v1 を作成する（TIB壁打ち会用） (2026-02-16) #sumitsugi 📅 2026-02-22
+- [ ] HAKOBUNE STARTUP CONTEST 4th Batch 応募準備（ローンチ後に判断） (2026-02-16) #sumitsugi ⏳ローンチ後
+- [ ] HAKOBUNE STARTUP CONTEST 応募提出（ローンチ後に判断 / 締切4/13） (2026-02-16) #sumitsugi ⏳ローンチ後
 <!-- 新しいタスクはここに追加される -->
 
 ## Archive

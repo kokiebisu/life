@@ -271,7 +271,6 @@ async function getExistingUrls(apiKey: string, dbId: string): Promise<Set<string
   do {
     const body: Record<string, unknown> = {
       page_size: 100,
-      filter_properties: ["URL"],
     };
     if (cursor) body.start_cursor = cursor;
 

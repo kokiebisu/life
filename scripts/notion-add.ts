@@ -68,7 +68,7 @@ async function main() {
     console.error("Usage:");
     console.error("  bun run scripts/notion-add.ts --title <title> --date YYYY-MM-DD --start HH:MM --end HH:MM");
     console.error("  bun run scripts/notion-add.ts --title <title> --date YYYY-MM-DD --allday");
-    console.error("  Options: --desc <description> --db <routine|events|guitar|meals>");
+    console.error("  Options: --desc <description> --db <routine|events|guitar|meals> --end-date YYYY-MM-DD");
     process.exit(1);
   }
 
@@ -80,17 +80,22 @@ async function main() {
   };
 
   if (flags.has("allday")) {
-    properties[config.dateProp] = { date: { start: opts.date } };
+    const dateObj: Record<string, string> = { start: opts.date };
+    if (opts["end-date"]) {
+      dateObj.end = opts["end-date"];
+    }
+    properties[config.dateProp] = { date: dateObj };
   } else {
     if (!opts.start) {
       console.error("Error: --start required (or use --allday)");
       process.exit(1);
     }
+    const endDate = opts["end-date"] || opts.date;
     const dateObj: Record<string, string> = {
       start: `${opts.date}T${opts.start}:00+09:00`,
     };
     if (opts.end) {
-      dateObj.end = `${opts.date}T${opts.end}:00+09:00`;
+      dateObj.end = `${endDate}T${opts.end}:00+09:00`;
     }
     properties[config.dateProp] = { date: dateObj };
   }

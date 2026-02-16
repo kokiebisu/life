@@ -14,9 +14,11 @@
 ## 操作ルール
 
 - **時間変更時: 前後の予定も連鎖チェックし、かぶりがあれば全部まとめて調整する**
-- **タスク追加時: 必ず時間（--start/--end）と詳細説明（--desc）を入れる**（--allday は使わない）
+- **タスク追加時: 必ず時間（--start/--end）を入れる**（--allday は使わない）
+- **説明・詳細はページ本文に書く**（後述「ページ本文ルール」参照）
 - **完了済タスクの追加時**（「〜してた」「〜やった」等）→ ステータスを「完了」にセットする
 - **同名エントリがある場合は確認する**: 同名のエントリが既にある場合、既存エントリを勝手に移動・変更せず「同じ名前のエントリがあるけど、新しく追加していい？」とユーザーに確認する
+- **重複エントリ防止**: 登録前に `notion-list.ts --date YYYY-MM-DD --json` で既存エントリを取得。同名・同内容があれば `notion-update-page` で更新、ない場合のみ新規登録
 
 ## DB の使い分け
 
@@ -28,17 +30,26 @@
 
 ### Schedule DBs
 
-| DB | 環境変数 | プロパティ |
-|----|---------|-----------|
-| 習慣 | `NOTION_TASKS_DB` | Name / 日付 |
-| イベント | `NOTION_EVENTS_DB` | 名前 / 日付 |
-| ギター | `NOTION_GUITAR_DB` | 名前 / 日付 |
-| 食事 | `NOTION_MEALS_DB` | 名前 / 日付 |
+| DB | 環境変数 | プロパティ | 用途 |
+|----|---------|-----------|------|
+| 習慣 | `NOTION_TASKS_DB` | Name / 日付 | 繰り返しルーティン |
+| イベント | `NOTION_EVENTS_DB` | 名前 / 日付 | 一回限りの予定 |
+| ギター | `NOTION_GUITAR_DB` | 名前 / 日付 | ギター練習・レッスン |
+| 食事 | `NOTION_MEALS_DB` | 名前 / 日付 | 食事メニュー（調理・食べるもの） |
+| 買い出し | `NOTION_GROCERIES_DB` | 件名 / 日付 | 買い出し・買い物 |
 
 ### Other DBs
 
 - `NOTION_ARTICLES_DB` — 記事（タイトル / ソース / URL / Aspect / Status）
 - `NOTION_INVESTMENT_DB` — 投資（Investment / Buy Date / Status / Type / Notes）
+
+## ページ本文ルール（Description プロパティ廃止）
+
+**DB の Description / 説明プロパティは使わない。** 内容はすべてページ本文に書く。
+
+- `--desc` オプションは廃止済み。`notion-add.ts` に渡しても無視される
+- 説明・詳細・レシピ・レッスン内容などは、ページ作成後に `notion-update-page` の `replace_content` でページ本文に書き込む
+- **手順:** `notion-add.ts` → ページ ID 取得 → `notion-update-page`（`replace_content`）で本文を書く
 
 ## Notion 操作の安全ルール
 

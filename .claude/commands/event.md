@@ -29,9 +29,8 @@
    ```bash
    bun run scripts/notion-add.ts --title "イベント名" --date YYYY-MM-DD --start HH:MM --end HH:MM
    bun run scripts/notion-add.ts --title "イベント名" --date YYYY-MM-DD --allday  # 終日イベント
-   # 説明がある場合:
-   bun run scripts/notion-add.ts --title "イベント名" --date YYYY-MM-DD --start HH:MM --end HH:MM --desc "説明"
    ```
+   説明はページ作成後に `notion-update-page` の `replace_content` で本文に書く。
 
 6. **登録結果を報告する**
 

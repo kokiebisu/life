@@ -109,8 +109,7 @@ async function addArticle(opts: Record<string, string>) {
   }
 
   const icon = pickArticleIcon(source);
-  const aspectHint = opts.aspect || "";
-  const cover = pickCover(aspectHint);
+  const cover = pickCover();
 
   await notionFetch(apiKey, "/pages", {
     parent: { database_id: dbId },
@@ -342,7 +341,7 @@ async function replenish(flags: Set<string>) {
   const today = todayJST();
   for (const article of toAdd) {
     const icon = pickArticleIcon(article.source);
-    const cover = pickCover(article.aspects.join(","));
+    const cover = pickCover();
     const aspects = article.aspects.map(a => ({ name: a }));
 
     if (dryRun) {

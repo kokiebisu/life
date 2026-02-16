@@ -37,7 +37,13 @@ async function aiIsDuplicate(newTitle: string, existingTitle: string): Promise<b
   }
 }
 
-async function checkDuplicate(apiKey: string, dbId: string, config: any, date: string, title: string): Promise<boolean> {
+function getTimeFromISO(iso: string | undefined): string | null {
+  if (!iso) return null;
+  const m = iso.match(/T(\d{2}:\d{2})/);
+  return m ? m[1] : null;
+}
+
+async function checkDuplicate(apiKey: string, dbId: string, config: any, date: string, title: string, newStart?: string, newEnd?: string): Promise<boolean> {
   const data = await queryDbByDate(apiKey, dbId, config, date, date);
   const pages: any[] = data.results || [];
   const normalizedNew = normalizeTitle(title);
@@ -45,13 +51,25 @@ async function checkDuplicate(apiKey: string, dbId: string, config: any, date: s
     const existingTitle = (page.properties?.[config.titleProp]?.title || [])
       .map((t: any) => t.plain_text || "").join("");
     const normalizedExisting = normalizeTitle(existingTitle);
-    // 正規化で完全一致 → 重複
-    if (normalizedNew === normalizedExisting) {
+    const existingDate = page.properties?.[config.dateProp]?.date;
+    const existingStart = getTimeFromISO(existingDate?.start);
+    const existingEnd = getTimeFromISO(existingDate?.end);
+
+    const titleMatch = normalizedNew === normalizedExisting;
+    const titleSimilar = !titleMatch && (normalizedNew.includes(normalizedExisting) || normalizedExisting.includes(normalizedNew));
+
+    if (!titleMatch && !titleSimilar) continue;
+
+    // タイトルが一致/類似でも、時間帯が異なれば別エントリとして許可
+    if (newStart && existingStart && newStart !== existingStart) continue;
+    if (newEnd && existingEnd && newEnd !== existingEnd) continue;
+
+    if (titleMatch) {
       console.error(`重複検出: "${existingTitle}" が既に存在します。スキップします。`);
       return true;
     }
     // 部分的に似ている場合 → AI で判定
-    if (normalizedNew.includes(normalizedExisting) || normalizedExisting.includes(normalizedNew)) {
+    if (titleSimilar) {
       const isDup = await aiIsDuplicate(title, existingTitle);
       if (isDup) {
         console.error(`重複検出（AI判定）: "${existingTitle}" と同一の予定です。スキップします。`);
@@ -101,13 +119,13 @@ async function main() {
   }
 
   // 重複チェック
-  const isDuplicate = await checkDuplicate(apiKey, dbId, config, opts.date, opts.title);
+  const isDuplicate = await checkDuplicate(apiKey, dbId, config, opts.date, opts.title, opts.start, opts.end);
   if (isDuplicate) {
     process.exit(0);
   }
 
   const icon = pickTaskIcon(opts.title);
-  const cover = pickCover(opts.title);
+  const cover = pickCover();
 
   return notionFetch(apiKey, "/pages", { parent: { database_id: dbId }, properties, icon, cover })
     .then((data: any) => {

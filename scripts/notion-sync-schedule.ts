@@ -127,7 +127,7 @@ async function main() {
     };
 
     const icon = pickTaskIcon(slot.label);
-    const cover = pickCover(slot.label);
+    const cover = pickCover();
 
     await notionFetch(apiKey, "/pages", {
       parent: { database_id: dbId },

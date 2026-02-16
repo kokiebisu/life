@@ -293,7 +293,7 @@ async function main() {
           properties["説明"] = { rich_text: [{ text: { content: `#${task.aspect}` } }] };
         }
         const icon = pickTaskIcon(task.title);
-        const cover = pickCover(task.title);
+        const cover = pickCover();
         await notionFetch(apiKey, "/pages", { parent: { database_id: dbId }, properties, icon, cover });
       }
       newInbox.push(task);

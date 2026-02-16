@@ -28,7 +28,7 @@
 | 習慣 | `NOTION_TASKS_DB` | Name / 日付 |
 | イベント | `NOTION_EVENTS_DB` | 名前 / 日付 |
 | ギター | `NOTION_GUITAR_DB` | 名前 / 日付 |
-| 食事 | `NOTION_MEALS_DB` | 件名 / 実施日 |
+| 食事 | `NOTION_MEALS_DB` | 名前 / 日付 |
 
 ### Other DBs
 

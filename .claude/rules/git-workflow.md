@@ -58,6 +58,12 @@ For each PR group, follow this exact sequence:
 - **Sequential processing** - Complete PR1 (merge) before starting PR2
 - **Clean state** - Return to main between PRs
 
+## Submodule（sumitsugi）
+
+- `projects/sumitsugi` のサブモジュールポインタ変更は **PR に含めない**
+- サブモジュールの更新は sumitsugi リポジトリ側で管理する
+- `git status` に出ても基本スキップする
+
 ## Post-Merge Cleanup
 
 After every PR merge, clean up stale branches:

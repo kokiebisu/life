@@ -149,10 +149,11 @@ interface MergedEntry {
   dbName: ScheduleDbName | "";
 }
 
-function mergeEntries(notionEntries: NormalizedEntry[], fileEntries: FileEntry[], dbName: ScheduleDbName): { merged: MergedEntry[]; added: number; updated: number; kept: number } {
+function mergeEntries(notionEntries: NormalizedEntry[], fileEntries: FileEntry[], dbName: ScheduleDbName): { merged: MergedEntry[]; added: number; updated: number; kept: number; dropped: string[] } {
   const used = new Set<number>();
   const merged: MergedEntry[] = [];
   let added = 0, updated = 0, kept = 0;
+  const dropped: string[] = [];
 
   // Match Notion entries to file entries
   for (const ne of notionEntries) {
@@ -220,32 +221,68 @@ function mergeEntries(notionEntries: NormalizedEntry[], fileEntries: FileEntry[]
     }
   }
 
-  // File-only entries (not matched to Notion) — keep as-is
-  for (let i = 0; i < fileEntries.length; i++) {
-    if (used.has(i)) continue;
-    kept++;
-    const fe = fileEntries[i];
-    merged.push({
-      done: fe.done,
-      startTime: fe.startTime,
-      endTime: fe.endTime,
-      allDay: fe.allDay,
-      title: fe.title,
-      tags: fe.tags,
-      descLines: fe.descLines,
-      feedbackLine: fe.feedbackLine,
-      source: "file",
-      actualStart: "",
-      actualEnd: "",
-      location: "",
-      notionId: "",
-      hasIcon: true,
-      hasCover: true,
-      dbName: "",
-    });
+  // File-only entries (not matched to Notion) — drop them
+  // If Notion has entries for this date but a local entry has no match,
+  // it was likely deleted from Notion and should be removed locally too.
+  // Only keep file-only entries when Notion returned zero entries (offline/error safety).
+  if (notionEntries.length === 0) {
+    for (let i = 0; i < fileEntries.length; i++) {
+      if (used.has(i)) continue;
+      kept++;
+      const fe = fileEntries[i];
+      merged.push({
+        done: fe.done,
+        startTime: fe.startTime,
+        endTime: fe.endTime,
+        allDay: fe.allDay,
+        title: fe.title,
+        tags: fe.tags,
+        descLines: fe.descLines,
+        feedbackLine: fe.feedbackLine,
+        source: "file",
+        actualStart: "",
+        actualEnd: "",
+        location: "",
+        notionId: "",
+        hasIcon: true,
+        hasCover: true,
+        dbName: "",
+      });
+    }
   }
 
-  return { merged, added, updated, kept };
+  // File-only entries: drop timed entries (deleted from Notion), keep all-day (local-only data)
+  for (let i = 0; i < fileEntries.length; i++) {
+    if (used.has(i)) continue;
+    const fe = fileEntries[i];
+    if (notionEntries.length > 0 && !fe.allDay) {
+      // Timed entry not in Notion — likely deleted, drop it
+      dropped.push(fe.title);
+    } else {
+      // All-day or no Notion data — keep as local-only
+      kept++;
+      merged.push({
+        done: fe.done,
+        startTime: fe.startTime,
+        endTime: fe.endTime,
+        allDay: fe.allDay,
+        title: fe.title,
+        tags: fe.tags,
+        descLines: fe.descLines,
+        feedbackLine: fe.feedbackLine,
+        source: "file",
+        actualStart: "",
+        actualEnd: "",
+        location: "",
+        notionId: "",
+        hasIcon: true,
+        hasCover: true,
+        dbName: "",
+      });
+    }
+  }
+
+  return { merged, added, updated, kept, dropped };
 }
 
 // --- Render ---
@@ -638,7 +675,7 @@ async function main() {
 
       if (notionEntries.length === 0 && fileEntries.length === 0) continue;
 
-      const { merged, added, updated, kept } = mergeEntries(notionEntries, fileEntries, db);
+      const { merged, added, updated, kept, dropped } = mergeEntries(notionEntries, fileEntries, db);
 
       // For past dates: remove uncompleted entries
       let final = merged;
@@ -671,6 +708,9 @@ async function main() {
         const fb = e.feedbackLine ? ` 💬 ${e.feedbackLine}` : "";
         const travel = e.actualStart ? ` (実際: ${e.actualStart}-${e.actualEnd})` : "";
         console.log(`  ${tag}: ${e.done ? "✅" : "⬜"} ${time} ${e.title}${travel}${fb}`);
+      }
+      for (const d of dropped) {
+        console.log(`  DROP: ${d} (not in Notion)`);
       }
 
       if (!dryRun) {

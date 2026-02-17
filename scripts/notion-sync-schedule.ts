@@ -93,12 +93,6 @@ async function main() {
 
   const toRegister: TimeSlot[] = [];
   for (const slot of routineSlots) {
-    // 同名の既存エントリがあればスキップ（時間帯が違っても重複防止）
-    const hasSameTitle = existing.some((e) =>
-      e.title.toLowerCase() === slot.label.toLowerCase(),
-    );
-    if (hasSameTitle) continue;
-
     // 時間帯が重なる既存イベントがあればスキップ（同日2回実行しても安全）
     const hasOverlap = existing.some((e) => {
       if (!e.start.includes("T") || !e.end) return false;

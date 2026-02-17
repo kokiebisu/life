@@ -35,13 +35,13 @@
 
 ### Schedule DBs
 
-| DB       | 環境変数              | プロパティ  | 用途                             |
-| -------- | --------------------- | ----------- | -------------------------------- |
-| 習慣     | `NOTION_TASKS_DB`     | Name / 日付 | 繰り返しルーティン               |
-| イベント | `NOTION_EVENTS_DB`    | 名前 / 日付 | 一回限りの予定                   |
-| ギター   | `NOTION_GUITAR_DB`    | 名前 / 日付 | ギター練習・レッスン             |
-| 食事     | `NOTION_MEALS_DB`     | 名前 / 日付 | 食事メニュー（調理・食べるもの） |
-| 買い出し | `NOTION_GROCERIES_DB` | 件名 / 日付 | 買い出し・買い物                 |
+| DB       | 環境変数              | プロパティ  | ステータス | 用途                             |
+| -------- | --------------------- | ----------- | ---------- | -------------------------------- |
+| 習慣     | `NOTION_TASKS_DB`     | Name / 日付 | ステータス | 繰り返しルーティン               |
+| イベント | `NOTION_EVENTS_DB`    | 名前 / 日付 | ステータス | 一回限りの予定                   |
+| ギター   | `NOTION_GUITAR_DB`    | 名前 / 日付 | ステータス | ギター練習・レッスン             |
+| 食事     | `NOTION_MEALS_DB`     | 名前 / 日付 | ステータス | 食事メニュー（調理・食べるもの） |
+| 買い出し | `NOTION_GROCERIES_DB` | 件名 / 日付 | ステータス | 買い出し・買い物                 |
 
 ### Other DBs
 
@@ -134,6 +134,24 @@
 - 豚バラ 150g → 小分けラップして冷凍（火夜 重ね蒸し用）
 ```
 
+### 価格見積もり
+
+買い出しリストを作成する際は、**必ず `aspects/diet/aoba-prices.csv` を参照して価格を見積もる。**
+
+1. **価格データベースを読み込む**
+   - `aspects/diet/aoba-prices.csv` から商品の価格情報を取得
+   - 価格が登録されている商品はその価格を使用
+   - 価格が未登録の商品は過去の相場から推定
+
+2. **カテゴリごとに小計を計算**
+   - 各カテゴリ（肉・魚、卵・乳製品、野菜・果物など）の小計を計算
+   - カテゴリ見出しに `（≒ 900円）` の形式で記載
+
+3. **推定合計を計算**
+   - 全カテゴリの小計を合算
+   - `**推定合計: 約 ¥3,000〜3,500**` の形式で記載
+   - 未登録商品がある場合は幅を持たせる
+
 ### 自動生成スクリプト
 
 `notion-grocery-gen.ts` で daily 献立から買い出しリスト本文を自動生成できる:
@@ -143,6 +161,46 @@ bun run scripts/notion-grocery-gen.ts --page-id <id>       # ページ指定
 bun run scripts/notion-grocery-gen.ts --date 2026-02-17     # 日付から検索
 bun run scripts/notion-grocery-gen.ts --date 2026-02-17 --dry-run  # プレビュー
 ```
+
+**スクリプトは自動的に `aoba-prices.csv` を参照して価格を見積もる。**
+
+### 買い出し後の価格登録ルール
+
+レシート画像を受け取ったら、以下の手順で処理する:
+
+1. **Notion groceries ページに詳細を記録**
+   - `mcp__claude_ai_Notion__notion-update-page` で買い出しページ本文に購入内容を記載
+   - フォーマット: 店舗、時刻、購入品リスト、合計金額
+
+2. **aspects/diet/aoba-prices.csv に価格を登録**
+   - 既存商品の価格が空欄の場合 → 価格・更新日・メモを追加
+   - 新規商品の場合 → 新しい行を追加（商品名,カテゴリ,価格,単位,更新日,メモ）
+   - メモ欄には店舗名を記載（例: `さわむら`、`aoba`）
+
+3. **ローカルファイルに記録**
+   - `aspects/diet/groceries/YYYY-MM-DD.md` にチェックマークと購入内容を追記
+
+**価格CSVフォーマット:**
+```csv
+商品名,カテゴリ,価格,単位,更新日,メモ
+ヨーグルト,卵・乳製品,165,1個,2026-02-17,ブルガリアLB81・さわむら
+```
+
+## notion-pull 対象 DB
+
+`notion-pull.ts` は以下の DB を Notion → ローカルファイルに逆同期する:
+
+| DB        | 同期先ファイル                         |
+| --------- | -------------------------------------- |
+| events    | `planning/events/YYYY-MM-DD.md`        |
+| guitar    | `aspects/guitar/events/YYYY-MM-DD.md`  |
+| meals     | `aspects/diet/events/YYYY-MM-DD.md`    |
+| routine   | `aspects/routine/events/YYYY-MM-DD.md` |
+| groceries | `aspects/diet/groceries/YYYY-MM-DD.md` |
+| todo      | `planning/tasks.md`（Inbox / Archive） |
+
+- 完了ステータスの判定: `"Done"` or `"完了"` → `[x]` にマーク
+- routine DB のステータスプロパティは `ステータス`（日本語）。`Status`（英語）ではない
 
 ## スクリプト一覧
 

@@ -1,9 +1,11 @@
 {
   "activeHours": { "start": "08:00", "end": "22:00" },
   "routines": [
+    { "label": "Devotion（朝）", "minutes": 30, "priority": 0, "splittable": false, "preferred": "start" },
     { "label": "開発", "minutes": 300, "priority": 1, "splittable": true, "minBlock": 60 },
     { "label": "ジム", "minutes": 90, "priority": 2, "splittable": false },
     { "label": "ギター練習", "minutes": 60, "priority": 3, "splittable": false },
-    { "label": "就寝前読書", "minutes": 30, "priority": 4, "splittable": false }
+    { "label": "就寝前読書", "minutes": 30, "priority": 4, "splittable": false },
+    { "label": "Devotion（夜）", "minutes": 30, "priority": 0, "splittable": false, "preferred": "end" }
   ]
 }

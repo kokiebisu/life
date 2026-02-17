@@ -52,6 +52,8 @@ jobs:
           if [ -z "$DATE" ]; then DATE=$(TZ=Asia/Tokyo date +%Y-%m-%d); fi
           for f in planning/events/${DATE}.md aspects/*/events/${DATE}.md; do
             if [ -f "$f" ]; then
+              # routine events are synced by notion-sync-schedule.ts, skip here
+              echo "$f" | grep -q "/routine/" && echo "Skipping $f (routine)" && continue
               echo "Syncing $f..."
               bun run scripts/notion-sync-event-file.ts --file "$f"
             fi

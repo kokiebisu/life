@@ -16,16 +16,19 @@
  *   bun run scripts/notion-pull.ts --days 7            # 複数日
  *   bun run scripts/notion-pull.ts --db events         # DB 指定
  *   bun run scripts/notion-pull.ts --dry-run           # プレビュー
+ *   bun run scripts/notion-pull.ts --no-enrich         # 移動時間エンリッチなし
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 import {
   type ScheduleDbName, type NormalizedEntry,
-  getScheduleDbConfigOptional, queryDbByDate, normalizePages,
-  notionFetch, getApiKey,
-  parseArgs, todayJST,
+  SCHEDULE_DB_CONFIGS, getScheduleDbConfigOptional, queryDbByDateCached, normalizePages,
+  notionFetch, getApiKey, clearNotionCache,
+  parseArgs, todayJST, loadEnv, getHomeAddress,
+  pickTaskIcon, pickCover,
 } from "./lib/notion";
+import { estimateTravelTime } from "./lib/travel";
 
 const ROOT = join(import.meta.dir, "..");
 
@@ -137,9 +140,16 @@ interface MergedEntry {
   descLines: string[];
   feedbackLine: string;
   source: "both" | "notion" | "file";
+  actualStart: string;
+  actualEnd: string;
+  location: string;
+  notionId: string;
+  hasIcon: boolean;
+  hasCover: boolean;
+  dbName: ScheduleDbName | "";
 }
 
-function mergeEntries(notionEntries: NormalizedEntry[], fileEntries: FileEntry[]): { merged: MergedEntry[]; added: number; updated: number; kept: number } {
+function mergeEntries(notionEntries: NormalizedEntry[], fileEntries: FileEntry[], dbName: ScheduleDbName): { merged: MergedEntry[]; added: number; updated: number; kept: number } {
   const used = new Set<number>();
   const merged: MergedEntry[] = [];
   let added = 0, updated = 0, kept = 0;
@@ -178,6 +188,13 @@ function mergeEntries(notionEntries: NormalizedEntry[], fileEntries: FileEntry[]
         descLines: fe.descLines,
         feedbackLine: ne.feedback || fe.feedbackLine,
         source: "both",
+        actualStart: ne.actualStart || "",
+        actualEnd: ne.actualEnd || "",
+        location: ne.location || "",
+        notionId: ne.id,
+        hasIcon: ne.hasIcon,
+        hasCover: ne.hasCover,
+        dbName,
       });
     } else {
       // Notion only — new entry
@@ -192,6 +209,13 @@ function mergeEntries(notionEntries: NormalizedEntry[], fileEntries: FileEntry[]
         descLines: ne.description ? [ne.description] : [],
         feedbackLine: ne.feedback || "",
         source: "notion",
+        actualStart: ne.actualStart || "",
+        actualEnd: ne.actualEnd || "",
+        location: ne.location || "",
+        notionId: ne.id,
+        hasIcon: ne.hasIcon,
+        hasCover: ne.hasCover,
+        dbName,
       });
     }
   }
@@ -211,6 +235,13 @@ function mergeEntries(notionEntries: NormalizedEntry[], fileEntries: FileEntry[]
       descLines: fe.descLines,
       feedbackLine: fe.feedbackLine,
       source: "file",
+      actualStart: "",
+      actualEnd: "",
+      location: "",
+      notionId: "",
+      hasIcon: true,
+      hasCover: true,
+      dbName: "",
     });
   }
 
@@ -238,6 +269,12 @@ function renderFile(date: string, entries: MergedEntry[]): string {
     }
     const tagPart = e.tags || "";
     lines.push(`- ${check} ${timePart} ${e.title}${tagPart}`);
+    if (e.actualStart && e.actualEnd) {
+      const actualMinutes = parseInt(e.actualStart.split(":")[0]) * 60 + parseInt(e.actualStart.split(":")[1]);
+      const startMinutes = parseInt(e.startTime.split(":")[0]) * 60 + parseInt(e.startTime.split(":")[1]);
+      const travelMinutes = actualMinutes - startMinutes;
+      lines.push(`  - 🕐 ${e.actualStart}-${e.actualEnd}（移動${travelMinutes}分）`);
+    }
     for (const desc of e.descLines) {
       lines.push(`  - ${desc}`);
     }
@@ -247,6 +284,144 @@ function renderFile(date: string, entries: MergedEntry[]): string {
   }
   lines.push("");
   return lines.join("\n");
+}
+
+// --- Travel time enrichment ---
+
+function extractLocation(title: string): string | null {
+  const m = title.match(/\s*@\s*(.+)$/);
+  return m ? m[1].trim() : null;
+}
+
+async function resolveAddress(placeName: string): Promise<string> {
+  const env = loadEnv();
+  const apiKey = env["GOOGLE_MAPS_API_KEY"] || process.env.GOOGLE_MAPS_API_KEY;
+  if (apiKey) {
+    try {
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(placeName)}&key=${apiKey}&language=ja`;
+      const res = await fetch(url);
+      const data = await res.json() as { results?: Array<{ formatted_address?: string }> };
+      if (data.results?.[0]?.formatted_address) {
+        return data.results[0].formatted_address;
+      }
+    } catch {
+      // fall through to return original
+    }
+  }
+  return placeName;
+}
+
+function subtractMinutes(time: string, minutes: number): string {
+  const [h, m] = time.split(":").map(Number);
+  const total = h * 60 + m - minutes;
+  const newH = Math.floor(total / 60);
+  const newM = total % 60;
+  return `${String(newH).padStart(2, "0")}:${String(newM).padStart(2, "0")}`;
+}
+
+function addMinutes(time: string, minutes: number): string {
+  const [h, m] = time.split(":").map(Number);
+  const total = h * 60 + m + minutes;
+  const newH = Math.floor(total / 60);
+  const newM = total % 60;
+  return `${String(newH).padStart(2, "0")}:${String(newM).padStart(2, "0")}`;
+}
+
+async function enrichEntries(entries: MergedEntry[], date: string, dryRun: boolean): Promise<number> {
+  const homeAddress = getHomeAddress();
+  let enriched = 0;
+
+  for (const entry of entries) {
+    if (entry.allDay) continue;
+
+    const needsIconCover = !entry.hasIcon || !entry.hasCover;
+    const needsTravelTime = !entry.actualStart && (entry.location || extractLocation(entry.title));
+
+    if (!needsIconCover && !needsTravelTime) continue;
+
+    // Icon/cover enrichment
+    if (needsIconCover && !dryRun && entry.notionId) {
+      const updates: Record<string, unknown> = {};
+      if (!entry.hasIcon) updates.icon = pickTaskIcon(entry.title);
+      if (!entry.hasCover) updates.cover = pickCover();
+      if (Object.keys(updates).length > 0) {
+        console.log(`  ENRICH: ${entry.title} — adding icon/cover`);
+        await notionFetch(getApiKey(), `/pages/${entry.notionId}`, updates, "PATCH");
+        entry.hasIcon = true;
+        entry.hasCover = true;
+      }
+    } else if (needsIconCover && dryRun) {
+      console.log(`  ENRICH: ${entry.title} — would add icon/cover`);
+    }
+
+    // Travel time enrichment
+    if (!needsTravelTime) continue;
+
+    const location = entry.location || extractLocation(entry.title)!;
+    const eventStart = entry.startTime;
+    const eventEnd = entry.endTime;
+    if (!eventStart) continue;
+
+    console.log(`  ENRICH: ${entry.title} — calculating travel time...`);
+
+    try {
+      const departureIso = `${date}T${eventStart}:00+09:00`;
+      const result = await estimateTravelTime(homeAddress, location, departureIso);
+      const travelMinutes = result.minutes;
+
+      const newStart = subtractMinutes(eventStart, travelMinutes);
+      const newEnd = addMinutes(eventEnd || eventStart, travelMinutes);
+
+      console.log(`    🚃 移動${travelMinutes}分 → ${newStart}-${newEnd}（実際: ${eventStart}-${eventEnd}）`);
+
+      // Update merged entry
+      entry.actualStart = eventStart;
+      entry.actualEnd = eventEnd;
+      entry.startTime = newStart;
+      entry.endTime = newEnd;
+
+      // Resolve address
+      const resolvedAddress = await resolveAddress(location);
+      if (!entry.location) entry.location = resolvedAddress;
+
+      // Update Notion page
+      if (!dryRun && entry.notionId) {
+        // Determine the date property name for this DB
+        const dateProp = entry.dbName
+          ? SCHEDULE_DB_CONFIGS[entry.dbName as ScheduleDbName]?.dateProp || "日付"
+          : "日付";
+
+        const properties: Record<string, unknown> = {
+          [dateProp]: {
+            date: {
+              start: `${date}T${newStart}:00+09:00`,
+              end: `${date}T${newEnd}:00+09:00`,
+            },
+          },
+        };
+
+        // Only set 開始時間/終了時間/場所 for events DB (other DBs may not have these properties)
+        if (entry.dbName === "events") {
+          properties["開始時間"] = { rich_text: [{ text: { content: eventStart } }] };
+          properties["終了時間"] = { rich_text: [{ text: { content: eventEnd } }] };
+          properties["場所"] = { rich_text: [{ text: { content: resolvedAddress } }] };
+        }
+
+        const updates: Record<string, unknown> = { properties };
+        if (!entry.hasIcon) updates.icon = pickTaskIcon(entry.title);
+        if (!entry.hasCover) updates.cover = pickCover();
+
+        await notionFetch(getApiKey(), `/pages/${entry.notionId}`, updates, "PATCH");
+      }
+
+      enriched++;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.log(`    ⚠ Travel time error: ${msg}`);
+    }
+  }
+
+  return enriched;
 }
 
 // --- Tasks.md parsing & merge (todo DB) ---
@@ -421,6 +596,7 @@ function renderTasksFile(header: string, inbox: TaskEntry[], footer: string, new
 async function main() {
   const { flags, opts } = parseArgs();
   const dryRun = flags.has("dry-run");
+  const noEnrich = flags.has("no-enrich");
   const dbFilter = opts.db as ScheduleDbName | undefined;
   const days = opts.days ? parseInt(opts.days, 10) : 1;
 
@@ -441,7 +617,7 @@ async function main() {
     console.log("[DRY RUN] Preview mode — no files will be written\n");
   }
 
-  let totalAdded = 0, totalUpdated = 0, totalKept = 0, totalRemoved = 0;
+  let totalAdded = 0, totalUpdated = 0, totalKept = 0, totalRemoved = 0, totalEnriched = 0;
 
   const today = todayJST();
 
@@ -454,7 +630,7 @@ async function main() {
       if (!dbConf) continue;
       const { apiKey, dbId, config } = dbConf;
 
-      const data = await queryDbByDate(apiKey, dbId, config, date, date);
+      const data = await queryDbByDateCached(apiKey, dbId, config, date, date);
       const notionEntries = normalizePages(data.results, config, db);
 
       const filePath = eventFilePath(db, date);
@@ -462,7 +638,7 @@ async function main() {
 
       if (notionEntries.length === 0 && fileEntries.length === 0) continue;
 
-      const { merged, added, updated, kept } = mergeEntries(notionEntries, fileEntries);
+      const { merged, added, updated, kept } = mergeEntries(notionEntries, fileEntries, db);
 
       // For past dates: remove uncompleted entries
       let final = merged;
@@ -470,6 +646,12 @@ async function main() {
       if (isPast) {
         final = merged.filter(e => e.done);
         removed = merged.length - final.length;
+      }
+
+      // Enrich entries with travel time and icon/cover
+      if (!noEnrich && !isPast) {
+        const enrichCount = await enrichEntries(final, date, dryRun);
+        totalEnriched += enrichCount;
       }
 
       totalAdded += added;
@@ -487,7 +669,8 @@ async function main() {
           : "KEEP";
         const time = e.allDay ? "終日" : `${e.startTime}-${e.endTime}`;
         const fb = e.feedbackLine ? ` 💬 ${e.feedbackLine}` : "";
-        console.log(`  ${tag}: ${e.done ? "✅" : "⬜"} ${time} ${e.title}${fb}`);
+        const travel = e.actualStart ? ` (実際: ${e.actualStart}-${e.actualEnd})` : "";
+        console.log(`  ${tag}: ${e.done ? "✅" : "⬜"} ${time} ${e.title}${travel}${fb}`);
       }
 
       if (!dryRun) {
@@ -508,7 +691,7 @@ async function main() {
       // Fetch all dates in range
       const allNotionTodos: NormalizedEntry[] = [];
       for (const date of dates) {
-        const data = await queryDbByDate(apiKey, dbId, config, date, date);
+        const data = await queryDbByDateCached(apiKey, dbId, config, date, date);
         allNotionTodos.push(...normalizePages(data.results, config, "todo"));
       }
 
@@ -544,6 +727,7 @@ async function main() {
           writeFileSync(TASKS_FILE, content);
 
           // Clear date for past uncompleted todos in Notion
+          clearNotionCache();
           for (const ne of pastUncompleted) {
             console.log(`  → Clearing date for: ${ne.title}`);
             await notionFetch(getApiKey(), `/pages/${ne.id}`, {
@@ -556,6 +740,7 @@ async function main() {
   }
 
   const parts = [`Added: ${totalAdded}`, `Updated: ${totalUpdated}`, `Kept: ${totalKept}`];
+  if (totalEnriched > 0) parts.push(`Enriched: ${totalEnriched}`);
   if (totalRemoved > 0) parts.push(`Removed: ${totalRemoved}`);
   console.log(`\nDone! ${parts.join(", ")}`);
 }

@@ -4,13 +4,18 @@
 
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
+import { homedir } from "os";
+import { createCache, cacheKey } from "./cache";
 
 const ROOT = join(import.meta.dir, "../..");
 const ENV_FILE = join(ROOT, ".env.local");
 
 const NOTION_API_VERSION = "2022-06-28";
 
+let _envCache: Record<string, string> | null = null;
+
 export function loadEnv(): Record<string, string> {
+  if (_envCache) return _envCache;
   const env: Record<string, string> = {};
   if (!existsSync(ENV_FILE)) return env;
   const content = readFileSync(ENV_FILE, "utf-8");
@@ -25,7 +30,17 @@ export function loadEnv(): Record<string, string> {
     }
     env[trimmed.slice(0, eqIdx).trim()] = val;
   }
+  _envCache = env;
   return env;
+}
+
+export function getHomeAddress(): string {
+  const memoryPath = join(homedir(), ".claude/projects/-workspaces-life/memory/MEMORY.md");
+  if (!existsSync(memoryPath)) throw new Error("MEMORY.md not found");
+  const content = readFileSync(memoryPath, "utf-8");
+  const match = content.match(/^- 住所:\s*(.+)$/m);
+  if (!match) throw new Error("住所 not found in MEMORY.md");
+  return match[1].trim();
 }
 
 export function getApiKey(): string {
@@ -178,6 +193,8 @@ export interface NormalizedEntry {
   actualStart: string | null;
   actualEnd: string | null;
   location: string | null;
+  hasIcon: boolean;
+  hasCover: boolean;
 }
 
 export async function queryDbByDate(
@@ -196,6 +213,33 @@ export async function queryDbByDate(
     },
     sorts: [{ property: config.dateProp, direction: "ascending" }],
   });
+}
+
+// --- Cached version of queryDbByDate ---
+
+const notionCache = createCache("notion-list", { defaultTtlMs: 5 * 60_000 });
+
+export async function queryDbByDateCached(
+  apiKey: string,
+  dbId: string,
+  config: ScheduleDbConfig,
+  startDate: string,
+  endDate: string,
+): Promise<any> {
+  const key = cacheKey(dbId, startDate, endDate);
+  const cached = notionCache.get(key);
+  if (cached !== undefined) return cached;
+  const result = await queryDbByDate(apiKey, dbId, config, startDate, endDate);
+  notionCache.set(key, result);
+  return result;
+}
+
+export function invalidateNotionCache(dbId: string, date: string): void {
+  notionCache.invalidate(cacheKey(dbId, date, date));
+}
+
+export function clearNotionCache(): number {
+  return notionCache.clear();
 }
 
 export async function queryDbByStatus(
@@ -237,6 +281,8 @@ export function normalizePages(pages: any[], config: ScheduleDbConfig, source: S
       actualStart: actualStartArr.map((t: any) => t.plain_text || "").join("") || null,
       actualEnd: actualEndArr.map((t: any) => t.plain_text || "").join("") || null,
       location: locationArr.map((t: any) => t.plain_text || "").join("") || null,
+      hasIcon: !!page.icon,
+      hasCover: !!page.cover,
     };
   });
 }

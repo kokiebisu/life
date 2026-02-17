@@ -12,6 +12,10 @@
  * 横浜の天気を取得する
  */
 
+import { createCache, cacheKey } from "./lib/cache";
+
+const weatherCache = createCache("weather", { defaultTtlMs: 2 * 3600_000 }); // 2h TTL
+
 // 横浜の座標
 const YOKOHAMA = { lat: 35.4437, lon: 139.638 };
 
@@ -68,6 +72,14 @@ export async function fetchForecast(dates: string[]): Promise<DayForecast[]> {
   const startDate = allDates[0];
   const endDate = allDates[allDates.length - 1];
 
+  const key = cacheKey(startDate!, endDate!);
+  const cached = weatherCache.get<DayForecast[]>(key);
+  if (cached !== undefined) {
+    // Filter to only requested dates
+    const dateSet = new Set(dates);
+    return cached.filter(f => dateSet.has(f.date));
+  }
+
   const url = new URL("https://api.open-meteo.com/v1/forecast");
   url.searchParams.set("latitude", String(YOKOHAMA.lat));
   url.searchParams.set("longitude", String(YOKOHAMA.lon));
@@ -123,6 +135,26 @@ export async function fetchForecast(dates: string[]): Promise<DayForecast[]> {
       windSpeedMax: daily.wind_speed_10m_max[i]!,
     });
   }
+
+  // Cache all results (not just filtered)
+  const allResults: DayForecast[] = [];
+  for (let i = 0; i < daily.time.length; i++) {
+    const d = daily.time[i]!;
+    const code = daily.weather_code[i]!;
+    const { label, emoji } = decodeWeather(code);
+    allResults.push({
+      date: d,
+      weatherCode: code,
+      weather: label,
+      emoji,
+      tempMax: daily.temperature_2m_max[i]!,
+      tempMin: daily.temperature_2m_min[i]!,
+      precipitationSum: daily.precipitation_sum[i]!,
+      precipitationProbMax: daily.precipitation_probability_max[i]!,
+      windSpeedMax: daily.wind_speed_10m_max[i]!,
+    });
+  }
+  weatherCache.set(key, allResults);
 
   return results;
 }

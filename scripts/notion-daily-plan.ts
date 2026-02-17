@@ -15,7 +15,7 @@ import {
   type ScheduleDbName,
   type NormalizedEntry,
   getScheduleDbConfigOptional,
-  queryDbByDate,
+  queryDbByDateCached,
   normalizePages,
   parseArgs,
   todayJST,
@@ -186,7 +186,7 @@ async function fetchAllDbEntries(date: string): Promise<NormalizedEntry[]> {
     const dbConf = getScheduleDbConfigOptional(name);
     if (!dbConf) return;
     const { apiKey, dbId, config } = dbConf;
-    const data = await queryDbByDate(apiKey, dbId, config, date, date);
+    const data = await queryDbByDateCached(apiKey, dbId, config, date, date);
     allEntries.push(...normalizePages(data.results, config, name));
   });
   await Promise.all(queries);

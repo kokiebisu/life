@@ -13,7 +13,7 @@
 
 import {
   type ScheduleDbName, type NormalizedEntry, SCHEDULE_DB_CONFIGS,
-  getScheduleDbConfigOptional, queryDbByDate, queryDbByStatus, normalizePages,
+  getScheduleDbConfigOptional, queryDbByDateCached, queryDbByStatus, normalizePages,
   parseArgs, todayJST,
 } from "./lib/notion";
 
@@ -64,7 +64,7 @@ async function main() {
     // todo DB: default to status-based query (show all open items)
     const data = name === "todo" && useTodoStatusQuery
       ? await queryDbByStatus(apiKey, dbId, config, ["未着手"])
-      : await queryDbByDate(apiKey, dbId, config, startDate, endDate);
+      : await queryDbByDateCached(apiKey, dbId, config, startDate, endDate);
     allEntries.push(...normalizePages(data.results, config, name));
   });
   await Promise.all(queries);

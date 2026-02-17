@@ -26,7 +26,7 @@ export async function callClaude(
   // Build the input from messages
   const input = messages.map((m) => m.content).join("\n\n");
 
-  const args = ["-p", "--model", model, "--max-turns", "1"];
+  const args = ["-p", "--model", model, "--max-turns", "3"];
   if (options.system) {
     args.push("--system-prompt", options.system);
   }

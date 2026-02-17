@@ -124,7 +124,8 @@ async function main() {
     process.exit(0);
   }
 
-  const icon = pickTaskIcon(opts.title);
+  const defaultEmoji = dbName === "meals" ? "🍽️" : "📌";
+  const icon = pickTaskIcon(opts.title, defaultEmoji);
   const cover = pickCover();
 
   return notionFetch(apiKey, "/pages", { parent: { database_id: dbId }, properties, icon, cover })

@@ -286,23 +286,35 @@ export function todayJST(): string {
 // --- Icon & Cover helpers ---
 
 const TASK_ICON_KEYWORDS: [RegExp, string][] = [
-  [/ギター|guitar/i, "🎸"],
-  [/教会|礼拝|church/i, "⛪"],
-  [/ジム|筋トレ|運動|トレーニング|gym|workout/i, "💪"],
+  [/ギター|guitar|lesson|レッスン/i, "🎸"],
+  [/教会|礼拝|church|service/i, "⛪"],
+  [/ジム|筋トレ|運動|gym|workout/i, "💪"],
+  [/バレー|volleyball/i, "🏐"],
   [/買い物|買い出し|shopping/i, "🛒"],
   [/料理|自炊|cook/i, "🍳"],
   [/勉強|学習|study/i, "📖"],
-  [/読書|本|book|read/i, "📚"],
+  [/読書|book|reading/i, "📚"],
   [/sumitsugi/i, "🧶"],
   [/面接|interview/i, "👔"],
-  [/ミーティング|会議|MTG|meeting/i, "🤝"],
-  [/医者|病院|歯医者|health/i, "🏥"],
+  [/ミーティング|会議|MTG|meeting|壁打ち/i, "🤝"],
+  [/医者|病院|歯医者/i, "🏥"],
   [/引越|移住|fukuoka/i, "🏠"],
   [/投資|invest/i, "📈"],
   [/散歩|walk/i, "🚶"],
+  [/昼寝|仮眠|nap/i, "😴"],
+  [/開発|develop|coding|プログラ/i, "💻"],
   [/掃除|cleaning/i, "🧹"],
-  [/飲み|居酒屋|dinner|ランチ|lunch/i, "🍽️"],
-  [/旅行|trip|travel/i, "✈️"],
+  [/飲み|居酒屋|ご飯|ランチ|lunch/i, "🍽️"],
+  [/パーティ|party|新年会|送別会/i, "🎉"],
+  [/デート|date/i, "💑"],
+  [/旅行|trip|travel|温泉/i, "✈️"],
+  [/見学|入会/i, "🔍"],
+  [/Devotion|祈り|prayer/i, "🙏"],
+  [/シャワー|風呂|bath/i, "🚿"],
+  [/ハローワーク|役所|届|手続|申告|確定申告|e-Tax/i, "📋"],
+  [/申込|エントリー|登録/i, "📝"],
+  [/整理|片付/i, "🗂️"],
+  [/カード|クレジット/i, "💳"],
   [/イベント|event/i, "🎪"],
 ];
 
@@ -324,11 +336,11 @@ export function pickArticleIcon(source: string): { type: "emoji"; emoji: string 
   return { type: "emoji", emoji: map[source] || "📰" };
 }
 
-export function pickTaskIcon(title: string): { type: "emoji"; emoji: string } {
+export function pickTaskIcon(title: string, defaultEmoji = "📌"): { type: "emoji"; emoji: string } {
   for (const [pattern, emoji] of TASK_ICON_KEYWORDS) {
     if (pattern.test(title)) return { type: "emoji", emoji };
   }
-  return { type: "emoji", emoji: "📌" };
+  return { type: "emoji", emoji: defaultEmoji };
 }
 
 export function pickCover(): { type: "external"; external: { url: string } } {

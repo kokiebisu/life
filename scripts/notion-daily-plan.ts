@@ -28,13 +28,21 @@ const PLANNING_DIR = join(ROOT, "planning");
 
 const WEEKDAY_NAMES = ["日", "月", "火", "水", "木", "金", "土"];
 
-const WEEKDAY_NOTES: Record<string, string> = {
-  月: "月曜: 週次プラン作成（朝30分）→ 通常スケジュール",
-  水: "水曜: ジムの日。昼の運動を重めに",
-  金: "金曜: ジムの日。昼の運動を重めに",
-  土: "土曜: 開発は午前のみ。午後は自由時間",
-  日: "日曜: 教会 → ゆっくり過ごす日。ギターと読書中心",
-};
+// --- Types ---
+
+interface RoutinePoolItem {
+  label: string;
+  minutes: number;
+  priority: number;
+  splittable: boolean;
+  minBlock: number;
+}
+
+interface FreeSlot {
+  start: string; // "09:00"
+  end: string; // "12:00"
+  minutes: number;
+}
 
 interface LocalEvent {
   aspect: string;
@@ -52,15 +60,20 @@ interface TimeSlot {
   source: "routine" | "event" | "notion";
   aspect?: string;
   dbSource?: ScheduleDbName;
-  notionRegistered?: boolean; // Notion登録済みフラグ
+  notionRegistered?: boolean;
 }
 
-const ROUTINE_SLOTS: TimeSlot[] = [
-  { start: "09:00", end: "12:00", label: "開発", source: "routine" },
-  { start: "12:00", end: "14:00", label: "ジム", source: "routine" },
-  { start: "14:00", end: "18:00", label: "開発", source: "routine" },
-  { start: "18:00", end: "19:30", label: "読書", source: "routine" },
-];
+interface AllDayItem {
+  label: string;
+  aspect?: string;
+  dbSource?: ScheduleDbName;
+  notionRegistered?: boolean;
+}
+
+interface ScheduleConfig {
+  activeHours: { start: string; end: string };
+  routines: RoutinePoolItem[];
+}
 
 interface DailyPlanData {
   targetDate: string;
@@ -71,15 +84,16 @@ interface DailyPlanData {
   todayTasks: NormalizedEntry[];
   localEvents: LocalEvent[];
   schedule: {
-    timeline: TimeSlot[];
-    allDay: {
-      label: string;
-      aspect?: string;
-      dbSource?: ScheduleDbName;
-      notionRegistered?: boolean;
-    }[];
+    confirmedTimeline: TimeSlot[];
+    allDay: AllDayItem[];
+    freeSlots: FreeSlot[];
+    routinePool: RoutinePoolItem[];
+    activeHours: { start: string; end: string };
+    timeline: TimeSlot[]; // backward compat: confirmed + filled routines
   };
 }
+
+// --- Utility ---
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleString("ja-JP", {
@@ -99,6 +113,62 @@ function getWeekday(dateStr: string): string {
   const d = new Date(dateStr + "T12:00:00+09:00");
   return WEEKDAY_NAMES[d.getDay()];
 }
+
+function timeToMinutes(t: string): number {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function minutesToTime(m: number): string {
+  const h = Math.floor(m / 60);
+  const min = m % 60;
+  return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+}
+
+function overlaps(
+  aStart: string,
+  aEnd: string,
+  bStart: string,
+  bEnd: string,
+): boolean {
+  const a0 = timeToMinutes(aStart);
+  const a1 = timeToMinutes(aEnd);
+  const b0 = timeToMinutes(bStart);
+  const b1 = timeToMinutes(bEnd);
+  return a0 < b1 && b0 < a1;
+}
+
+// --- Schedule Config ---
+
+function loadScheduleConfig(): ScheduleConfig {
+  const configPath = join(ROOT, "aspects", "routine", "schedule.json");
+  if (existsSync(configPath)) {
+    const raw = readFileSync(configPath, "utf-8");
+    const config = JSON.parse(raw);
+    return {
+      activeHours: config.activeHours,
+      routines: config.routines.map((r: any) => ({
+        label: r.label,
+        minutes: r.minutes,
+        priority: r.priority,
+        splittable: r.splittable ?? false,
+        minBlock: r.minBlock ?? 30,
+      })),
+    };
+  }
+  // Fallback defaults (equivalent to old ROUTINE_SLOTS)
+  return {
+    activeHours: { start: "08:00", end: "22:00" },
+    routines: [
+      { label: "開発", minutes: 300, priority: 1, splittable: true, minBlock: 60 },
+      { label: "ジム", minutes: 90, priority: 2, splittable: false, minBlock: 90 },
+      { label: "ギター練習", minutes: 60, priority: 3, splittable: false, minBlock: 60 },
+      { label: "読書", minutes: 90, priority: 4, splittable: true, minBlock: 30 },
+    ],
+  };
+}
+
+// --- Data Fetching ---
 
 async function fetchAllDbEntries(date: string): Promise<NormalizedEntry[]> {
   const dbNames: ScheduleDbName[] = [
@@ -123,16 +193,15 @@ async function fetchAllDbEntries(date: string): Promise<NormalizedEntry[]> {
   return allEntries;
 }
 
-async function fetchRoutineEntries(date: string): Promise<NormalizedEntry[]> {
-  const dbConf = getScheduleDbConfigOptional("routine");
-  if (!dbConf) return [];
-  const { apiKey, dbId, config } = dbConf;
-  const data = await queryDbByDate(apiKey, dbId, config, date, date);
-  return normalizePages(data.results, config, "routine");
-}
-
 function loadLocalEvents(date: string): LocalEvent[] {
   const events: LocalEvent[] = [];
+
+  // Check planning/events/
+  const planningEventFile = join(PLANNING_DIR, "events", `${date}.md`);
+  if (existsSync(planningEventFile)) {
+    const content = readFileSync(planningEventFile, "utf-8");
+    events.push(...parseEventLines(content, "planning"));
+  }
 
   // Scan aspects/*/events/ directories
   let aspects: string[];
@@ -144,156 +213,75 @@ function loadLocalEvents(date: string): LocalEvent[] {
     aspects = [];
   }
 
-  // Also check planning/events/
-  const planningEventFile = join(PLANNING_DIR, "events", `${date}.md`);
-  if (existsSync(planningEventFile)) {
-    const content = readFileSync(planningEventFile, "utf-8");
-    const lines = content.split("\n");
-    for (let i = 0; i < lines.length; i++) {
-      const match = lines[i].match(/^- \[[ x]\] (.+?) (.+)$/);
-      if (match) {
-        const timeStr = match[1];
-        const title = match[2];
-        let description = "";
-        if (i + 1 < lines.length && lines[i + 1].startsWith("  - ")) {
-          description = lines[i + 1].replace(/^\s+- /, "");
-        }
-        const timeRange = timeStr.match(/^(\d{1,2}:\d{2})-(\d{1,2}:\d{2})$/);
-        if (timeRange) {
-          events.push({
-            aspect: "planning",
-            start: timeRange[1],
-            end: timeRange[2],
-            allDay: false,
-            title,
-            description,
-          });
-        } else if (timeStr === "終日") {
-          events.push({
-            aspect: "planning",
-            start: "",
-            end: "",
-            allDay: true,
-            title,
-            description,
-          });
-        } else {
-          events.push({
-            aspect: "planning",
-            start: "",
-            end: "",
-            allDay: true,
-            title: `${timeStr} ${title}`,
-            description,
-          });
-        }
-      }
-    }
-  }
-
   for (const aspect of aspects) {
     const filePath = join(ASPECTS_DIR, aspect, "events", `${date}.md`);
     if (!existsSync(filePath)) continue;
-
     const content = readFileSync(filePath, "utf-8");
-    const lines = content.split("\n");
+    events.push(...parseEventLines(content, aspect));
+  }
 
-    for (let i = 0; i < lines.length; i++) {
-      const match = lines[i].match(/^- \[[ x]\] (.+?) (.+)$/);
-      if (match) {
-        const timeStr = match[1];
-        const title = match[2];
-        let description = "";
-        if (i + 1 < lines.length && lines[i + 1].startsWith("  - ")) {
-          description = lines[i + 1].replace(/^\s+- /, "");
-        }
+  return events;
+}
 
-        const timeRange = timeStr.match(/^(\d{1,2}:\d{2})-(\d{1,2}:\d{2})$/);
-        if (timeRange) {
-          events.push({
-            aspect,
-            start: timeRange[1],
-            end: timeRange[2],
-            allDay: false,
-            title,
-            description,
-          });
-        } else if (timeStr === "終日") {
-          events.push({
-            aspect,
-            start: "",
-            end: "",
-            allDay: true,
-            title,
-            description,
-          });
-        } else {
-          // 時間形式が不明な場合はそのまま終日扱い
-          events.push({
-            aspect,
-            start: "",
-            end: "",
-            allDay: true,
-            title: `${timeStr} ${title}`,
-            description,
-          });
-        }
-      }
+function parseEventLines(content: string, aspect: string): LocalEvent[] {
+  const events: LocalEvent[] = [];
+  const lines = content.split("\n");
+
+  for (let i = 0; i < lines.length; i++) {
+    const match = lines[i].match(/^- \[[ x]\] (.+?) (.+)$/);
+    if (!match) continue;
+
+    const timeStr = match[1];
+    const title = match[2];
+    let description = "";
+    if (i + 1 < lines.length && lines[i + 1].startsWith("  - ")) {
+      description = lines[i + 1].replace(/^\s+- /, "");
+    }
+
+    const timeRange = timeStr.match(/^(\d{1,2}:\d{2})-(\d{1,2}:\d{2})$/);
+    if (timeRange) {
+      events.push({
+        aspect,
+        start: timeRange[1],
+        end: timeRange[2],
+        allDay: false,
+        title,
+        description,
+      });
+    } else if (timeStr === "終日") {
+      events.push({
+        aspect,
+        start: "",
+        end: "",
+        allDay: true,
+        title,
+        description,
+      });
+    } else {
+      events.push({
+        aspect,
+        start: "",
+        end: "",
+        allDay: true,
+        title: `${timeStr} ${title}`,
+        description,
+      });
     }
   }
 
   return events;
 }
 
-function timeToMinutes(t: string): number {
-  const [h, m] = t.split(":").map(Number);
-  return h * 60 + m;
-}
+// --- Schedule Building ---
 
-function minutesToTime(m: number): string {
-  const h = Math.floor(m / 60);
-  const min = m % 60;
-  return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
-}
-
-/** 2つの時間帯が重なっているか */
-function overlaps(
-  aStart: string,
-  aEnd: string,
-  bStart: string,
-  bEnd: string,
-): boolean {
-  const a0 = timeToMinutes(aStart);
-  const a1 = timeToMinutes(aEnd);
-  const b0 = timeToMinutes(bStart);
-  const b1 = timeToMinutes(bEnd);
-  return a0 < b1 && b0 < a1;
-}
-
-function buildSchedule(
+function buildConfirmedSchedule(
   localEvents: LocalEvent[],
   todayTasks: NormalizedEntry[],
-): {
-  timeline: TimeSlot[];
-  allDay: {
-    label: string;
-    aspect?: string;
-    dbSource?: ScheduleDbName;
-    notionRegistered?: boolean;
-  }[];
-} {
-  // Start with routine slots as base
-  let slots: TimeSlot[] = ROUTINE_SLOTS.map((s) => ({ ...s }));
-
-  const allDay: {
-    label: string;
-    aspect?: string;
-    dbSource?: ScheduleDbName;
-    notionRegistered?: boolean;
-  }[] = [];
-
-  // Collect timed events from local events
+): { confirmedTimeline: TimeSlot[]; allDay: AllDayItem[] } {
+  const allDay: AllDayItem[] = [];
   const timedEvents: TimeSlot[] = [];
+
+  // Collect from local events
   for (const ev of localEvents) {
     if (ev.allDay) {
       const desc = ev.description ? ` — ${ev.description}` : "";
@@ -310,10 +298,9 @@ function buildSchedule(
     });
   }
 
-  // Collect timed events from Notion tasks
+  // Collect from Notion tasks
   for (const t of todayTasks) {
     if (!t.start.includes("T")) {
-      // All-day Notion task
       allDay.push({
         label: t.title,
         dbSource: t.source,
@@ -324,7 +311,6 @@ function buildSchedule(
     const start = formatTime(t.start);
     const end = t.end ? formatTime(t.end) : "";
     if (!end) {
-      // No end time → treat as all-day
       allDay.push({
         label: `${start}〜 ${t.title}`,
         dbSource: t.source,
@@ -342,12 +328,10 @@ function buildSchedule(
     });
   }
 
-  // Bug 1: Deduplicate local events vs Notion entries
-  // Notion entries take priority; remove local events that overlap with a similar Notion entry
+  // Deduplicate: Notion entries take priority over local events
   const notionEvents = timedEvents.filter((e) => e.source === "notion");
   const deduped = timedEvents.filter((e) => {
     if (e.source !== "event") return true;
-    // Normalize label: strip "[aspect] " prefix for comparison
     const normalizedLocal = e.label.replace(/^\[[^\]]+\]\s*/, "").toLowerCase();
     return !notionEvents.some((n) => {
       const normalizedNotion = n.label.toLowerCase();
@@ -359,68 +343,123 @@ function buildSchedule(
     });
   });
 
-  // Sort timed events by start time
   deduped.sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
 
-  // Trim/split routine slots around each timed event
-  for (const event of deduped) {
-    const evStart = timeToMinutes(event.start);
-    const evEnd = timeToMinutes(event.end);
+  return { confirmedTimeline: deduped, allDay };
+}
 
-    const newSlots: TimeSlot[] = [];
-    for (const slot of slots) {
-      if (slot.source !== "routine") {
-        newSlots.push(slot);
-        continue;
+function computeFreeSlots(
+  confirmed: TimeSlot[],
+  activeHours: { start: string; end: string },
+): FreeSlot[] {
+  const sorted = [...confirmed].sort(
+    (a, b) => timeToMinutes(a.start) - timeToMinutes(b.start),
+  );
+
+  const activeStart = timeToMinutes(activeHours.start);
+  const activeEnd = timeToMinutes(activeHours.end);
+
+  const freeSlots: FreeSlot[] = [];
+  let cursor = activeStart;
+
+  for (const slot of sorted) {
+    const slotStart = timeToMinutes(slot.start);
+    const slotEnd = timeToMinutes(slot.end);
+
+    // Only consider events within active hours
+    const effectiveStart = Math.max(slotStart, activeStart);
+    const effectiveEnd = Math.min(slotEnd, activeEnd);
+    if (effectiveStart >= effectiveEnd) continue;
+
+    if (effectiveStart > cursor) {
+      const gap = effectiveStart - cursor;
+      if (gap >= 30) {
+        freeSlots.push({
+          start: minutesToTime(cursor),
+          end: minutesToTime(effectiveStart),
+          minutes: gap,
+        });
       }
-
-      const slotStart = timeToMinutes(slot.start);
-      const slotEnd = timeToMinutes(slot.end);
-
-      // No overlap
-      if (evEnd <= slotStart || evStart >= slotEnd) {
-        newSlots.push(slot);
-        continue;
-      }
-
-      // Event fully covers routine → remove routine
-      if (evStart <= slotStart && evEnd >= slotEnd) {
-        continue;
-      }
-
-      // Event overlaps start of routine → trim routine start
-      if (evStart <= slotStart && evEnd < slotEnd) {
-        newSlots.push({ ...slot, start: minutesToTime(evEnd) });
-        continue;
-      }
-
-      // Event overlaps end of routine → trim routine end
-      if (evStart > slotStart && evEnd >= slotEnd) {
-        newSlots.push({ ...slot, end: minutesToTime(evStart) });
-        continue;
-      }
-
-      // Event in the middle → split routine
-      newSlots.push({ ...slot, end: minutesToTime(evStart) });
-      newSlots.push({ ...slot, start: minutesToTime(evEnd) });
     }
-    slots = newSlots;
+    cursor = Math.max(cursor, effectiveEnd);
   }
 
-  // Bug 2: Remove routine fragments shorter than 30 minutes after carving
-  slots = slots.filter((s) => {
-    if (s.source !== "routine") return true;
-    return timeToMinutes(s.end) - timeToMinutes(s.start) >= 30;
-  });
+  // After last confirmed event to activeEnd
+  if (activeEnd > cursor) {
+    const gap = activeEnd - cursor;
+    if (gap >= 30) {
+      freeSlots.push({
+        start: minutesToTime(cursor),
+        end: minutesToTime(activeEnd),
+        minutes: gap,
+      });
+    }
+  }
 
-  // Add timed events to slots
-  slots.push(...deduped);
-
-  // Sort all by start time
-  slots.sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
-
-  return { timeline: slots, allDay };
+  return freeSlots;
 }
+
+function fillRoutinesByPriority(
+  freeSlots: FreeSlot[],
+  routinePool: RoutinePoolItem[],
+): TimeSlot[] {
+  const sorted = [...routinePool].sort((a, b) => a.priority - b.priority);
+
+  // Track available segments (mutable copies)
+  const segments = freeSlots.map((s) => ({
+    start: timeToMinutes(s.start),
+    end: timeToMinutes(s.end),
+  }));
+
+  const result: TimeSlot[] = [];
+
+  for (const routine of sorted) {
+    let minutesLeft = routine.minutes;
+    const minBlock = routine.minBlock;
+
+    if (routine.splittable) {
+      for (const seg of segments) {
+        if (minutesLeft <= 0) break;
+        const available = seg.end - seg.start;
+        if (available < minBlock) continue;
+
+        const allocate = Math.min(minutesLeft, available);
+        if (allocate < minBlock) continue;
+
+        result.push({
+          start: minutesToTime(seg.start),
+          end: minutesToTime(seg.start + allocate),
+          label: routine.label,
+          source: "routine",
+        });
+
+        seg.start += allocate;
+        minutesLeft -= allocate;
+      }
+    } else {
+      // Need a single contiguous block
+      for (const seg of segments) {
+        const available = seg.end - seg.start;
+        if (available >= routine.minutes) {
+          result.push({
+            start: minutesToTime(seg.start),
+            end: minutesToTime(seg.start + routine.minutes),
+            label: routine.label,
+            source: "routine",
+          });
+
+          seg.start += routine.minutes;
+          minutesLeft = 0;
+          break;
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
+// --- Markdown Output ---
 
 function formatMarkdown(data: DailyPlanData): string {
   const lines: string[] = [];
@@ -432,7 +471,6 @@ function formatMarkdown(data: DailyPlanData): string {
   lines.push(`## 昨日の振り返り（${data.yesterdayDate}）`);
   lines.push("");
 
-  // 振り返り対象は todo と events のみ（routine/meals/guitar はアクション不要）
   const actionableTasks = data.yesterdayTasks.filter(
     (t) => t.source === "todo" || t.source === "events",
   );
@@ -444,7 +482,6 @@ function formatMarkdown(data: DailyPlanData): string {
     lines.push("タスク: 登録なし");
   }
 
-  // 完了タスク
   const doneTasks = actionableTasks.filter((t) => t.status === "Done");
   if (doneTasks.length > 0) {
     lines.push("");
@@ -454,7 +491,6 @@ function formatMarkdown(data: DailyPlanData): string {
     }
   }
 
-  // 未完了タスク
   const incompleteTasks = actionableTasks.filter((t) => t.status !== "Done");
   if (incompleteTasks.length > 0) {
     lines.push("");
@@ -464,7 +500,6 @@ function formatMarkdown(data: DailyPlanData): string {
     }
   }
 
-  // フィードバック
   const feedbackTasks = data.yesterdayTasks.filter((t) => t.feedback);
   if (feedbackTasks.length > 0) {
     lines.push("");
@@ -507,7 +542,7 @@ function formatMarkdown(data: DailyPlanData): string {
   }
 
   lines.push("");
-  lines.push("> 🔶 = 確定した予定  🔹 = ルーティン（テンプレートからの提案）");
+  lines.push("> 🔶 = 確定した予定  🔹 = ルーティン（プールからの配置）");
   lines.push(
     "> ※登録済みのタスクは重複登録しないこと。空き時間にのみ新規追加する。",
   );
@@ -522,20 +557,12 @@ function formatMarkdown(data: DailyPlanData): string {
 
   const points: string[] = [];
 
-  // 持ち越し
   for (const t of incompleteTasks) {
     points.push(`- 昨日未完了: ${t.title}`);
   }
 
-  // フィードバック引用
   for (const t of feedbackTasks) {
     points.push(`- 💬 ${t.title} → ${t.feedback}`);
-  }
-
-  // 曜日メモ
-  const weekdayNote = WEEKDAY_NOTES[data.targetWeekday];
-  if (weekdayNote) {
-    points.push(`- ${weekdayNote}`);
   }
 
   if (points.length > 0) {
@@ -548,17 +575,25 @@ function formatMarkdown(data: DailyPlanData): string {
   return lines.join("\n");
 }
 
+// --- AI Generation ---
+
 const SYSTEM_PROMPT = `あなたは松本あかり、ライフコーチです。ユーザーの1日のスケジュールを最適化します。
 
 ルール:
 1. 確定済み予定（🔶マーク / Notion登録済み）は時間を変更しない
-2. ルーティン枠（🔹）のみ調整可能
-3. 優先順位: sumitsugi > 運動/減量 > ギター > 投資 > study > 読書
+2. ルーティンプールの項目を空き時間に最適配置する
+3. 優先順位: sumitsugi(開発) > 運動/減量(ジム) > ギター > 投資 > study > 読書
 4. フィードバックに基づいて時間配分・運動強度・休息を調整
 5. 未完了タスクは可能な範囲で今日に組み込む
 6. 出力はマークダウンのみ。説明文不要
-7. **1ブロック = 1タスク（厳守）**: 「A + B」「A or B」「A / B / C」のような複合タイトル禁止。1つの時間枠には1つの活動だけ入れる。複数やりたいことがあるなら別々のブロックに分ける
+7. **1ブロック = 1タスク（厳守）**: 「A + B」「A or B」「A / B / C」のような複合タイトル禁止。1つの時間枠には1つの活動だけ入れる
 8. 夜の自由時間もその日に1つ選んで具体的に入れる（「study / 読書 / 投資」ではなく「読書」など）
+
+ルーティンプール配置ルール:
+- splittable: true → 複数の空きブロックに分割可能（minBlock 以上の単位で）
+- splittable: false → 連続した1つの空きブロックに収まる必要がある。入らなければスキップ
+- priority が小さいほど優先。空き時間が足りなければ低優先度のルーティンを削る
+- 確定予定は絶対に変更しない。空き時間にのみルーティンを配置する
 
 フィードバック解釈:
 - 「疲れた」「だるい」→ 運動軽め、休憩増
@@ -572,10 +607,6 @@ function buildUserPrompt(data: DailyPlanData): string {
 
   // 日付・曜日
   sections.push(`## 対象日: ${data.targetDate}（${data.targetWeekday}）`);
-  const weekdayNote = WEEKDAY_NOTES[data.targetWeekday];
-  if (weekdayNote) {
-    sections.push(`曜日ルール: ${weekdayNote}`);
-  }
 
   // 昨日の完了/未完了（todo と events のみ）
   const actionableForAI = data.yesterdayTasks.filter(
@@ -608,11 +639,12 @@ function buildUserPrompt(data: DailyPlanData): string {
   }
 
   // 今日の確定予定
-  const { timeline, allDay } = data.schedule;
-  const confirmedSlots = timeline.filter((s) => s.source !== "routine");
-  if (confirmedSlots.length > 0) {
+  const { confirmedTimeline, allDay, freeSlots, routinePool, activeHours } =
+    data.schedule;
+
+  if (confirmedTimeline.length > 0) {
     sections.push(`\n## 今日の確定予定（変更不可）`);
-    for (const s of confirmedSlots) {
+    for (const s of confirmedTimeline) {
       sections.push(`- ${s.start}-${s.end} 🔶 ${s.label}`);
     }
   }
@@ -625,13 +657,33 @@ function buildUserPrompt(data: DailyPlanData): string {
     }
   }
 
-  // ルーティンテンプレート
-  const routineSlots = timeline.filter((s) => s.source === "routine");
-  if (routineSlots.length > 0) {
-    sections.push(`\n## ルーティン枠（調整可能）`);
-    for (const s of routineSlots) {
-      sections.push(`- ${s.start}-${s.end} 🔹 ${s.label}`);
-    }
+  // 空き時間
+  const totalFreeMinutes = freeSlots.reduce((sum, s) => sum + s.minutes, 0);
+  sections.push(`\n## 空き時間（合計 ${totalFreeMinutes} 分）`);
+  sections.push(`活動時間帯: ${activeHours.start}〜${activeHours.end}`);
+  for (const s of freeSlots) {
+    sections.push(`- ${s.start}-${s.end}（${s.minutes}分）`);
+  }
+
+  // ルーティンプール
+  const totalRoutineMinutes = routinePool.reduce(
+    (sum, r) => sum + r.minutes,
+    0,
+  );
+  sections.push(`\n## ルーティンプール（合計 ${totalRoutineMinutes} 分）`);
+  for (const r of routinePool) {
+    const split = r.splittable
+      ? `分割可（最小${r.minBlock}分）`
+      : "分割不可";
+    sections.push(
+      `- [優先${r.priority}] ${r.label}: ${r.minutes}分（${split}）`,
+    );
+  }
+
+  if (totalRoutineMinutes > totalFreeMinutes) {
+    sections.push(
+      `\n⚠️ 空き時間（${totalFreeMinutes}分）< ルーティン合計（${totalRoutineMinutes}分）。優先度順で配置し、入りきらない低優先度ルーティンはスキップしてください。`,
+    );
   }
 
   // 出力フォーマット
@@ -663,7 +715,7 @@ HH:MM-HH:MM  🔶/🔹 タスク名
 ### 終日
 - タスク名
 
-> 🔶 = 確定した予定  🔹 = ルーティン（テンプレートからの提案）
+> 🔶 = 確定した予定  🔹 = ルーティン（プールからの配置）
 > ※登録済みのタスクは重複登録しないこと。空き時間にのみ新規追加する。
 
 ---
@@ -671,7 +723,7 @@ HH:MM-HH:MM  🔶/🔹 タスク名
 ## 今日のポイント
 
 - フィードバックに基づく調整理由
-- 曜日メモ
+- ルーティン配置の判断理由
 `);
 
   return sections.join("\n");
@@ -686,6 +738,8 @@ async function generateAIPlan(data: DailyPlanData): Promise<string> {
   return result.trim();
 }
 
+// --- Main ---
+
 async function main() {
   const { flags, opts } = parseArgs();
   const targetDate = opts.date || todayJST();
@@ -694,13 +748,39 @@ async function main() {
 
   const yesterdayDate = getYesterday(targetDate);
 
+  // Fetch data
   const [yesterdayTasks, todayTasks] = await Promise.all([
     fetchAllDbEntries(yesterdayDate),
     fetchAllDbEntries(targetDate),
   ]);
 
   const localEvents = loadLocalEvents(targetDate);
-  const schedule = buildSchedule(localEvents, todayTasks);
+
+  // Load schedule config
+  const scheduleConfig = loadScheduleConfig();
+
+  // Build confirmed schedule (no routines)
+  const { confirmedTimeline, allDay } = buildConfirmedSchedule(
+    localEvents,
+    todayTasks,
+  );
+
+  // Compute free slots
+  const freeSlots = computeFreeSlots(
+    confirmedTimeline,
+    scheduleConfig.activeHours,
+  );
+
+  // Fill routines for non-AI path (and backward-compat timeline)
+  const filledRoutines = fillRoutinesByPriority(
+    freeSlots,
+    scheduleConfig.routines,
+  );
+
+  // Merge confirmed + filled routines into unified timeline
+  const timeline = [...confirmedTimeline, ...filledRoutines].sort(
+    (a, b) => timeToMinutes(a.start) - timeToMinutes(b.start),
+  );
 
   const data: DailyPlanData = {
     targetDate,
@@ -710,7 +790,14 @@ async function main() {
     yesterdayTasks,
     todayTasks,
     localEvents,
-    schedule,
+    schedule: {
+      confirmedTimeline,
+      allDay,
+      freeSlots,
+      routinePool: scheduleConfig.routines,
+      activeHours: scheduleConfig.activeHours,
+      timeline,
+    },
   };
 
   if (json) {

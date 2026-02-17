@@ -240,7 +240,7 @@ export function notionHeaders(apiKey: string) {
   };
 }
 
-export async function notionFetch(apiKey: string, path: string, body?: unknown, method?: "GET" | "POST" | "PATCH"): Promise<any> {
+export async function notionFetch(apiKey: string, path: string, body?: unknown, method?: "GET" | "POST" | "PATCH" | "DELETE"): Promise<any> {
   const resolvedMethod = method || (body !== undefined ? "POST" : "GET");
   const res = await fetch(`https://api.notion.com/v1${path}`, {
     method: resolvedMethod,
@@ -251,6 +251,7 @@ export async function notionFetch(apiKey: string, path: string, body?: unknown, 
     const err = await res.json();
     throw new Error(`Notion API ${res.status}: ${(err as any).message}`);
   }
+  if (res.status === 204) return {};
   return res.json();
 }
 

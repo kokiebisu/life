@@ -136,7 +136,7 @@ async function backfillMeals(dryRun: boolean, force: boolean) {
     if (!force && page.icon && page.cover) continue;
     const title = (page.properties[dbConf.config.titleProp]?.title || [])
       .map((t: any) => t.plain_text || "").join("");
-    const icon = pickTaskIcon(title);
+    const icon = pickTaskIcon(title, "🍽️");
     const cover = pickCover();
 
     updated++;

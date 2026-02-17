@@ -12,7 +12,7 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
-import { getScheduleDbConfig, notionFetch, parseArgs } from "./lib/notion";
+import { getScheduleDbConfig, notionFetch, parseArgs, pickTaskIcon, pickCover } from "./lib/notion";
 
 const ROOT = join(import.meta.dir, "..");
 const BEADS_FILE = join(ROOT, "projects/sumitsugi/.beads/issues.jsonl");
@@ -207,7 +207,9 @@ async function syncNotion(
   const descParts = [event.location, event.tsuId].filter(Boolean).join("。");
   properties[config.descProp] = { rich_text: [{ text: { content: descParts } }] };
 
-  await notionFetch(apiKey, "/pages", { parent: { database_id: dbId }, properties });
+  const icon = pickTaskIcon(event.title);
+  const cover = pickCover();
+  await notionFetch(apiKey, "/pages", { parent: { database_id: dbId }, properties, icon, cover });
 
   return "created";
 }

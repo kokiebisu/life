@@ -188,10 +188,10 @@ bun run scripts/notion-grocery-gen.ts --date 2026-02-18 --dry-run
 
 1. イベントに場所がある（タイトルに `@ location`）場合、移動元を確認する
    - 前のイベントの `場所` プロパティがあればそこから出発
-   - なければユーザーの自宅（MEMORY.md の住所を `--from` に渡す）
-2. `travel-time.ts` で移動時間を見積もる
+   - なければユーザーの自宅（**MEMORY.md の住所をそのまま `--from` に渡す。駅名や略称ではなく、必ず正式な住所を使うこと**）
+2. `travel-time.ts` で移動時間を見積もる（`--from` には MEMORY.md の正式住所を使う）
    ```bash
-   bun run scripts/travel-time.ts --from "桜木町" --to "藤沢善行" --json
+   bun run scripts/travel-time.ts --from "<MEMORY.mdの住所>" --to "藤沢善行" --json
    ```
 3. 移動時間込みの `--start`/`--end` と実際の `--actual-start`/`--actual-end` で登録
    ```bash

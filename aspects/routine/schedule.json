@@ -4,6 +4,6 @@
     { "label": "開発", "minutes": 300, "priority": 1, "splittable": true, "minBlock": 60 },
     { "label": "ジム", "minutes": 90, "priority": 2, "splittable": false },
     { "label": "ギター練習", "minutes": 60, "priority": 3, "splittable": false },
-    { "label": "読書", "minutes": 90, "priority": 4, "splittable": true, "minBlock": 30 }
+    { "label": "就寝前読書", "minutes": 30, "priority": 4, "splittable": false }
   ]
 }

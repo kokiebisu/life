@@ -31,7 +31,7 @@ const ROOT = join(import.meta.dir, "..");
 
 // --- DB → file path mapping ---
 
-const EVENT_DBS: ScheduleDbName[] = ["events", "guitar", "meals"];
+const EVENT_DBS: ScheduleDbName[] = ["events", "guitar", "meals", "routine", "groceries"];
 const TASKS_FILE = join(ROOT, "planning/tasks.md");
 
 function dbToDir(db: ScheduleDbName): string {
@@ -39,6 +39,8 @@ function dbToDir(db: ScheduleDbName): string {
     case "events": return "planning/events";
     case "guitar": return "aspects/guitar/events";
     case "meals": return "aspects/diet/events";
+    case "routine": return "aspects/routine/events";
+    case "groceries": return "aspects/diet/groceries";
     default: throw new Error(`Unsupported DB for pull: ${db}`);
   }
 }

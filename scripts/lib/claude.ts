@@ -1,26 +1,9 @@
 /**
  * Claude API 共通ヘルパー
  *
- * 認証優先順位:
- *   1. CLAUDE_CODE_OAUTH_TOKEN (Bearer auth) — Claude Code CLI OAuth トークン
- *   2. ANTHROPIC_API_KEY (x-api-key auth) — API キー
+ * claude -p（Claude Code CLI）経由で呼び出す。
+ * 認証は Claude Code の設定（OAuth / API キー）に委譲。
  */
-
-import { loadEnv } from "./notion";
-
-function getAuthHeaders(): Record<string, string> {
-  const env = loadEnv();
-  const oauthToken = env["CLAUDE_CODE_OAUTH_TOKEN"] || process.env.CLAUDE_CODE_OAUTH_TOKEN;
-  const apiKey = env["ANTHROPIC_API_KEY"] || process.env.ANTHROPIC_API_KEY;
-
-  if (oauthToken) {
-    return { "Authorization": `Bearer ${oauthToken}` };
-  }
-  if (apiKey) {
-    return { "x-api-key": apiKey };
-  }
-  throw new Error("CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY must be set");
-}
 
 interface ClaudeMessage {
   role: "user" | "assistant";
@@ -33,47 +16,45 @@ interface ClaudeOptions {
   system?: string;
 }
 
-interface ClaudeResponse {
-  content: Array<{ type: string; text?: string }>;
-}
-
 export async function callClaude(
   messages: ClaudeMessage[],
   options: ClaudeOptions = {},
 ): Promise<string> {
-  const authHeaders = getAuthHeaders();
   const model = options.model || "claude-haiku-4-5-20251001";
   const maxTokens = options.maxTokens || 4096;
 
-  const body: Record<string, unknown> = {
-    model,
-    max_tokens: maxTokens,
-    messages,
-  };
+  // Build the input from messages
+  const input = messages.map((m) => m.content).join("\n\n");
+
+  const args = ["-p", "--model", model, "--max-turns", "1"];
   if (options.system) {
-    body.system = options.system;
+    args.push("--system-prompt", options.system);
   }
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "anthropic-version": "2023-06-01",
-      ...authHeaders,
-    },
-    body: JSON.stringify(body),
+  const env = { ...process.env };
+  delete env.CLAUDECODE;
+
+  const proc = Bun.spawn(["claude", ...args], {
+    stdin: new Blob([input]),
+    stdout: "pipe",
+    stderr: "pipe",
+    env,
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Claude API ${res.status}: ${errText}`);
+  const [stdout, stderr, exitCode] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+    proc.exited,
+  ]);
+
+  if (exitCode !== 0) {
+    throw new Error(`claude -p exited with code ${exitCode}: ${stderr}`);
   }
 
-  const data = (await res.json()) as ClaudeResponse;
-  const textBlock = data.content.find((b) => b.type === "text");
-  if (!textBlock?.text) {
-    throw new Error("No text content in Claude API response");
+  const text = stdout.trim();
+  if (!text) {
+    throw new Error("No output from claude -p");
   }
 
-  return textBlock.text;
+  return text;
 }

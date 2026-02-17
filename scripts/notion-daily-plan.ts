@@ -12,10 +12,13 @@
 import { readFileSync, existsSync, readdirSync } from "fs";
 import { join } from "path";
 import {
-  type ScheduleDbName, type NormalizedEntry,
+  type ScheduleDbName,
+  type NormalizedEntry,
   getScheduleDbConfigOptional,
-  queryDbByDate, normalizePages,
-  parseArgs, todayJST,
+  queryDbByDate,
+  normalizePages,
+  parseArgs,
+  todayJST,
 } from "./lib/notion";
 import { callClaude } from "./lib/claude";
 
@@ -26,11 +29,11 @@ const PLANNING_DIR = join(ROOT, "planning");
 const WEEKDAY_NAMES = ["日", "月", "火", "水", "木", "金", "土"];
 
 const WEEKDAY_NOTES: Record<string, string> = {
-  "月": "月曜: 週次プラン作成（朝30分）→ 通常スケジュール",
-  "水": "水曜: ジムの日。昼の運動を重めに",
-  "金": "金曜: ジムの日。昼の運動を重めに",
-  "土": "土曜: sumitsugi開発は午前のみ。午後は自由時間",
-  "日": "日曜: 教会 → ゆっくり過ごす日。ギターと読書中心",
+  月: "月曜: 週次プラン作成（朝30分）→ 通常スケジュール",
+  水: "水曜: ジムの日。昼の運動を重めに",
+  金: "金曜: ジムの日。昼の運動を重めに",
+  土: "土曜: 開発は午前のみ。午後は自由時間",
+  日: "日曜: 教会 → ゆっくり過ごす日。ギターと読書中心",
 };
 
 interface LocalEvent {
@@ -44,7 +47,7 @@ interface LocalEvent {
 
 interface TimeSlot {
   start: string; // "09:00"
-  end: string;   // "12:00"
+  end: string; // "12:00"
   label: string;
   source: "routine" | "event" | "notion";
   aspect?: string;
@@ -53,12 +56,10 @@ interface TimeSlot {
 }
 
 const ROUTINE_SLOTS: TimeSlot[] = [
-  { start: "09:00", end: "12:00", label: "sumitsugi開発", source: "routine" },
-  { start: "12:00", end: "13:00", label: "昼食", source: "routine" },
-  { start: "13:00", end: "14:00", label: "運動", source: "routine" },
-  { start: "14:00", end: "17:00", label: "sumitsugi開発", source: "routine" },
-  { start: "17:00", end: "18:00", label: "ギター練習", source: "routine" },
-  { start: "18:00", end: "20:00", label: "自由時間", source: "routine" },
+  { start: "09:00", end: "12:00", label: "開発", source: "routine" },
+  { start: "12:00", end: "14:00", label: "ジム", source: "routine" },
+  { start: "14:00", end: "18:00", label: "開発", source: "routine" },
+  { start: "18:00", end: "19:30", label: "読書", source: "routine" },
 ];
 
 interface DailyPlanData {
@@ -69,7 +70,15 @@ interface DailyPlanData {
   yesterdayTasks: NormalizedEntry[];
   todayTasks: NormalizedEntry[];
   localEvents: LocalEvent[];
-  schedule: { timeline: TimeSlot[]; allDay: { label: string; aspect?: string; dbSource?: ScheduleDbName; notionRegistered?: boolean }[] };
+  schedule: {
+    timeline: TimeSlot[];
+    allDay: {
+      label: string;
+      aspect?: string;
+      dbSource?: ScheduleDbName;
+      notionRegistered?: boolean;
+    }[];
+  };
 }
 
 function formatTime(iso: string): string {
@@ -92,7 +101,13 @@ function getWeekday(dateStr: string): string {
 }
 
 async function fetchAllDbEntries(date: string): Promise<NormalizedEntry[]> {
-  const dbNames: ScheduleDbName[] = ["routine", "events", "guitar", "meals", "todo"];
+  const dbNames: ScheduleDbName[] = [
+    "routine",
+    "events",
+    "guitar",
+    "meals",
+    "todo",
+  ];
   const allEntries: NormalizedEntry[] = [];
 
   const queries = dbNames.map(async (name) => {
@@ -145,11 +160,32 @@ function loadLocalEvents(date: string): LocalEvent[] {
         }
         const timeRange = timeStr.match(/^(\d{1,2}:\d{2})-(\d{1,2}:\d{2})$/);
         if (timeRange) {
-          events.push({ aspect: "planning", start: timeRange[1], end: timeRange[2], allDay: false, title, description });
+          events.push({
+            aspect: "planning",
+            start: timeRange[1],
+            end: timeRange[2],
+            allDay: false,
+            title,
+            description,
+          });
         } else if (timeStr === "終日") {
-          events.push({ aspect: "planning", start: "", end: "", allDay: true, title, description });
+          events.push({
+            aspect: "planning",
+            start: "",
+            end: "",
+            allDay: true,
+            title,
+            description,
+          });
         } else {
-          events.push({ aspect: "planning", start: "", end: "", allDay: true, title: `${timeStr} ${title}`, description });
+          events.push({
+            aspect: "planning",
+            start: "",
+            end: "",
+            allDay: true,
+            title: `${timeStr} ${title}`,
+            description,
+          });
         }
       }
     }
@@ -174,12 +210,33 @@ function loadLocalEvents(date: string): LocalEvent[] {
 
         const timeRange = timeStr.match(/^(\d{1,2}:\d{2})-(\d{1,2}:\d{2})$/);
         if (timeRange) {
-          events.push({ aspect, start: timeRange[1], end: timeRange[2], allDay: false, title, description });
+          events.push({
+            aspect,
+            start: timeRange[1],
+            end: timeRange[2],
+            allDay: false,
+            title,
+            description,
+          });
         } else if (timeStr === "終日") {
-          events.push({ aspect, start: "", end: "", allDay: true, title, description });
+          events.push({
+            aspect,
+            start: "",
+            end: "",
+            allDay: true,
+            title,
+            description,
+          });
         } else {
           // 時間形式が不明な場合はそのまま終日扱い
-          events.push({ aspect, start: "", end: "", allDay: true, title: `${timeStr} ${title}`, description });
+          events.push({
+            aspect,
+            start: "",
+            end: "",
+            allDay: true,
+            title: `${timeStr} ${title}`,
+            description,
+          });
         }
       }
     }
@@ -200,7 +257,12 @@ function minutesToTime(m: number): string {
 }
 
 /** 2つの時間帯が重なっているか */
-function overlaps(aStart: string, aEnd: string, bStart: string, bEnd: string): boolean {
+function overlaps(
+  aStart: string,
+  aEnd: string,
+  bStart: string,
+  bEnd: string,
+): boolean {
   const a0 = timeToMinutes(aStart);
   const a1 = timeToMinutes(aEnd);
   const b0 = timeToMinutes(bStart);
@@ -211,11 +273,24 @@ function overlaps(aStart: string, aEnd: string, bStart: string, bEnd: string): b
 function buildSchedule(
   localEvents: LocalEvent[],
   todayTasks: NormalizedEntry[],
-): { timeline: TimeSlot[]; allDay: { label: string; aspect?: string; dbSource?: ScheduleDbName; notionRegistered?: boolean }[] } {
+): {
+  timeline: TimeSlot[];
+  allDay: {
+    label: string;
+    aspect?: string;
+    dbSource?: ScheduleDbName;
+    notionRegistered?: boolean;
+  }[];
+} {
   // Start with routine slots as base
   let slots: TimeSlot[] = ROUTINE_SLOTS.map((s) => ({ ...s }));
 
-  const allDay: { label: string; aspect?: string; dbSource?: ScheduleDbName; notionRegistered?: boolean }[] = [];
+  const allDay: {
+    label: string;
+    aspect?: string;
+    dbSource?: ScheduleDbName;
+    notionRegistered?: boolean;
+  }[] = [];
 
   // Collect timed events from local events
   const timedEvents: TimeSlot[] = [];
@@ -239,14 +314,22 @@ function buildSchedule(
   for (const t of todayTasks) {
     if (!t.start.includes("T")) {
       // All-day Notion task
-      allDay.push({ label: t.title, dbSource: t.source, notionRegistered: true });
+      allDay.push({
+        label: t.title,
+        dbSource: t.source,
+        notionRegistered: true,
+      });
       continue;
     }
     const start = formatTime(t.start);
     const end = t.end ? formatTime(t.end) : "";
     if (!end) {
       // No end time → treat as all-day
-      allDay.push({ label: `${start}〜 ${t.title}`, dbSource: t.source, notionRegistered: true });
+      allDay.push({
+        label: `${start}〜 ${t.title}`,
+        dbSource: t.source,
+        notionRegistered: true,
+      });
       continue;
     }
     timedEvents.push({
@@ -270,7 +353,8 @@ function buildSchedule(
       const normalizedNotion = n.label.toLowerCase();
       return (
         overlaps(e.start, e.end, n.start, n.end) &&
-        (normalizedNotion.includes(normalizedLocal) || normalizedLocal.includes(normalizedNotion))
+        (normalizedNotion.includes(normalizedLocal) ||
+          normalizedLocal.includes(normalizedNotion))
       );
     });
   });
@@ -404,7 +488,9 @@ function formatMarkdown(data: DailyPlanData): string {
     for (const slot of timeline) {
       const icon = slot.source === "routine" ? "🔹" : "🔶";
       const registered = slot.notionRegistered ? "（※登録済み）" : "";
-      lines.push(`${slot.start}-${slot.end}  ${icon} ${slot.label}${registered}`);
+      lines.push(
+        `${slot.start}-${slot.end}  ${icon} ${slot.label}${registered}`,
+      );
     }
   } else {
     lines.push("予定なし");
@@ -422,7 +508,9 @@ function formatMarkdown(data: DailyPlanData): string {
 
   lines.push("");
   lines.push("> 🔶 = 確定した予定  🔹 = ルーティン（テンプレートからの提案）");
-  lines.push("> ※登録済みのタスクは重複登録しないこと。空き時間にのみ新規追加する。");
+  lines.push(
+    "> ※登録済みのタスクは重複登録しないこと。空き時間にのみ新規追加する。",
+  );
 
   lines.push("");
   lines.push("---");
@@ -469,6 +557,8 @@ const SYSTEM_PROMPT = `あなたは松本あかり、ライフコーチです。
 4. フィードバックに基づいて時間配分・運動強度・休息を調整
 5. 未完了タスクは可能な範囲で今日に組み込む
 6. 出力はマークダウンのみ。説明文不要
+7. **1ブロック = 1タスク（厳守）**: 「A + B」「A or B」「A / B / C」のような複合タイトル禁止。1つの時間枠には1つの活動だけ入れる。複数やりたいことがあるなら別々のブロックに分ける
+8. 夜の自由時間もその日に1つ選んで具体的に入れる（「study / 読書 / 投資」ではなく「読書」など）
 
 フィードバック解釈:
 - 「疲れた」「だるい」→ 運動軽め、休憩増
@@ -589,10 +679,10 @@ HH:MM-HH:MM  🔶/🔹 タスク名
 
 async function generateAIPlan(data: DailyPlanData): Promise<string> {
   const userPrompt = buildUserPrompt(data);
-  const result = await callClaude(
-    [{ role: "user", content: userPrompt }],
-    { system: SYSTEM_PROMPT, maxTokens: 4096 },
-  );
+  const result = await callClaude([{ role: "user", content: userPrompt }], {
+    system: SYSTEM_PROMPT,
+    maxTokens: 4096,
+  });
   return result.trim();
 }
 

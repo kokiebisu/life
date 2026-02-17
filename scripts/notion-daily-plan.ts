@@ -61,6 +61,8 @@ interface TimeSlot {
   aspect?: string;
   dbSource?: ScheduleDbName;
   notionRegistered?: boolean;
+  actualStart?: string; // "18:30" — 実際のイベント開始時刻
+  actualEnd?: string;   // "21:00" — 実際のイベント終了時刻
 }
 
 interface AllDayItem {
@@ -325,6 +327,8 @@ function buildConfirmedSchedule(
       source: "notion",
       dbSource: t.source,
       notionRegistered: true,
+      actualStart: t.actualStart || undefined,
+      actualEnd: t.actualEnd || undefined,
     });
   }
 
@@ -523,8 +527,9 @@ function formatMarkdown(data: DailyPlanData): string {
     for (const slot of timeline) {
       const icon = slot.source === "routine" ? "🔹" : "🔶";
       const registered = slot.notionRegistered ? "（※登録済み）" : "";
+      const actualInfo = slot.actualStart ? `（開始 ${slot.actualStart}）` : "";
       lines.push(
-        `${slot.start}-${slot.end}  ${icon} ${slot.label}${registered}`,
+        `${slot.start}-${slot.end}  ${icon} ${slot.label}${actualInfo}${registered}`,
       );
     }
   } else {
@@ -645,7 +650,8 @@ function buildUserPrompt(data: DailyPlanData): string {
   if (confirmedTimeline.length > 0) {
     sections.push(`\n## 今日の確定予定（変更不可）`);
     for (const s of confirmedTimeline) {
-      sections.push(`- ${s.start}-${s.end} 🔶 ${s.label}`);
+      const actualInfo = s.actualStart ? `（開始 ${s.actualStart}）` : "";
+      sections.push(`- ${s.start}-${s.end} 🔶 ${s.label}${actualInfo}`);
     }
   }
 

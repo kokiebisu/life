@@ -78,15 +78,16 @@ export interface ScheduleDbConfig {
   dateProp: string;
   descProp: string;
   statusProp: string;
+  statusDone: string;
 }
 
 export const SCHEDULE_DB_CONFIGS: Record<ScheduleDbName, ScheduleDbConfig> = {
-  routine: { envKey: "NOTION_TASKS_DB", titleProp: "Name", dateProp: "日付", descProp: "", statusProp: "ステータス" },
-  events:  { envKey: "NOTION_EVENTS_DB", titleProp: "名前", dateProp: "日付", descProp: "", statusProp: "ステータス" },
-  guitar:  { envKey: "NOTION_GUITAR_DB", titleProp: "名前", dateProp: "日付", descProp: "", statusProp: "ステータス" },
-  meals:      { envKey: "NOTION_MEALS_DB", titleProp: "名前", dateProp: "日付", descProp: "", statusProp: "ステータス" },
-  groceries:  { envKey: "NOTION_GROCERIES_DB", titleProp: "件名", dateProp: "日付", descProp: "", statusProp: "ステータス" },
-  todo:    { envKey: "NOTION_TODO_DB", titleProp: "タスク名", dateProp: "日付", descProp: "", statusProp: "ステータス" },
+  routine: { envKey: "NOTION_TASKS_DB", titleProp: "Name", dateProp: "日付", descProp: "", statusProp: "ステータス", statusDone: "Done" },
+  events:  { envKey: "NOTION_EVENTS_DB", titleProp: "名前", dateProp: "日付", descProp: "", statusProp: "ステータス", statusDone: "完了" },
+  guitar:  { envKey: "NOTION_GUITAR_DB", titleProp: "名前", dateProp: "日付", descProp: "", statusProp: "ステータス", statusDone: "完了" },
+  meals:      { envKey: "NOTION_MEALS_DB", titleProp: "名前", dateProp: "日付", descProp: "", statusProp: "ステータス", statusDone: "完了" },
+  groceries:  { envKey: "NOTION_GROCERIES_DB", titleProp: "件名", dateProp: "日付", descProp: "", statusProp: "ステータス", statusDone: "完了" },
+  todo:    { envKey: "NOTION_TODO_DB", titleProp: "タスク名", dateProp: "日付", descProp: "", statusProp: "ステータス", statusDone: "完了" },
 };
 
 export function getScheduleDbConfig(name: ScheduleDbName): { apiKey: string; dbId: string; config: ScheduleDbConfig } {

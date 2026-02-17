@@ -777,10 +777,32 @@ async function main() {
     scheduleConfig.activeHours,
   );
 
+  // Adjust routine pool: subtract already-confirmed minutes, skip non-splittable duplicates
+  const confirmedMinutesByLabel = new Map<string, number>();
+  for (const s of confirmedTimeline) {
+    const key = s.label.toLowerCase();
+    const mins = timeToMinutes(s.end) - timeToMinutes(s.start);
+    confirmedMinutesByLabel.set(key, (confirmedMinutesByLabel.get(key) || 0) + mins);
+  }
+  const remainingRoutines: RoutinePoolItem[] = [];
+  for (const r of scheduleConfig.routines) {
+    const confirmed = confirmedMinutesByLabel.get(r.label.toLowerCase()) || 0;
+    if (confirmed <= 0) {
+      remainingRoutines.push(r);
+    } else if (r.splittable) {
+      // splittable: reduce remaining minutes
+      const left = r.minutes - confirmed;
+      if (left >= r.minBlock) {
+        remainingRoutines.push({ ...r, minutes: left });
+      }
+    }
+    // non-splittable + already confirmed → skip entirely
+  }
+
   // Fill routines for non-AI path (and backward-compat timeline)
   const filledRoutines = fillRoutinesByPriority(
     freeSlots,
-    scheduleConfig.routines,
+    remainingRoutines,
   );
 
   // Merge confirmed + filled routines into unified timeline

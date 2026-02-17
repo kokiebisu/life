@@ -169,7 +169,7 @@ function buildProperties(event: ParsedEvent, date: string, config: ScheduleDbCon
   }
 
   if (event.done && config.statusProp) {
-    properties[config.statusProp] = { status: { name: "Done" } };
+    properties[config.statusProp] = { status: { name: config.statusDone } };
   }
 
   return properties;
@@ -221,11 +221,11 @@ function diffProperties(
     }
   }
 
-  // Compare status (only set to Done, never revert)
+  // Compare status (only set to done, never revert)
   if (event.done && config.statusProp) {
     const existingStatus = existingPage.properties?.[config.statusProp]?.status?.name;
-    if (existingStatus !== "Done") {
-      updates[config.statusProp] = { status: { name: "Done" } };
+    if (existingStatus !== config.statusDone) {
+      updates[config.statusProp] = { status: { name: config.statusDone } };
       hasChanges = true;
     }
   }

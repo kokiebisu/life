@@ -118,6 +118,28 @@ CLI コマンドは `/calendar` コマンドを参照。
 - DB が違っても（routine / meals / guitar / events）時間が被ったらNG
 - 例: 朝シャワー 08:00-08:30 と朝食 08:00-08:30 → 朝食は 08:30-09:00 にずらす
 
+### 食事変更時は買い出しリストも連動更新（必須）
+
+食事メニューを**移動・削除・差し替え**したら、**対応する買い出しリスト（Notion groceries ページ）も必ず更新する。**
+
+**更新手順（スクリプトで再生成）:**
+1. `aspects/diet/daily/` の献立ファイルを先に更新する
+2. `notion-grocery-gen.ts` で買い出しページを再生成する
+3. **手動で Notion ページを編集しない**（オシャレなフォーマットが崩れるため）
+
+```bash
+# 日付指定で再生成
+bun run scripts/notion-grocery-gen.ts --date 2026-02-18
+
+# プレビュー（Notionに書き込まない）
+bun run scripts/notion-grocery-gen.ts --date 2026-02-18 --dry-run
+```
+
+**なぜ手動編集NG:**
+- スクリプトは callout・toggle heading・emoji・価格見積もりなどオシャレなフォーマットで出力する
+- 手動編集するとフォーマットが崩れ、見づらくなる
+- 献立変更 → daily ファイル更新 → スクリプト再生成、の流れを守る
+
 ### キャンセル
 
 予定をキャンセルする場合:

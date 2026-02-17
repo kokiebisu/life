@@ -15,7 +15,7 @@
 import {
   type ScheduleDbName,
   getScheduleDbConfig,
-  queryDbByDate,
+  queryDbByDateCached,
   notionFetch,
   getApiKey,
   parseArgs,
@@ -232,7 +232,7 @@ async function findMealPage(
   meal: string,
 ): Promise<{ id: string; title: string }> {
   const { dbId, config } = getScheduleDbConfig("meals");
-  const data = await queryDbByDate(apiKey, dbId, config, date, date);
+  const data = await queryDbByDateCached(apiKey, dbId, config, date, date);
   const pages = data.results;
 
   // Filter by meal time (朝/昼/間食/夜)

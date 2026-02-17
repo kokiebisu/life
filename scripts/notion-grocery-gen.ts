@@ -15,7 +15,7 @@ import { join } from "path";
 import {
   type ScheduleDbName,
   getScheduleDbConfig, getScheduleDbConfigOptional,
-  queryDbByDate, normalizePages, notionFetch,
+  queryDbByDateCached, normalizePages, notionFetch,
   getApiKey, parseArgs,
 } from "./lib/notion";
 import { callClaude } from "./lib/claude";
@@ -128,7 +128,7 @@ async function findGroceriesPage(
   date: string,
 ): Promise<{ id: string; title: string; dateStart: string; dateEnd: string }> {
   const { dbId, config } = getScheduleDbConfig("groceries");
-  const data = await queryDbByDate(apiKey, dbId, config, date, date);
+  const data = await queryDbByDateCached(apiKey, dbId, config, date, date);
   const pages = data.results;
 
   if (pages.length === 0) {
@@ -190,7 +190,7 @@ async function fetchEatingOutEvents(
   const dbConf = getScheduleDbConfigOptional("events");
   if (!dbConf) return [];
   const { dbId, config } = dbConf;
-  const data = await queryDbByDate(apiKey, dbId, config, startDate, endDate);
+  const data = await queryDbByDateCached(apiKey, dbId, config, startDate, endDate);
   const entries = normalizePages(data.results, config, "events");
 
   const eatingKeywords =

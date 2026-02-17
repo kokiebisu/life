@@ -7,7 +7,7 @@
  *   bun run scripts/notion-delete.ts 309ce17f-7b98-8194-bc0f-e3a6534cefdf
  */
 
-import { getApiKey, notionFetch } from "./lib/notion";
+import { getApiKey, notionFetch, clearNotionCache } from "./lib/notion";
 
 async function main() {
   const ids = process.argv.slice(2).filter((a) => !a.startsWith("--"));
@@ -17,6 +17,7 @@ async function main() {
   }
 
   const apiKey = getApiKey();
+  clearNotionCache();
 
   for (const id of ids) {
     const data = await notionFetch(apiKey, `/pages/${id}`, { archived: true }, "PATCH");

@@ -20,8 +20,8 @@ import { readFileSync, existsSync } from "fs";
 import { join, basename } from "path";
 import {
   type ScheduleDbName, type ScheduleDbConfig,
-  SCHEDULE_DB_CONFIGS, getScheduleDbConfig, queryDbByDate, normalizePages,
-  notionFetch, parseArgs, pickTaskIcon, pickCover,
+  SCHEDULE_DB_CONFIGS, getScheduleDbConfig, queryDbByDateCached, normalizePages,
+  notionFetch, parseArgs, pickTaskIcon, pickCover, clearNotionCache,
 } from "./lib/notion";
 
 const ROOT = join(import.meta.dir, "..");
@@ -277,7 +277,7 @@ async function main() {
   await Promise.all(dbNames.map(async (name) => {
     const conf = getScheduleDbConfig(name);
     try {
-      const data = await queryDbByDate(conf.apiKey, conf.dbId, conf.config, date, date);
+      const data = await queryDbByDateCached(conf.apiKey, conf.dbId, conf.config, date, date);
       const entries = normalizePages(data.results, conf.config, name);
       for (const e of entries) allExistingTitles.add(normalizeTitle(e.title));
     } catch { /* DB may not exist */ }
@@ -332,6 +332,10 @@ async function main() {
         created++;
       }
     }
+  }
+
+  if (created > 0 || updated > 0) {
+    clearNotionCache();
   }
 
   console.log(`\nDone! Created: ${created}, Updated: ${updated}, Skipped: ${skipped}`);

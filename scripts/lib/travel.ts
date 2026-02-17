@@ -6,6 +6,13 @@
  */
 
 import { loadEnv } from "./notion";
+import { join } from "path";
+import { createCache, cacheKey } from "./cache";
+
+const travelCache = createCache("routes", {
+  baseDir: join(import.meta.dir, "travel-cache"),
+  defaultTtlMs: 0, // no expiry
+});
 
 interface TravelEstimate {
   minutes: number;
@@ -143,17 +150,26 @@ export async function estimateTravelTime(
   destination: string,
   departureTime?: string,
 ): Promise<TravelEstimate> {
+  const key = cacheKey(origin, destination);
+  const cached = travelCache.get<TravelEstimate>(key);
+  if (cached !== undefined) return cached;
+
   const env = loadEnv();
   const apiKey = env["GOOGLE_MAPS_API_KEY"] || process.env.GOOGLE_MAPS_API_KEY;
 
+  let result: TravelEstimate;
   if (apiKey) {
     try {
-      return await estimateViaGoogleMaps(apiKey, origin, destination, departureTime);
+      result = await estimateViaGoogleMaps(apiKey, origin, destination, departureTime);
+      travelCache.set(key, result);
+      return result;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error(`Google Maps API failed, falling back to claude -p: ${msg}`);
     }
   }
 
-  return estimateViaClaude(origin, destination);
+  result = await estimateViaClaude(origin, destination);
+  travelCache.set(key, result);
+  return result;
 }

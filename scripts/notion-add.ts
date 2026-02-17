@@ -10,7 +10,7 @@
  *   bun run scripts/notion-add.ts --title "ギター練習" --date 2026-02-14 --start 17:00 --end 18:00 --db guitar
  */
 
-import { type ScheduleDbName, getScheduleDbConfig, notionFetch, queryDbByDate, parseArgs, pickTaskIcon, pickCover } from "./lib/notion";
+import { type ScheduleDbName, getScheduleDbConfig, notionFetch, queryDbByDateCached, invalidateNotionCache, parseArgs, pickTaskIcon, pickCover } from "./lib/notion";
 
 function normalizeTitle(title: string): string {
   return title.replace(/[（）()]/g, "").replace(/\s+/g, "").replace(/ー/g, "").toLowerCase();
@@ -44,7 +44,7 @@ function getTimeFromISO(iso: string | undefined): string | null {
 }
 
 async function checkDuplicate(apiKey: string, dbId: string, config: any, date: string, title: string, newStart?: string, newEnd?: string): Promise<boolean> {
-  const data = await queryDbByDate(apiKey, dbId, config, date, date);
+  const data = await queryDbByDateCached(apiKey, dbId, config, date, date);
   const pages: any[] = data.results || [];
   const normalizedNew = normalizeTitle(title);
   for (const page of pages) {
@@ -142,6 +142,7 @@ async function main() {
 
   return notionFetch(apiKey, "/pages", { parent: { database_id: dbId }, properties, icon, cover })
     .then((data: any) => {
+      invalidateNotionCache(dbId, opts.date);
       const title = (data.properties[config.titleProp]?.title || [])
         .map((t: any) => t.plain_text || "").join("");
       const date = data.properties[config.dateProp]?.date;

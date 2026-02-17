@@ -39,6 +39,8 @@
 - [ ] sumitsugi ピッチデッキ v1 を作成する（TIB壁打ち会用） (2026-02-16) #sumitsugi 📅 2026-02-22
 - [ ] HAKOBUNE STARTUP CONTEST 4th Batch 応募準備（ローンチ後に判断） (2026-02-16) #sumitsugi ⏳ローンチ後
 - [ ] HAKOBUNE STARTUP CONTEST 応募提出（ローンチ後に判断 / 締切4/13） (2026-02-16) #sumitsugi ⏳ローンチ後
+- [ ] aobaの商品価格辞書をスプレッドシートで管理する (2026-02-17) #diet
+- [ ] kenichi.okiebisu@gmail.comのGoogle Drive整理 (2026-02-17)
 <!-- 新しいタスクはここに追加される -->
 
 ## Archive

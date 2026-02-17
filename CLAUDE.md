@@ -28,6 +28,7 @@
 /tidy                    # 指示ファイルの重複・配置を整理
 /calendar                # Notion カレンダー操作
 /event                   # イベント登録
+/cache                   # キャッシュ管理（status / clear / analyze）
 ```
 
 ## Directory Structure

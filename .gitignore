@@ -5,3 +5,4 @@
 .env.local
 *.diff
 node_modules/
+scripts/lib/travel-cache/

@@ -114,7 +114,8 @@ async function main() {
         : "[終日]";
       const dbTag = `[${DB_LABEL[entry.source]}]`;
       const fb = entry.feedback ? ` 💬 ${entry.feedback}` : "";
-      console.log(`  ${check} ${time}  ${dbTag} ${entry.title}${fb}`);
+      const actual = entry.actualStart ? ` (実際 ${entry.actualStart}${entry.actualEnd ? "-" + entry.actualEnd : ""})` : "";
+      console.log(`  ${check} ${time}  ${dbTag} ${entry.title}${actual}${fb}`);
     }
   }
   console.log("");

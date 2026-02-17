@@ -87,6 +87,7 @@ async function main() {
     console.error("  bun run scripts/notion-add.ts --title <title> --date YYYY-MM-DD --start HH:MM --end HH:MM");
     console.error("  bun run scripts/notion-add.ts --title <title> --date YYYY-MM-DD --allday");
     console.error("  Options: --db <routine|events|guitar|meals> --end-date YYYY-MM-DD");
+    console.error("  Options: --actual-start HH:MM --actual-end HH:MM --location <住所>");
     process.exit(1);
   }
 
@@ -116,6 +117,17 @@ async function main() {
       dateObj.end = `${endDate}T${opts.end}:00+09:00`;
     }
     properties[config.dateProp] = { date: dateObj };
+  }
+
+  // 移動時間管理プロパティ（開始時間/終了時間/場所）
+  if (opts["actual-start"]) {
+    properties["開始時間"] = { rich_text: [{ text: { content: opts["actual-start"] } }] };
+  }
+  if (opts["actual-end"]) {
+    properties["終了時間"] = { rich_text: [{ text: { content: opts["actual-end"] } }] };
+  }
+  if (opts.location) {
+    properties["場所"] = { rich_text: [{ text: { content: opts.location } }] };
   }
 
   // 重複チェック

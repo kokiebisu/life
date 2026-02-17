@@ -34,6 +34,15 @@ const CATEGORY_ORDER = [
   "おやつ・その他",
 ];
 
+const CATEGORY_EMOJI: Record<string, string> = {
+  "肉・魚": "🥩",
+  "卵・乳製品": "🥚",
+  "豆腐・納豆": "🫘",
+  "野菜・果物": "🥬",
+  "主食": "🍚",
+  "おやつ・その他": "🍫",
+};
+
 // --- Types ---
 
 interface MealEntry {
@@ -351,32 +360,83 @@ function richText(text: string): any[] {
   return [{ type: "text", text: { content: text } }];
 }
 
+function styledText(segments: Array<{ text: string; bold?: boolean; color?: string }>): any[] {
+  return segments.map((s) => ({
+    type: "text",
+    text: { content: s.text },
+    annotations: {
+      ...(s.bold && { bold: true }),
+      ...(s.color && { color: s.color }),
+    },
+  }));
+}
+
+function buildCategoryBlock(
+  cat: string,
+  items: GroceryItem[],
+): any {
+  const emoji = CATEGORY_EMOJI[cat] || "📦";
+  const subtotal = items.reduce((sum, i) => sum + i.estimatedPrice, 0);
+
+  const children = items.map((item) => {
+    const refs =
+      item.mealRefs.length > 0
+        ? ` （${item.mealRefs.join(" / ")}）`
+        : "";
+    return {
+      object: "block",
+      type: "to_do",
+      to_do: {
+        rich_text: styledText([
+          { text: `${item.name} ${item.quantity}`, bold: true },
+          ...(refs ? [{ text: refs, color: "gray" }] : []),
+        ]),
+        checked: false,
+      },
+    };
+  });
+
+  return {
+    object: "block",
+    type: "heading_3",
+    heading_3: {
+      rich_text: styledText([
+        { text: `${emoji} ${cat}` },
+        { text: `  ≒ ¥${subtotal.toLocaleString()}`, color: "gray" },
+      ]),
+      is_toggleable: true,
+      children,
+    },
+  };
+}
+
 function buildNotionBlocks(data: GroceryListData): any[] {
   const blocks: any[] = [];
 
-  // heading_2: period summary
-  blocks.push({
-    object: "block",
-    type: "heading_2",
-    heading_2: { rich_text: richText(data.periodSummary) },
-  });
-
-  // callout: summary info
-  const calloutLines = [`推定合計: ${data.estimatedTotal}`];
-  if (data.eatingOutNotes.length > 0) {
-    calloutLines.push(`外食: ${data.eatingOutNotes.join(" / ")}`);
-  }
+  // Summary callout (green background)
+  const summaryParts: Array<{ text: string; bold?: boolean; color?: string }> = [
+    { text: `💰 ${data.estimatedTotal}`, bold: true },
+    { text: "\n" },
+  ];
   if (data.cookingNotes.length > 0) {
-    calloutLines.push(...data.cookingNotes);
+    summaryParts.push({ text: `🍳 ${data.cookingNotes.join(" / ")}` });
+  }
+  if (data.eatingOutNotes.length > 0) {
+    summaryParts.push({ text: "\n" });
+    summaryParts.push({ text: `🍽️ 外食: ${data.eatingOutNotes.join(" / ")}` });
   }
   blocks.push({
     object: "block",
     type: "callout",
     callout: {
-      rich_text: richText(calloutLines.join("\n")),
+      rich_text: styledText(summaryParts),
       icon: { type: "emoji", emoji: "🛒" },
+      color: "green_background",
     },
   });
+
+  // Divider
+  blocks.push({ object: "block", type: "divider", divider: {} });
 
   // Group items by category
   const byCategory = new Map<string, GroceryItem[]>();
@@ -385,82 +445,42 @@ function buildNotionBlocks(data: GroceryListData): any[] {
     byCategory.get(item.category)!.push(item);
   }
 
-  // Output categories in defined order
+  // Categories in defined order (toggle heading_3 with children)
   for (const cat of CATEGORY_ORDER) {
     const items = byCategory.get(cat);
     if (!items || items.length === 0) continue;
-
-    const subtotal = items.reduce((sum, i) => sum + i.estimatedPrice, 0);
-
-    // heading_3: category + subtotal
-    blocks.push({
-      object: "block",
-      type: "heading_3",
-      heading_3: {
-        rich_text: richText(`${cat}（≒ ${subtotal.toLocaleString()}円）`),
-      },
-    });
-
-    // to_do: each item
-    for (const item of items) {
-      const refs =
-        item.mealRefs.length > 0
-          ? `（${item.mealRefs.join(" / ")}）`
-          : "";
-      blocks.push({
-        object: "block",
-        type: "to_do",
-        to_do: {
-          rich_text: richText(`${item.name} ${item.quantity}${refs}`),
-          checked: false,
-        },
-      });
-    }
+    blocks.push(buildCategoryBlock(cat, items));
   }
 
   // Any categories not in CATEGORY_ORDER
   for (const [cat, items] of byCategory) {
     if (CATEGORY_ORDER.includes(cat)) continue;
-    const subtotal = items.reduce((sum, i) => sum + i.estimatedPrice, 0);
-    blocks.push({
-      object: "block",
-      type: "heading_3",
-      heading_3: {
-        rich_text: richText(`${cat}（≒ ${subtotal.toLocaleString()}円）`),
-      },
-    });
-    for (const item of items) {
-      const refs =
-        item.mealRefs.length > 0
-          ? `（${item.mealRefs.join(" / ")}）`
-          : "";
-      blocks.push({
-        object: "block",
-        type: "to_do",
-        to_do: {
-          rich_text: richText(`${item.name} ${item.quantity}${refs}`),
-          checked: false,
-        },
-      });
-    }
+    blocks.push(buildCategoryBlock(cat, items));
   }
 
   // Freeze memos
   if (data.freezeMemos.length > 0) {
+    blocks.push({ object: "block", type: "divider", divider: {} });
+    const freezeChildren = data.freezeMemos.map((memo) => ({
+      object: "block",
+      type: "bulleted_list_item",
+      bulleted_list_item: {
+        rich_text: styledText([
+          { text: memo.item, bold: true },
+          { text: ` → ${memo.instruction}` },
+        ]),
+      },
+    }));
     blocks.push({
       object: "block",
-      type: "heading_3",
-      heading_3: { rich_text: richText("冷凍メモ") },
+      type: "callout",
+      callout: {
+        rich_text: richText("冷凍する食材"),
+        icon: { type: "emoji", emoji: "🧊" },
+        color: "blue_background",
+        children: freezeChildren,
+      },
     });
-    for (const memo of data.freezeMemos) {
-      blocks.push({
-        object: "block",
-        type: "bulleted_list_item",
-        bulleted_list_item: {
-          rich_text: richText(`${memo.item} → ${memo.instruction}`),
-        },
-      });
-    }
   }
 
   return blocks;
@@ -502,33 +522,50 @@ async function appendBlocks(
 
 // --- Dry run preview ---
 
-function previewBlocks(blocks: any[]): string {
+function previewBlock(block: any, indent = ""): string {
   const lines: string[] = [];
-  for (const block of blocks) {
-    const type = block.type;
-    const text =
-      block[type]?.rich_text?.map((t: any) => t.text.content).join("") || "";
-    switch (type) {
-      case "heading_2":
-        lines.push(`## ${text}`);
-        break;
-      case "heading_3":
-        lines.push(`### ${text}`);
-        break;
-      case "callout":
-        lines.push(`> ${text.replace(/\n/g, "\n> ")}`);
-        break;
-      case "to_do":
-        lines.push(`- [ ] ${text}`);
-        break;
-      case "bulleted_list_item":
-        lines.push(`- ${text}`);
-        break;
-      default:
-        lines.push(`[${type}] ${text}`);
+  const type = block.type;
+  const text =
+    block[type]?.rich_text?.map((t: any) => t.text.content).join("") || "";
+  const children: any[] = block[type]?.children || [];
+
+  switch (type) {
+    case "heading_2":
+      lines.push(`${indent}## ${text}`);
+      break;
+    case "heading_3": {
+      const toggle = block[type]?.is_toggleable ? "▶ " : "";
+      lines.push(`${indent}${toggle}### ${text}`);
+      break;
     }
+    case "callout": {
+      const icon = block[type]?.icon?.emoji || "💡";
+      const color = block[type]?.color || "";
+      lines.push(`${indent}${icon} [${color}] ${text.replace(/\n/g, `\n${indent}  `)}`);
+      break;
+    }
+    case "to_do":
+      lines.push(`${indent}- [ ] ${text}`);
+      break;
+    case "bulleted_list_item":
+      lines.push(`${indent}- ${text}`);
+      break;
+    case "divider":
+      lines.push(`${indent}---`);
+      break;
+    default:
+      lines.push(`${indent}[${type}] ${text}`);
   }
+
+  for (const child of children) {
+    lines.push(previewBlock(child, indent + "  "));
+  }
+
   return lines.join("\n");
+}
+
+function previewBlocks(blocks: any[]): string {
+  return blocks.map((b) => previewBlock(b)).join("\n");
 }
 
 // --- Main ---

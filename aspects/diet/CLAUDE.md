@@ -106,6 +106,99 @@
 - [ ] 作り方の全手順を記載したか？
 - [ ] ページ本文が空のまま放置していないか？
 
+#### レシピページのレイアウトテンプレート（Notion MCP）
+
+**Notion MCP `mcp__claude_ai_Notion__notion-update-page` でレシピを書き込む際は、以下のブロック構造を使う。** 買い出しリストと同じように、callout・heading・list・quote を組み合わせてオシャレに。
+
+```javascript
+// 1. 📋 出典 + 調理時間（callout・緑背景）
+{
+  "type": "callout",
+  "callout": {
+    "rich_text": [
+      { "type": "text", "text": { "content": "クラシル", "link": { "url": "https://..." } }, "annotations": { "bold": true } },
+      { "type": "text", "text": { "content": " | 調理時間 " } },
+      { "type": "text", "text": { "content": "20分" }, "annotations": { "bold": true, "color": "orange" } }
+    ],
+    "icon": { "type": "emoji", "emoji": "📋" },
+    "color": "green_background"
+  }
+}
+
+// 2. 区切り線
+{ "type": "divider", "divider": {} }
+
+// 3. 🥗 材料（1人前）
+{
+  "type": "heading_3",
+  "heading_3": {
+    "rich_text": [{ "type": "text", "text": { "content": "🥗 材料（1人前）" } }]
+  }
+}
+
+// 4. 材料リスト（bulleted_list_item）
+{
+  "type": "bulleted_list_item",
+  "bulleted_list_item": {
+    "rich_text": [
+      { "type": "text", "text": { "content": "鶏むね肉" }, "annotations": { "bold": true } },
+      { "type": "text", "text": { "content": " 150g" } }
+    ]
+  }
+}
+
+// 5. 👨‍🍳 作り方
+{
+  "type": "heading_3",
+  "heading_3": {
+    "rich_text": [{ "type": "text", "text": { "content": "👨‍🍳 作り方" } }]
+  }
+}
+
+// 6. 手順（numbered_list_item）
+{
+  "type": "numbered_list_item",
+  "numbered_list_item": {
+    "rich_text": [{ "type": "text", "text": { "content": "鶏むね肉を一口大に切る" } }]
+  }
+}
+
+// 7. 💡 コツ・ポイント
+{
+  "type": "heading_3",
+  "heading_3": {
+    "rich_text": [{ "type": "text", "text": { "content": "💡 コツ・ポイント" } }]
+  }
+}
+
+// 8. コツの内容（quote）
+{
+  "type": "quote",
+  "quote": {
+    "rich_text": [{ "type": "text", "text": { "content": "むね肉は下味をつけると柔らかくなる\n火加減は中火でじっくり" } }]
+  }
+}
+
+// 9. 🎯 今週のスキルテーマ（該当する場合のみ・callout・青背景）
+{
+  "type": "callout",
+  "callout": {
+    "rich_text": [
+      { "type": "text", "text": { "content": "🎯 今週のスキルテーマ\n" }, "annotations": { "bold": true } },
+      { "type": "text", "text": { "content": "焼く - フライパンの火加減" } }
+    ],
+    "icon": { "type": "emoji", "emoji": "🎯" },
+    "color": "blue_background"
+  }
+}
+```
+
+**ワークフロー:**
+1. WebSearch でレシピURLを検索（例: `クラシル 鶏むね肉のソテー`）
+2. WebFetch でレシピ内容を取得
+3. 上記テンプレートに従って Notion MCP でブロックを作成
+4. `mcp__claude_ai_Notion__notion-update-page` で書き込み（`replace_content: true`）
+
 ### 料理スキルアップ
 
 **目標:** 3ヶ月で「レシピを見ながら一通り作れる」→「アレンジできる」レベルへ

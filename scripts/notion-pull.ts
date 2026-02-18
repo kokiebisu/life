@@ -783,6 +783,70 @@ async function main() {
   if (totalEnriched > 0) parts.push(`Enriched: ${totalEnriched}`);
   if (totalRemoved > 0) parts.push(`Removed: ${totalRemoved}`);
   console.log(`\nDone! ${parts.join(", ")}`);
+
+  // --- Regenerate daily plan from current Notion state ---
+  if (!dryRun) {
+    console.log(`\nRegenerating daily plan for ${baseDate}...`);
+    const planProc = Bun.spawn(
+      ["bun", "run", "scripts/notion-daily-plan.ts", "--date", baseDate],
+      { stdout: "pipe", stderr: "pipe", cwd: ROOT },
+    );
+    const planOutput = await new Response(planProc.stdout).text();
+    const planErr = await new Response(planProc.stderr).text();
+    await planProc.exited;
+    if (planProc.exitCode === 0 && planOutput.trim()) {
+      const dailyPath = join(ROOT, "planning", "daily", `${baseDate}.md`);
+      const dir = dirname(dailyPath);
+      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+      writeFileSync(dailyPath, planOutput);
+      console.log(`Updated planning/daily/${baseDate}.md`);
+    } else if (planErr) {
+      console.error(`Daily plan generation failed: ${planErr}`);
+    }
+  }
+
+  // --- Push local event changes back to Notion ---
+  if (!dryRun) {
+    console.log(`\nSyncing local events → Notion...`);
+    for (const date of dates) {
+      const eventFiles = [
+        join(ROOT, "planning", "events", `${date}.md`),
+        join(ROOT, "aspects", "diet", "events", `${date}.md`),
+        join(ROOT, "aspects", "guitar", "events", `${date}.md`),
+      ];
+      for (const f of eventFiles) {
+        if (!existsSync(f)) continue;
+        const relPath = f.replace(ROOT + "/", "");
+        const syncProc = Bun.spawn(
+          ["bun", "run", "scripts/notion-sync-event-file.ts", "--file", relPath],
+          { stdout: "pipe", stderr: "pipe", cwd: ROOT },
+        );
+        const syncOut = await new Response(syncProc.stdout).text();
+        await syncProc.exited;
+        if (syncOut.trim()) {
+          for (const line of syncOut.trim().split("\n")) {
+            if (line.includes("SKIP") && line.includes("no changes")) continue;
+            console.log(`  ${line}`);
+          }
+        }
+      }
+    }
+
+    // Sync routine schedule
+    for (const date of dates) {
+      const schedProc = Bun.spawn(
+        ["bun", "run", "scripts/notion-sync-schedule.ts", "--date", date],
+        { stdout: "pipe", stderr: "pipe", cwd: ROOT },
+      );
+      const schedOut = await new Response(schedProc.stdout).text();
+      await schedProc.exited;
+      if (schedOut.trim() && !schedOut.includes("全てのルーティンは登録済み")) {
+        for (const line of schedOut.trim().split("\n")) {
+          console.log(`  ${line}`);
+        }
+      }
+    }
+  }
 }
 
 main().catch((err) => {

@@ -16,6 +16,38 @@
 
 ルーティンの追加・削除・比率変更は **schedule.json を編集するだけ** でスクリプトに反映される。
 
+## 週間 ratio トラッキング
+
+ratio ベースのルーティンは週単位（月〜日）でバランスを自動調整する。日曜の教会等で特定ルーティンが減っても、翌日以降で自動補填される。
+
+### 仕組み
+
+1. 月曜〜昨日の routine DB 実績を取得（完了エントリのみ）
+2. label ごとに実績分数を集計し、実績 ratio を算出
+3. 目標 ratio との差分を `correctionWeight` で調整
+   - `adjustedRatio = targetRatio + (targetRatio - actualRatio) × correctionWeight`
+   - `correctionWeight = min(daysElapsed / daysRemaining, 2.0)`
+4. Floor 5%（最低配分）→ 正規化して合計 1.0 に
+
+### 補正の強さ
+
+- 月曜: データなし → 生の ratio をそのまま使用
+- 週前半（火〜水）: 微調整（weight 0.17〜0.40）
+- 週後半（木〜金）: やや強め（weight 0.75〜1.33）
+- 週末（土〜日）: 上限キャップ 2.0
+
+### ラベルマッチング
+
+routine DB のエントリタイトルと schedule.json の label を前方一致で照合する。例: 「開発 @ 図書館」→「開発」にマッチ。
+
+### CLI
+
+```bash
+bun run scripts/notion-daily-plan.ts --week-stats  # 週間バランス表のみ表示
+```
+
+通常のデイリープラン出力にも週間バランスセクションが含まれる。
+
 ## 基本スケジュール（参考ガイダンス）
 
 | 時間帯              | 内容                                   |

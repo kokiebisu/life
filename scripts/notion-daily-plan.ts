@@ -7,6 +7,7 @@
  *   bun run scripts/notion-daily-plan.ts --date 2026-02-15  # 指定日
  *   bun run scripts/notion-daily-plan.ts --json        # JSON出力
  *   bun run scripts/notion-daily-plan.ts --ai          # AI最適化プラン
+ *   bun run scripts/notion-daily-plan.ts --week-stats  # 週間バランス表示
  */
 
 import { readFileSync, existsSync, readdirSync } from "fs";
@@ -30,6 +31,34 @@ const WEEKDAY_NAMES = ["日", "月", "火", "水", "木", "金", "土"];
 
 // --- Types ---
 
+type ConflictAction = "keep" | "delete" | "shift" | "shrink";
+
+interface ConflictOverride {
+  match: { label?: string; dbSource?: ScheduleDbName };
+  action: ConflictAction;
+  shiftDirection?: "later" | "earlier";
+  maxShiftMinutes?: number;
+  allowExceedActiveHours?: boolean;
+  minMinutes?: number;
+}
+
+interface ConflictRules {
+  dbPriority: ScheduleDbName[];
+  defaults: Partial<Record<ScheduleDbName, ConflictAction>>;
+  overrides: ConflictOverride[];
+}
+
+interface ConflictResolution {
+  entry: TimeSlot;
+  action: ConflictAction;
+  conflictWith: TimeSlot;
+  originalStart: string;
+  originalEnd: string;
+  newStart?: string;
+  newEnd?: string;
+  warning?: string;
+}
+
 interface RoutinePoolItem {
   label: string;
   minutes: number;
@@ -37,6 +66,7 @@ interface RoutinePoolItem {
   priority: number;
   splittable: boolean;
   minBlock: number;
+  preferred?: "start" | "end";
 }
 
 interface FreeSlot {
@@ -61,6 +91,7 @@ interface TimeSlot {
   source: "routine" | "event" | "notion";
   aspect?: string;
   dbSource?: ScheduleDbName;
+  notionId?: string;
   notionRegistered?: boolean;
   actualStart?: string; // "18:30" — 実際のイベント開始時刻
   actualEnd?: string;   // "21:00" — 実際のイベント終了時刻
@@ -73,9 +104,32 @@ interface AllDayItem {
   notionRegistered?: boolean;
 }
 
+interface WeekRoutineHistory {
+  label: string;
+  totalMinutes: number; // 完了した合計分数
+}
+
+interface AdjustedRatio {
+  label: string;
+  targetRatio: number;
+  actualRatio: number;
+  adjustedRatio: number;
+  weekMinutes: number; // 今週の実績分数
+  todayMinutes: number; // 今日の配分分数
+}
+
+interface WeeklyStats {
+  weekStart: string; // "2026-02-16"
+  weekEnd: string; // "2026-02-22"
+  daysElapsed: number;
+  daysTotal: number;
+  adjustedRatios: AdjustedRatio[];
+}
+
 interface ScheduleConfig {
   activeHours: { start: string; end: string };
   routines: RoutinePoolItem[];
+  conflictRules?: ConflictRules;
 }
 
 interface DailyPlanData {
@@ -93,7 +147,9 @@ interface DailyPlanData {
     routinePool: RoutinePoolItem[];
     activeHours: { start: string; end: string };
     timeline: TimeSlot[]; // backward compat: confirmed + filled routines
+    conflictResolutions?: ConflictResolution[];
   };
+  weeklyStats?: WeeklyStats;
 }
 
 // --- Utility ---
@@ -141,6 +197,27 @@ function overlaps(
   return a0 < b1 && b0 < a1;
 }
 
+function getWeekStartDate(dateStr: string): string {
+  const d = new Date(dateStr + "T12:00:00+09:00");
+  const day = d.getDay(); // 0=Sun, 1=Mon, ...
+  const diff = day === 0 ? 6 : day - 1; // Monday-based
+  d.setDate(d.getDate() - diff);
+  return d.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
+}
+
+function getWeekEndDate(dateStr: string): string {
+  const monday = getWeekStartDate(dateStr);
+  const d = new Date(monday + "T12:00:00+09:00");
+  d.setDate(d.getDate() + 6); // Sunday
+  return d.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
+}
+
+function daysBetween(startStr: string, endStr: string): number {
+  const s = new Date(startStr + "T12:00:00+09:00");
+  const e = new Date(endStr + "T12:00:00+09:00");
+  return Math.round((e.getTime() - s.getTime()) / (24 * 60 * 60 * 1000));
+}
+
 // --- Schedule Config ---
 
 function loadScheduleConfig(): ScheduleConfig {
@@ -157,7 +234,9 @@ function loadScheduleConfig(): ScheduleConfig {
         priority: r.priority,
         splittable: r.splittable ?? false,
         minBlock: r.minBlock ?? 30,
+        preferred: r.preferred,
       })),
+      conflictRules: config.conflictRules,
     };
   }
   // Fallback defaults (equivalent to old ROUTINE_SLOTS)
@@ -277,6 +356,128 @@ function parseEventLines(content: string, aspect: string): LocalEvent[] {
   return events;
 }
 
+// --- Weekly Ratio Tracking ---
+
+async function fetchWeekRoutineHistory(
+  weekStart: string,
+  yesterday: string,
+  ratioRoutines: RoutinePoolItem[],
+): Promise<WeekRoutineHistory[]> {
+  if (weekStart > yesterday) return []; // Monday: no prior data
+
+  const dbConf = getScheduleDbConfigOptional("routine");
+  if (!dbConf) return [];
+
+  const { apiKey, dbId, config } = dbConf;
+  const data = await queryDbByDateCached(apiKey, dbId, config, weekStart, yesterday);
+  const entries = normalizePages(data.results, config, "routine");
+
+  // Count completed minutes per label
+  const minutesByLabel = new Map<string, number>();
+  for (const entry of entries) {
+    if (entry.status !== "Done" && entry.status !== "完了") continue;
+    if (!entry.start.includes("T") || !entry.end) continue;
+
+    const startMs = new Date(entry.start).getTime();
+    const endMs = new Date(entry.end).getTime();
+    const mins = Math.round((endMs - startMs) / 60000);
+    if (mins <= 0) continue;
+
+    // Match entry title to schedule.json labels via prefix matching
+    const matchedLabel = matchRoutineLabel(entry.title, ratioRoutines);
+    if (!matchedLabel) continue;
+
+    minutesByLabel.set(matchedLabel, (minutesByLabel.get(matchedLabel) || 0) + mins);
+  }
+
+  return ratioRoutines.map((r) => ({
+    label: r.label,
+    totalMinutes: minutesByLabel.get(r.label) || 0,
+  }));
+}
+
+function matchRoutineLabel(title: string, routines: RoutinePoolItem[]): string | null {
+  const normalized = title.toLowerCase();
+  // Exact match first
+  for (const r of routines) {
+    if (normalized === r.label.toLowerCase()) return r.label;
+  }
+  // Prefix match: "開発 @ 図書館" → "開発"
+  for (const r of routines) {
+    if (normalized.startsWith(r.label.toLowerCase())) return r.label;
+  }
+  // Reverse prefix: label starts with title
+  for (const r of routines) {
+    if (r.label.toLowerCase().startsWith(normalized)) return r.label;
+  }
+  return null;
+}
+
+function computeAdjustedRatios(
+  ratioRoutines: RoutinePoolItem[],
+  history: WeekRoutineHistory[],
+  daysElapsed: number,
+  daysTotal: number,
+  poolForRatio: number,
+): AdjustedRatio[] {
+  const totalTracked = history.reduce((sum, h) => sum + h.totalMinutes, 0);
+
+  // Monday or no data: use raw ratios
+  if (daysElapsed === 0 || totalTracked === 0) {
+    return ratioRoutines.map((r) => {
+      const todayMinutes = Math.max(r.minBlock, Math.floor(poolForRatio * r.ratio!));
+      return {
+        label: r.label,
+        targetRatio: r.ratio!,
+        actualRatio: 0,
+        adjustedRatio: r.ratio!,
+        weekMinutes: 0,
+        todayMinutes,
+      };
+    });
+  }
+
+  const daysRemaining = daysTotal - daysElapsed;
+  const correctionWeight = Math.min(daysElapsed / daysRemaining, 2.0);
+
+  // Compute adjusted ratios
+  const raw: { label: string; targetRatio: number; actualRatio: number; adjusted: number }[] = [];
+  for (const r of ratioRoutines) {
+    const h = history.find((h) => h.label === r.label);
+    const actualRatio = h ? h.totalMinutes / totalTracked : 0;
+    const adjusted = r.ratio! + (r.ratio! - actualRatio) * correctionWeight;
+    raw.push({
+      label: r.label,
+      targetRatio: r.ratio!,
+      actualRatio,
+      adjusted: Math.max(adjusted, 0.05), // Floor 5%
+    });
+  }
+
+  // Normalize to sum = 1.0
+  const totalAdjusted = raw.reduce((sum, r) => sum + r.adjusted, 0);
+  const normalized = raw.map((r) => ({
+    ...r,
+    adjusted: r.adjusted / totalAdjusted,
+  }));
+
+  return normalized.map((r) => {
+    const h = history.find((h) => h.label === r.label);
+    const todayMinutes = Math.max(
+      ratioRoutines.find((rr) => rr.label === r.label)!.minBlock,
+      Math.floor(poolForRatio * r.adjusted),
+    );
+    return {
+      label: r.label,
+      targetRatio: r.targetRatio,
+      actualRatio: r.actualRatio,
+      adjustedRatio: r.adjusted,
+      weekMinutes: h?.totalMinutes || 0,
+      todayMinutes,
+    };
+  });
+}
+
 // --- Schedule Building ---
 
 function buildConfirmedSchedule(
@@ -329,6 +530,7 @@ function buildConfirmedSchedule(
       label: t.title,
       source: "notion",
       dbSource: t.source,
+      notionId: t.id,
       notionRegistered: true,
       actualStart: t.actualStart || undefined,
       actualEnd: t.actualEnd || undefined,
@@ -353,6 +555,162 @@ function buildConfirmedSchedule(
   deduped.sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
 
   return { confirmedTimeline: deduped, allDay };
+}
+
+function resolveTimelineConflicts(
+  timeline: TimeSlot[],
+  rules: ConflictRules,
+  activeHours: { start: string; end: string },
+): { resolved: TimeSlot[]; resolutions: ConflictResolution[] } {
+  const resolved = timeline
+    .map((s) => ({ ...s }))
+    .sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
+  const resolutions: ConflictResolution[] = [];
+  const maxIterations = resolved.length * 2;
+
+  for (let iter = 0; iter < maxIterations; iter++) {
+    // Find first overlapping pair
+    let foundOverlap = false;
+    for (let i = 0; i < resolved.length - 1; i++) {
+      const a = resolved[i];
+      const b = resolved[i + 1];
+      if (!overlaps(a.start, a.end, b.start, b.end)) continue;
+      // Same DB → skip (user-intentional)
+      if (a.dbSource && a.dbSource === b.dbSource) continue;
+
+      foundOverlap = true;
+
+      // Determine winner/loser by dbPriority
+      const aPrio = a.dbSource ? rules.dbPriority.indexOf(a.dbSource) : -1;
+      const bPrio = b.dbSource ? rules.dbPriority.indexOf(b.dbSource) : -1;
+      // Lower index = higher priority. -1 means not in list → treat as highest (keep)
+      const aWins = aPrio !== -1 && bPrio !== -1 ? aPrio <= bPrio : aPrio === -1;
+      const winner = aWins ? a : b;
+      const loser = aWins ? b : a;
+
+      // Determine action for loser
+      const action = getConflictAction(loser, rules);
+
+      const resolution: ConflictResolution = {
+        entry: loser,
+        action,
+        conflictWith: winner,
+        originalStart: loser.start,
+        originalEnd: loser.end,
+      };
+
+      if (action === "delete") {
+        const idx = resolved.indexOf(loser);
+        resolved.splice(idx, 1);
+      } else if (action === "shift") {
+        const override = findOverride(loser, rules);
+        const maxShift = override?.maxShiftMinutes ?? 120;
+        const allowExceed = override?.allowExceedActiveHours ?? false;
+        const winnerEnd = timeToMinutes(winner.end);
+        const loserDuration = timeToMinutes(loser.end) - timeToMinutes(loser.start);
+        const hardEnd = allowExceed ? 24 * 60 : timeToMinutes(activeHours.end);
+
+        // Find first gap after winner ends where loser fits
+        let placed = false;
+        let candidate = winnerEnd;
+        const maxCandidate = timeToMinutes(loser.start) + maxShift;
+
+        while (candidate + loserDuration <= Math.min(hardEnd, maxCandidate + loserDuration)) {
+          const candidateEnd = candidate + loserDuration;
+          // Check no overlap with any existing slot
+          const hasConflict = resolved.some(
+            (s) => s !== loser && overlaps(minutesToTime(candidate), minutesToTime(candidateEnd), s.start, s.end),
+          );
+          if (!hasConflict) {
+            loser.start = minutesToTime(candidate);
+            loser.end = minutesToTime(candidateEnd);
+            resolution.newStart = loser.start;
+            resolution.newEnd = loser.end;
+            placed = true;
+            break;
+          }
+          candidate += 5; // try 5-minute increments
+        }
+
+        if (!placed) {
+          // Cannot shift → fallback to delete
+          resolution.action = "delete";
+          resolution.warning = `シフト先が見つからず削除: ${loser.label}`;
+          const idx = resolved.indexOf(loser);
+          resolved.splice(idx, 1);
+        }
+      } else if (action === "shrink") {
+        const override = findOverride(loser, rules);
+        const minMins = override?.minMinutes ?? 15;
+        const winnerStart = timeToMinutes(winner.start);
+        const winnerEnd = timeToMinutes(winner.end);
+        const loserStart = timeToMinutes(loser.start);
+        const loserEnd = timeToMinutes(loser.end);
+
+        // Trim the overlapping part
+        let newStart = loserStart;
+        let newEnd = loserEnd;
+        if (loserStart < winnerStart) {
+          newEnd = Math.min(newEnd, winnerStart);
+        } else {
+          newStart = Math.max(newStart, winnerEnd);
+        }
+
+        if (newEnd - newStart < minMins) {
+          // Too short → delete
+          resolution.action = "delete";
+          resolution.warning = `縮小後${newEnd - newStart}分 < 最小${minMins}分のため削除`;
+          const idx = resolved.indexOf(loser);
+          resolved.splice(idx, 1);
+        } else {
+          loser.start = minutesToTime(newStart);
+          loser.end = minutesToTime(newEnd);
+          resolution.newStart = loser.start;
+          resolution.newEnd = loser.end;
+        }
+      }
+      // "keep" → both stay; if both are "keep", shift the lower-priority one
+      else if (action === "keep") {
+        // Both keep → shift the loser anyway
+        const winnerEnd = timeToMinutes(winner.end);
+        const loserDuration = timeToMinutes(loser.end) - timeToMinutes(loser.start);
+        loser.start = minutesToTime(winnerEnd);
+        loser.end = minutesToTime(winnerEnd + loserDuration);
+        resolution.action = "shift";
+        resolution.newStart = loser.start;
+        resolution.newEnd = loser.end;
+        resolution.warning = "両方 keep のため低優先側をシフト";
+      }
+
+      resolutions.push(resolution);
+      // Re-sort after modification
+      resolved.sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
+      break; // restart loop
+    }
+
+    if (!foundOverlap) break;
+  }
+
+  return { resolved, resolutions };
+}
+
+function getConflictAction(slot: TimeSlot, rules: ConflictRules): ConflictAction {
+  // Check overrides first
+  const override = findOverride(slot, rules);
+  if (override) return override.action;
+  // Fall back to DB default
+  if (slot.dbSource && rules.defaults[slot.dbSource]) {
+    return rules.defaults[slot.dbSource]!;
+  }
+  return "delete";
+}
+
+function findOverride(slot: TimeSlot, rules: ConflictRules): ConflictOverride | undefined {
+  return rules.overrides.find((o) => {
+    if (o.match.label && !slot.label.includes(o.match.label)) return false;
+    if (o.match.dbSource && slot.dbSource !== o.match.dbSource) return false;
+    return true;
+  });
 }
 
 function computeFreeSlots(
@@ -423,9 +781,13 @@ function fillRoutinesByPriority(
   for (const routine of sorted) {
     let minutesLeft = routine.minutes;
     const minBlock = routine.minBlock;
+    const fromEnd = routine.preferred === "end";
+
+    // Iterate segments: from end (reversed) or from start
+    const segOrder = fromEnd ? [...segments].reverse() : segments;
 
     if (routine.splittable) {
-      for (const seg of segments) {
+      for (const seg of segOrder) {
         if (minutesLeft <= 0) break;
         const available = seg.end - seg.start;
         if (available < minBlock) continue;
@@ -433,29 +795,48 @@ function fillRoutinesByPriority(
         const allocate = Math.min(minutesLeft, available);
         if (allocate < minBlock) continue;
 
-        result.push({
-          start: minutesToTime(seg.start),
-          end: minutesToTime(seg.start + allocate),
-          label: routine.label,
-          source: "routine",
-        });
-
-        seg.start += allocate;
+        if (fromEnd) {
+          // Place at the tail of the segment
+          result.push({
+            start: minutesToTime(seg.end - allocate),
+            end: minutesToTime(seg.end),
+            label: routine.label,
+            source: "routine",
+          });
+          seg.end -= allocate;
+        } else {
+          result.push({
+            start: minutesToTime(seg.start),
+            end: minutesToTime(seg.start + allocate),
+            label: routine.label,
+            source: "routine",
+          });
+          seg.start += allocate;
+        }
         minutesLeft -= allocate;
       }
     } else {
       // Need a single contiguous block
-      for (const seg of segments) {
+      for (const seg of segOrder) {
         const available = seg.end - seg.start;
         if (available >= routine.minutes) {
-          result.push({
-            start: minutesToTime(seg.start),
-            end: minutesToTime(seg.start + routine.minutes),
-            label: routine.label,
-            source: "routine",
-          });
-
-          seg.start += routine.minutes;
+          if (fromEnd) {
+            result.push({
+              start: minutesToTime(seg.end - routine.minutes),
+              end: minutesToTime(seg.end),
+              label: routine.label,
+              source: "routine",
+            });
+            seg.end -= routine.minutes;
+          } else {
+            result.push({
+              start: minutesToTime(seg.start),
+              end: minutesToTime(seg.start + routine.minutes),
+              label: routine.label,
+              source: "routine",
+            });
+            seg.start += routine.minutes;
+          }
           minutesLeft = 0;
           break;
         }
@@ -467,6 +848,32 @@ function fillRoutinesByPriority(
 }
 
 // --- Markdown Output ---
+
+function formatWeeklyStats(data: DailyPlanData): string {
+  const lines: string[] = [];
+  const ws = data.weeklyStats;
+  if (!ws) return "週間データなし";
+
+  lines.push(`## 週間バランス`);
+  lines.push(`期間: ${ws.weekStart}（${getWeekday(ws.weekStart)}）〜 ${ws.weekEnd}（${getWeekday(ws.weekEnd)}）`);
+  lines.push(`経過日数: ${ws.daysElapsed} / ${ws.daysTotal}`);
+  lines.push("");
+  lines.push("| ルーティン | 目標 | 実績 | 今日の配分 | 今週(分) | 今日(分) |");
+  lines.push("|-----------|------|------|-----------|---------|---------|");
+
+  for (const r of ws.adjustedRatios) {
+    const target = `${Math.round(r.targetRatio * 100)}%`;
+    const actual = ws.daysElapsed > 0 ? `${Math.round(r.actualRatio * 100)}%` : "-";
+    const arrow = ws.daysElapsed > 0
+      ? (r.adjustedRatio > r.targetRatio + 0.02 ? " ↑" : r.adjustedRatio < r.targetRatio - 0.02 ? " ↓" : "")
+      : "";
+    const adjusted = `${Math.round(r.adjustedRatio * 100)}%${arrow}`;
+    lines.push(`| ${r.label} | ${target} | ${actual} | ${adjusted} | ${r.weekMinutes} | ${r.todayMinutes} |`);
+  }
+
+  lines.push("");
+  return lines.join("\n");
+}
 
 function formatMarkdown(data: DailyPlanData): string {
   const lines: string[] = [];
@@ -554,6 +961,30 @@ function formatMarkdown(data: DailyPlanData): string {
   lines.push(
     "> ※登録済みのタスクは重複登録しないこと。空き時間にのみ新規追加する。",
   );
+
+  // Conflict resolutions
+  const cr = data.schedule.conflictResolutions;
+  if (cr && cr.length > 0) {
+    lines.push("");
+    lines.push("### 競合解決");
+    for (const r of cr) {
+      const icon = r.action === "delete" ? "🗑️" : r.action === "shift" ? "➡️" : "✂️";
+      if (r.action === "delete") {
+        lines.push(`${icon} ${r.entry.label}（${r.originalStart}-${r.originalEnd}）→ 削除（${r.conflictWith.label} と重複）`);
+      } else {
+        lines.push(`${icon} ${r.entry.label}（${r.originalStart}-${r.originalEnd}）→ ${r.newStart}-${r.newEnd}（${r.conflictWith.label} と重複）`);
+      }
+      if (r.warning) lines.push(`  ⚠️ ${r.warning}`);
+    }
+  }
+
+  // 週間バランス
+  if (data.weeklyStats) {
+    lines.push("");
+    lines.push("---");
+    lines.push("");
+    lines.push(formatWeeklyStats(data));
+  }
 
   lines.push("");
   lines.push("---");
@@ -695,6 +1126,31 @@ function buildUserPrompt(data: DailyPlanData): string {
     );
   }
 
+  // 週間バランスコンテキスト
+  if (data.weeklyStats && data.weeklyStats.daysElapsed > 0) {
+    const ws = data.weeklyStats;
+    sections.push(`\n## 週間バランス（${ws.weekStart}〜、${ws.daysElapsed}/${ws.daysTotal}日経過）`);
+    sections.push("今週の実績と調整方向:");
+    for (const r of ws.adjustedRatios) {
+      const dir = r.adjustedRatio > r.targetRatio + 0.02 ? "↑ 増やす" : r.adjustedRatio < r.targetRatio - 0.02 ? "↓ 減らす" : "→ 維持";
+      sections.push(`- ${r.label}: 目標${Math.round(r.targetRatio * 100)}% → 実績${Math.round(r.actualRatio * 100)}% → 今日${Math.round(r.adjustedRatio * 100)}%（${dir}）`);
+    }
+    sections.push("\n上記の調整済み配分に基づいてルーティンを配置してください。遅れているルーティンを優先し、超過しているものは控えめにしてください。");
+  }
+
+  // 競合解決
+  const cr = data.schedule.conflictResolutions;
+  if (cr && cr.length > 0) {
+    sections.push(`\n## 競合解決（自動処理済み）`);
+    for (const r of cr) {
+      if (r.action === "delete") {
+        sections.push(`- 🗑️ ${r.entry.label}（${r.originalStart}-${r.originalEnd}）→ 削除（${r.conflictWith.label} と重複）`);
+      } else {
+        sections.push(`- ➡️ ${r.entry.label}（${r.originalStart}-${r.originalEnd}）→ ${r.newStart}-${r.newEnd}（${r.conflictWith.label} と重複）`);
+      }
+    }
+  }
+
   // 出力フォーマット
   sections.push(`\n## 出力フォーマット
 
@@ -754,6 +1210,7 @@ async function main() {
   const targetDate = opts.date || todayJST();
   const json = flags.has("json");
   const ai = flags.has("ai");
+  const weekStats = flags.has("week-stats");
 
   const yesterdayDate = getYesterday(targetDate);
 
@@ -769,10 +1226,23 @@ async function main() {
   const scheduleConfig = loadScheduleConfig();
 
   // Build confirmed schedule (no routines)
-  const { confirmedTimeline, allDay } = buildConfirmedSchedule(
+  const { confirmedTimeline: rawTimeline, allDay } = buildConfirmedSchedule(
     localEvents,
     todayTasks,
   );
+
+  // Resolve conflicts between confirmed entries
+  let confirmedTimeline = rawTimeline;
+  let conflictResolutions: ConflictResolution[] = [];
+  if (scheduleConfig.conflictRules) {
+    const result = resolveTimelineConflicts(
+      rawTimeline,
+      scheduleConfig.conflictRules,
+      scheduleConfig.activeHours,
+    );
+    confirmedTimeline = result.resolved;
+    conflictResolutions = result.resolutions;
+  }
 
   // Compute free slots
   const freeSlots = computeFreeSlots(
@@ -787,19 +1257,47 @@ async function main() {
     const mins = timeToMinutes(s.end) - timeToMinutes(s.start);
     confirmedMinutesByLabel.set(key, (confirmedMinutesByLabel.get(key) || 0) + mins);
   }
-  // Resolve ratio-based routines: distribute free time by ratio
+
+  // Resolve ratio-based routines with weekly adjustment
   const totalFreeMinutes = freeSlots.reduce((sum, s) => sum + s.minutes, 0);
   const fixedRoutines = scheduleConfig.routines.filter((r) => r.minutes > 0 && !r.ratio);
   const ratioRoutines = scheduleConfig.routines.filter((r) => r.ratio);
   const fixedTotal = fixedRoutines.reduce((sum, r) => sum + r.minutes, 0);
   const poolForRatio = Math.max(0, totalFreeMinutes - fixedTotal);
 
+  // Weekly ratio tracking
+  const weekStart = getWeekStartDate(targetDate);
+  const weekEnd = getWeekEndDate(targetDate);
+  const daysElapsed = daysBetween(weekStart, targetDate);
+  const daysTotal = 7;
+
+  const history = await fetchWeekRoutineHistory(weekStart, yesterdayDate, ratioRoutines);
+  const adjustedRatios = computeAdjustedRatios(
+    ratioRoutines,
+    history,
+    daysElapsed,
+    daysTotal,
+    poolForRatio,
+  );
+
+  const weeklyStatsData: WeeklyStats = {
+    weekStart,
+    weekEnd,
+    daysElapsed,
+    daysTotal,
+    adjustedRatios,
+  };
+
+  // Build resolved routines using adjusted ratios
   const resolvedRoutines: RoutinePoolItem[] = [
     ...fixedRoutines,
-    ...ratioRoutines.map((r) => ({
-      ...r,
-      minutes: Math.max(r.minBlock, Math.floor(poolForRatio * r.ratio!)),
-    })),
+    ...ratioRoutines.map((r) => {
+      const adj = adjustedRatios.find((a) => a.label === r.label);
+      return {
+        ...r,
+        minutes: adj ? adj.todayMinutes : Math.max(r.minBlock, Math.floor(poolForRatio * r.ratio!)),
+      };
+    }),
   ];
 
   const remainingRoutines: RoutinePoolItem[] = [];
@@ -843,8 +1341,15 @@ async function main() {
       routinePool: scheduleConfig.routines,
       activeHours: scheduleConfig.activeHours,
       timeline,
+      conflictResolutions: conflictResolutions.length > 0 ? conflictResolutions : undefined,
     },
+    weeklyStats: weeklyStatsData,
   };
+
+  if (weekStats) {
+    console.log(formatWeeklyStats(data));
+    return;
+  }
 
   if (json) {
     console.log(JSON.stringify(data, null, 2));

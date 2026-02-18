@@ -121,12 +121,41 @@ function loadAobaPrices(): string {
   return readFileSync(path, "utf-8");
 }
 
+function loadFridge(): string {
+  const path = join(DIET_DIR, "fridge.md");
+  if (!existsSync(path)) return "";
+  return readFileSync(path, "utf-8");
+}
+
+function toJSTTimeStr(isoStr: string): string | null {
+  if (!isoStr.includes("T")) return null;
+  try {
+    const d = new Date(isoStr);
+    return d.toLocaleTimeString("ja-JP", {
+      timeZone: "Asia/Tokyo",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+  } catch {
+    return null;
+  }
+}
+
 // --- Page finding ---
+
+interface PageInfo {
+  id: string;
+  title: string;
+  dateStart: string;
+  dateEnd: string;
+  shoppingTimeJST: string | null;
+}
 
 async function findGroceriesPage(
   apiKey: string,
   date: string,
-): Promise<{ id: string; title: string; dateStart: string; dateEnd: string }> {
+): Promise<PageInfo> {
   const { dbId, config } = getScheduleDbConfig("groceries");
   const data = await queryDbByDateCached(apiKey, dbId, config, date, date);
   const pages = data.results;
@@ -156,14 +185,15 @@ async function findGroceriesPage(
 
   const dateStart = dateObj.start.split("T")[0];
   const dateEnd = dateObj.end ? dateObj.end.split("T")[0] : dateStart;
+  const shoppingTimeJST = toJSTTimeStr(dateObj.start);
 
-  return { id: page.id, title, dateStart, dateEnd };
+  return { id: page.id, title, dateStart, dateEnd, shoppingTimeJST };
 }
 
 async function getPageDateRange(
   apiKey: string,
   pageId: string,
-): Promise<{ id: string; title: string; dateStart: string; dateEnd: string }> {
+): Promise<PageInfo> {
   const page = await notionFetch(apiKey, `/pages/${pageId}`);
   const props = page.properties;
   const titleArr = props["件名"]?.title || [];
@@ -176,8 +206,9 @@ async function getPageDateRange(
 
   const dateStart = dateObj.start.split("T")[0];
   const dateEnd = dateObj.end ? dateObj.end.split("T")[0] : dateStart;
+  const shoppingTimeJST = toJSTTimeStr(dateObj.start);
 
-  return { id: pageId, title, dateStart, dateEnd };
+  return { id: pageId, title, dateStart, dateEnd, shoppingTimeJST };
 }
 
 // --- Events DB check ---
@@ -238,6 +269,10 @@ const SYSTEM_PROMPT = `あなたは買い出しリスト生成アシスタント
 
 9. **間食の食材も含める**: ヨーグルト、バナナ、ナッツなど間食の食材も忘れずにリストに入れる
 
+10. **買い出し前の食事は除外**: 買い出し時刻が指定されている場合、買い出し当日でその時刻より前の食事（朝食など）の食材は買い出しリストに含めない。在庫・前回の買い出しで対応する前提
+
+11. **冷蔵庫の在庫を考慮**: 冷蔵庫の在庫情報が提供されている場合、十分な量がある食材は買い出しリストから除外する（例: 卵が8個あり必要数が4個なら購入不要）
+
 ## 出力フォーマット
 
 以下のJSON構造で出力してください（JSONのみ、他のテキスト不要）:
@@ -269,13 +304,18 @@ function buildUserPrompt(
   eatingOutEvents: string[],
   pantry: string,
   prices: string,
+  fridge: string,
   startDate: string,
   endDate: string,
+  shoppingTimeJST: string | null,
 ): string {
   const sections: string[] = [];
 
   sections.push(`## 期間: ${startDate} 〜 ${endDate}`);
   sections.push(`買い出し日: ${startDate}（${getWeekday(startDate)}）`);
+  if (shoppingTimeJST) {
+    sections.push(`買い出し時刻: ${shoppingTimeJST}（この時刻より前の食事の食材は購入不要）`);
+  }
 
   // Meals by day
   sections.push("\n## 献立");
@@ -312,6 +352,12 @@ function buildUserPrompt(
     }
   }
 
+  // Fridge inventory
+  if (fridge) {
+    sections.push("\n## 冷蔵庫の在庫（在庫がある食材は購入不要）");
+    sections.push(fridge);
+  }
+
   // Pantry
   sections.push("\n## 常備調味料（除外対象）");
   sections.push(pantry);
@@ -328,16 +374,20 @@ async function generateGroceryList(
   eatingOutEvents: string[],
   pantry: string,
   prices: string,
+  fridge: string,
   startDate: string,
   endDate: string,
+  shoppingTimeJST: string | null,
 ): Promise<GroceryListData> {
   const userPrompt = buildUserPrompt(
     meals,
     eatingOutEvents,
     pantry,
     prices,
+    fridge,
     startDate,
     endDate,
+    shoppingTimeJST,
   );
 
   const result = await callClaude(
@@ -607,13 +657,21 @@ async function main() {
     `  Days: ${dates.map((d) => `${d}(${getWeekday(d)})`).join(", ")}`,
   );
 
+  if (page.shoppingTimeJST) {
+    console.log(`  Shopping time: ${page.shoppingTimeJST} JST`);
+  }
+
   // 3. Collect data (parallel)
   console.log("Collecting data ...");
-  const [eatingOutEvents, pantry, prices] = await Promise.all([
+  const [eatingOutEvents, pantry, prices, fridge] = await Promise.all([
     fetchEatingOutEvents(apiKey, page.dateStart, page.dateEnd),
     Promise.resolve(loadPantry()),
     Promise.resolve(loadAobaPrices()),
+    Promise.resolve(loadFridge()),
   ]);
+  if (fridge) {
+    console.log("  Fridge inventory loaded");
+  }
 
   // Parse daily meals
   const allMeals: MealEntry[] = [];
@@ -641,8 +699,10 @@ async function main() {
     eatingOutEvents,
     pantry,
     prices,
+    fridge,
     page.dateStart,
     page.dateEnd,
+    page.shoppingTimeJST,
   );
 
   // 5. Build Notion blocks

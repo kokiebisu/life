@@ -178,6 +178,7 @@ async function fetchAllDbEntries(date: string): Promise<NormalizedEntry[]> {
     "events",
     "guitar",
     "meals",
+    "groceries",
     "todo",
   ];
   const allEntries: NormalizedEntry[] = [];

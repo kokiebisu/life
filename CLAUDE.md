@@ -30,6 +30,7 @@
 /calendar                # Notion カレンダー操作
 /event                   # イベント登録
 /cache                   # キャッシュ管理（status / clear / analyze）
+/learn                   # ミスからの学習・再発防止
 ```
 
 ## Directory Structure

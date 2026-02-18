@@ -150,6 +150,11 @@ interface MergedEntry {
   hasCover: boolean;
   dbName: ScheduleDbName | "";
   changed: boolean;
+  // before→after diff tracking (populated for UPDATE entries)
+  oldStartTime: string;
+  oldEndTime: string;
+  oldDone: boolean;
+  oldFeedbackLine: string;
 }
 
 function mergeEntries(notionEntries: NormalizedEntry[], fileEntries: FileEntry[], dbName: ScheduleDbName): { merged: MergedEntry[]; added: number; updated: number; kept: number; dropped: string[] } {
@@ -200,6 +205,10 @@ function mergeEntries(notionEntries: NormalizedEntry[], fileEntries: FileEntry[]
         hasCover: ne.hasCover,
         dbName,
         changed,
+        oldStartTime: fe.startTime,
+        oldEndTime: fe.endTime,
+        oldDone: fe.done,
+        oldFeedbackLine: fe.feedbackLine,
       });
     } else {
       // Notion only — new entry
@@ -222,6 +231,10 @@ function mergeEntries(notionEntries: NormalizedEntry[], fileEntries: FileEntry[]
         hasCover: ne.hasCover,
         dbName,
         changed: true,
+        oldStartTime: "",
+        oldEndTime: "",
+        oldDone: false,
+        oldFeedbackLine: "",
       });
     }
   }
@@ -253,6 +266,10 @@ function mergeEntries(notionEntries: NormalizedEntry[], fileEntries: FileEntry[]
         hasCover: true,
         dbName: "",
         changed: false,
+        oldStartTime: "",
+        oldEndTime: "",
+        oldDone: false,
+        oldFeedbackLine: "",
       });
     }
   }
@@ -285,6 +302,10 @@ function mergeEntries(notionEntries: NormalizedEntry[], fileEntries: FileEntry[]
         hasCover: true,
         dbName: "",
         changed: false,
+        oldStartTime: "",
+        oldEndTime: "",
+        oldDone: false,
+        oldFeedbackLine: "",
       });
     }
   }
@@ -829,6 +850,29 @@ async function main() {
         const fb = e.feedbackLine ? ` 💬 ${e.feedbackLine}` : "";
         const travel = e.actualStart && e.changed ? ` (実際: ${e.actualStart}-${e.actualEnd})` : "";
         console.log(`  ${tag}: ${e.done ? "✅" : "⬜"} ${time} ${e.title}${travel}${fb}`);
+
+        // Show before→after diff for UPDATE entries
+        if (tag === "UPDATE" && e.source === "both") {
+          const diffs: string[] = [];
+          const oldTime = e.oldStartTime && e.oldEndTime ? `${e.oldStartTime}-${e.oldEndTime}` : "";
+          const newTime = e.startTime && e.endTime ? `${e.startTime}-${e.endTime}` : "";
+          if (oldTime && newTime && oldTime !== newTime) {
+            diffs.push(`時間: ${oldTime} → ${newTime}`);
+          }
+          if (e.oldDone !== e.done) {
+            diffs.push(`ステータス: ${e.oldDone ? "✅" : "⬜"} → ${e.done ? "✅" : "⬜"}`);
+          }
+          if (e.feedbackLine && e.oldFeedbackLine !== e.feedbackLine) {
+            if (e.oldFeedbackLine) {
+              diffs.push(`💬: "${e.oldFeedbackLine}" → "${e.feedbackLine}"`);
+            } else {
+              diffs.push(`💬 追加: "${e.feedbackLine}"`);
+            }
+          }
+          if (diffs.length > 0) {
+            console.log(`    ↳ ${diffs.join(" / ")}`);
+          }
+        }
       }
       for (const d of r.dropped) {
         console.log(`  DROP: ${d} (not in Notion)`);
@@ -890,13 +934,17 @@ async function main() {
         console.log(`planning/tasks.md [todo]:`);
         for (const ne of allNotionTodos) {
           const isDone = ne.status === "Done" || ne.status === "完了";
-          const matched = updatedInbox.some(t => titlesMatch(ne.title, t.title));
+          const matchedTask = updatedInbox.find(t => titlesMatch(ne.title, t.title));
           const isNew = newEntries.some(n => n.id === ne.id);
           const isPastUncompleted = pastUncompleted.some(p => p.id === ne.id);
           const tag = isPastUncompleted ? "UNSCHEDULE"
             : isNew ? "ADD"
-            : (matched && isDone ? "DONE" : "KEEP");
+            : (matchedTask && isDone ? "DONE" : "KEEP");
           console.log(`  ${tag}: ${isDone ? "✅" : "⬜"} ${ne.title}`);
+          // Show diff for DONE (was unchecked → now completed)
+          if (tag === "DONE" && matchedTask && !inbox.find(t => titlesMatch(ne.title, t.title))?.done) {
+            console.log(`    ↳ ステータス: ⬜ → ✅`);
+          }
         }
 
         if (!dryRun) {

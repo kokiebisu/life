@@ -10,6 +10,23 @@
 
 ---
 
+## Cross-DB 重複自動解決（from:notion 実行時）
+
+`notion-pull.ts` はDB間の時間重複を自動的に解決する。優先度の高いDB のエントリが低いDBのエントリに勝ち、重複する低優先エントリは Notion から削除される。
+
+**DB 優先度（高→低）:** events > todo > guitar > meals > routine > groceries
+
+**例:**
+- デート（events, 19:00-22:00）と夕食（meals, 19:00-20:00）→ 夕食を削除（デートで食事する）
+- イベント（events）と Devotion（routine）→ Devotion を削除（ルーティン同期が別の時間に再配置する）
+
+**ポイント:**
+- 手動でNotionにイベントを追加した後に `from:notion` を実行すると、自動エントリとの重複が解消される
+- 削除されたルーティンは `notion-sync-schedule.ts` が空き時間に再配置する
+- 同じDB内のエントリ同士は重複解決の対象外（ユーザーが意図的に配置したと判断）
+
+---
+
 ## イベント登録時の必須チェックリスト（厳守）
 
 **新しいイベント・タスクを登録するときは、以下を必ず実行する:**
@@ -119,7 +136,7 @@ CLI コマンドは `/calendar` コマンドを参照。
 
 予定をキャンセルする場合:
 
-1. **Notion**: 日付プロパティを `null` にクリアしてカレンダーから消す（タイトルは変更しない）
+1. **Notion**: `notion-delete.ts` でページごと削除する（日付クリアではなく完全削除）
 2. **イベントファイル**: キャンセルセクションに記録を残す
 
 ### 注意
@@ -131,6 +148,27 @@ CLI コマンドは `/calendar` コマンドを参照。
 
 - **`planning/events/`** — 未来の予定。**一回限りのイベントのみ**
 - **`planning/daily/`** — その日の実績・記録用（完了タスク、持ち越し、Feedback 転記）
+
+## 重複解決ルール（Conflict Resolution）
+
+`schedule.json` の `conflictRules` に基づく。
+
+### ルール
+
+- **events / todo**: keep（絶対に動かさない）
+- **Devotion**: shift（後ろにずらす。削除禁止）
+- **meals**: delete（外食イベントと重複したら削除）
+- **groceries**: delete
+- **routine（その他）/ guitar**: shift
+
+### Claude の対応
+
+デイリープラン生成後、`conflictResolutions` を確認:
+- `delete` → `notion-delete.ts` で Notion ページ削除
+- `shift` → `notion-update-page` で時間変更
+- `shrink` → `notion-update-page` で時間変更
+
+---
 
 ### ルーティンを events/ に書かない（厳守）
 

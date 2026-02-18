@@ -7,11 +7,14 @@
 `aspects/routine/schedule.json` にルーティンプールを定義。`notion-daily-plan.ts` はこのファイルを読み、確定予定の空き時間にルーティンを自動配置する。
 
 - `activeHours`: 活動時間帯（この範囲内に配置）
+- `routines[].minutes`: 固定分数（Devotion 等、ratio と排他）
+- `routines[].ratio`: 空き時間に対する比率（0.0〜1.0）。固定分を引いた残りを比率で分配
 - `routines[].priority`: 小さいほど優先。空き時間不足時は低優先度を削る
 - `routines[].splittable`: true なら複数ブロックに分割可（`minBlock` 以上）
 - `routines[].splittable`: false なら連続1ブロック必須
+- `routines[].preferred`: `"start"` / `"end"` — 活動時間帯の先頭・末尾に優先配置
 
-ルーティンの追加・削除・時間変更は **schedule.json を編集するだけ** でスクリプトに反映される。
+ルーティンの追加・削除・比率変更は **schedule.json を編集するだけ** でスクリプトに反映される。
 
 ## 基本スケジュール（参考ガイダンス）
 

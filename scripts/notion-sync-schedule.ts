@@ -12,7 +12,7 @@
  *   3. 未登録のルーティン枠を Notion に追加
  */
 
-import { getScheduleDbConfig, notionFetch, parseArgs, todayJST, pickTaskIcon, pickCover } from "./lib/notion";
+import { getScheduleDbConfig, notionFetch, parseArgs, todayJST, pickTaskIcon, pickCover, type ScheduleDbName } from "./lib/notion";
 
 interface TimeSlot {
   start: string;
@@ -110,32 +110,80 @@ async function main() {
 
   console.log(`${toRegister.length} 件のルーティンを登録${dryRun ? "（dry-run）" : ""}:`);
 
-  const { apiKey, dbId, config } = getScheduleDbConfig("routine");
+  // Label → DB mapping for non-routine entries
+  const GUITAR_LABEL = "ギター練習";
+
+  /** Find the next unscheduled Lesson page in guitar DB (no date set, not completed) */
+  async function findNextLesson(): Promise<{ id: string; title: string } | null> {
+    const { apiKey, dbId } = getScheduleDbConfig("guitar");
+    const resp = await notionFetch(apiKey, "/databases/" + dbId + "/query", {
+      filter: {
+        and: [
+          { property: "名前", title: { starts_with: "Lesson" } },
+          { property: "日付", date: { is_empty: true } },
+          { property: "ステータス", status: { does_not_equal: "完了" } },
+        ],
+      },
+      sorts: [{ property: "名前", direction: "ascending" }],
+      page_size: 1,
+    });
+    const page = resp.results?.[0];
+    if (!page) return null;
+    const title = page.properties?.["名前"]?.title?.[0]?.plain_text || "";
+    return { id: page.id, title };
+  }
 
   for (const slot of toRegister) {
-    console.log(`  ${slot.start}-${slot.end}  ${slot.label}`);
+    const isGuitar = slot.label === GUITAR_LABEL;
 
-    if (dryRun) continue;
+    if (isGuitar) {
+      // Guitar: find existing Lesson page and set date (don't create new)
+      const lesson = await findNextLesson();
+      if (!lesson) {
+        console.log(`  ${slot.start}-${slot.end}  ⚠ 未スケジュールの Lesson が見つかりません [guitar]`);
+        continue;
+      }
 
-    const properties: Record<string, unknown> = {
-      [config.titleProp]: { title: [{ text: { content: slot.label } }] },
-      [config.dateProp]: {
-        date: {
-          start: `${date}T${slot.start}:00+09:00`,
-          end: `${date}T${slot.end}:00+09:00`,
+      console.log(`  ${slot.start}-${slot.end}  ${lesson.title} [guitar]`);
+
+      if (dryRun) continue;
+
+      const { apiKey } = getScheduleDbConfig("guitar");
+      await notionFetch(apiKey, `/pages/${lesson.id}`, {
+        properties: {
+          "日付": {
+            date: {
+              start: `${date}T${slot.start}:00+09:00`,
+              end: `${date}T${slot.end}:00+09:00`,
+            },
+          },
         },
-      },
-    };
+      }, "PATCH");
+    } else {
+      // Default: create new page in routine DB
+      const { apiKey, dbId, config } = getScheduleDbConfig("routine");
 
-    const icon = pickTaskIcon(slot.label);
-    const cover = pickCover();
+      console.log(`  ${slot.start}-${slot.end}  ${slot.label}`);
 
-    await notionFetch(apiKey, "/pages", {
-      parent: { database_id: dbId },
-      properties,
-      icon,
-      cover,
-    });
+      if (dryRun) continue;
+
+      const properties: Record<string, unknown> = {
+        [config.titleProp]: { title: [{ text: { content: slot.label } }] },
+        [config.dateProp]: {
+          date: {
+            start: `${date}T${slot.start}:00+09:00`,
+            end: `${date}T${slot.end}:00+09:00`,
+          },
+        },
+      };
+
+      await notionFetch(apiKey, "/pages", {
+        parent: { database_id: dbId },
+        properties,
+        icon: pickTaskIcon(slot.label),
+        cover: pickCover(),
+      });
+    }
   }
 
   if (!dryRun) {

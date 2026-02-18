@@ -58,6 +58,18 @@ Notion MCP (`notion-update-page`) で日時プロパティを設定するとき�
 - events DB は**物理的に人と会う or 場所に行く予定**に限定する
 - パソコン作業・申請・書類整理・ダウンロード等は全て todo DB
 
+**schedule.json に定義されたルーティンは必ず routine DB に入れる（例外あり）:**
+- ❌ 間違い: 「開発（神奈川県立図書館）」を todo DB に登録
+- ✅ 正解: 「開発（神奈川県立図書館）」は routine DB に登録
+- `schedule.json` の `routines` に定義されている活動（開発・ジム等）は routine DB
+- 場所の指定（図書館、カフェ等）やサブタイトルがついても、活動の本質が routine なら routine DB
+- **DB 選択前に `schedule.json` の routines 一覧を確認すること**
+
+**ギター練習は guitar DB に入れる（routine DB ではない・厳守）:**
+- guitar DB はカリキュラム型: Lesson 1, 2, 3... のページが事前に作成済み
+- **新規ページを作らない。** 日付未設定の既存 Lesson ページを探して日付をセットする
+- `notion-sync-schedule.ts` が自動で処理する（`findNextLesson` で未スケジュール Lesson を検索）
+
 **電話・窓口での問い合わせ・手続きも todo DB に入れる:**
 - ❌ 間違い: 「国保の保険料を試算してもらう（役所の窓口 or 電話）」を events DB に登録
 - ✅ 正解: 「国保の保険料を試算してもらう」は todo DB に登録
@@ -91,6 +103,16 @@ Notion MCP (`notion-update-page`) で日時プロパティを設定するとき�
 
 ## Notion 操作の安全ルール
 
+### ページ本文の上書き禁止（厳守）
+
+**`replace_content` でページ全体を上書きしない。** 既存コンテンツ（チェックリスト等）が消える。
+
+- ページを更新するときは **まず `notion-fetch` で既存内容を確認する**
+- 部分的な変更は `replace_content_range` または `insert_content_after` を使う
+- 特定の行を削除したいだけなら、その行だけを `replace_content_range` で空文字に置換する
+- `replace_content` は **新規作成直後の空ページ** にのみ使う
+- スクリプト生成ページ（grocery-gen 等）の内容は手動編集せず、スクリプトを再実行する
+
 ### Notion ページ ID の取り違え防止
 
 複数エントリを一括更新するとき、**更新前に ID→タイトルの対応表を書き出して確認する。** UUID の目視コピーは取り違えやすいため、JSON 出力から ID を拾うときは必ずタイトルとセットで扱う。
@@ -118,6 +140,12 @@ Notion MCP (`notion-update-page`) で日時プロパティを設定するとき�
 - 「Aパーティ」と「Aパーティ買い出し」のように名前が似たエントリを扱うとき、重複検出の誤判定に注意する
 - 重複検出でスキップされた場合、本当に同一エントリか（名前・時間が完全一致か）を確認する
 - 誤判定でブロックされたら、Notion MCP（`notion-create-pages`）で直接登録する
+
+### 食事メニュー変更時は本文も更新する（厳守）
+
+- `update_properties` でタイトル（名前）を変更しただけでは、ページ本文（レシピ等）は旧メニューのまま残る
+- **間違った手順:** `update_properties` でタイトルだけ変更 → 本文に旧レシピが残る
+- **正しい手順:** `update_properties` でタイトル変更 → `notion-fetch` で本文確認 → `replace_content` で本文を新メニューに差し替え
 
 ### 予定の日付変更・前倒し（重要）
 

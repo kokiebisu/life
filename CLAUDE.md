@@ -22,7 +22,8 @@
 ```bash
 /ask:diet                # ダイエットチームに相談
 /ask:job:search          # 就職活動チームに相談
-/sync:sumitsugi          # sumitsugi ↔ LIFE Linear タスク同期
+/from:notion             # Notion からデータ同期
+/from:sumitsugi          # sumitsugi ↔ LIFE Linear タスク同期
 /goal                    # 壁打ちして新しい目標を追加
 /pr                      # 変更をグループ化してPR作成
 /tidy                    # 指示ファイルの重複・配置を整理
@@ -34,7 +35,7 @@
 ## Directory Structure
 
 ```
-profile/                 # ユーザープロフィール（basic/health/career/love/personality）
+profile/                 # ユーザープロフィール（basic/health/career/goals/love/personality）
 planning/                # 全体管理（events/, daily/, goals.md, roadmap.md, tasks.md）
 aspects/                 # 生活の各側面（各ディレクトリに CLAUDE.md あり）
 projects/sumitsugi/      # 個人プロジェクト（サブモジュール）
@@ -59,11 +60,12 @@ memory-bank/             # セッション間の記憶（decisions.md）
 | job/search | 6人チーム | 就職活動 |
 | fukuoka | 田中誠 | 福岡移住検討 |
 | reading | 村上葉月 | 読書記録 |
-| planning | 松本あかり | 全aspect横断管理 |
 | routine | - | 習慣・ルーティン → Notion: 習慣DB |
 | church | - | 教会関連 |
-| diary | - | 日記・振り返り |
-| sumitsugi | サブモジュール | 個人プロジェクト（本業） |
+
+**その他:**
+- `planning/` — 全aspect横断管理（events/, daily/, goals.md, roadmap.md, tasks.md）
+- `projects/sumitsugi/` — 個人プロジェクト・本業（サブモジュール）
 
 ## Devcontainer
 

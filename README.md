@@ -25,7 +25,7 @@ scripts/     Notion 連携スクリプト
 | [ギター](aspects/guitar/) | ギター練習 | 3人 | - |
 | [投資](aspects/investment/) | 投資判断 | 8人 | - |
 | [学習](aspects/study/) | 起業・法律・技術 | 9人 | - |
-| [就職活動](aspects/job/) | 就職・転職活動 | - | `/ask:job:search` |
+| [就職活動](aspects/job/) | 就職・転職活動 | 6人 | `/ask:job:search` |
 | [福岡](aspects/fukuoka/) | 福岡移住検討 | 1人 | - |
 | [読書](aspects/reading/) | 読書記録 | 1人 | - |
 | [ルーティン](aspects/routine/) | 習慣管理 | - | - |
@@ -45,9 +45,12 @@ scripts/     Notion 連携スクリプト
 | `/ask:job:search` | 就職活動チームに相談 |
 | `/goal` | 壁打ちして目標を追加 |
 | `/event` | イベント登録 |
-| `/calendar` | カレンダー確認 |
+| `/calendar` | Notion カレンダー操作 |
 | `/pr` | 変更をグループ化してPR作成 |
-| `/sync:sumitsugi` | sumitsugi ↔ LIFE タスク同期 |
+| `/from:notion` | Notion からデータ同期 |
+| `/from:sumitsugi` | sumitsugi ↔ LIFE タスク同期 |
+| `/tidy` | 指示ファイルの整理・重複削減 |
+| `/cache` | キャッシュ管理 |
 
 ## タスク・スケジュール管理
 

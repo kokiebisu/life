@@ -23,7 +23,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 import {
   type ScheduleDbName, type NormalizedEntry,
-  SCHEDULE_DB_CONFIGS, getScheduleDbConfigOptional, queryDbByDateCached, normalizePages,
+  SCHEDULE_DB_CONFIGS, getScheduleDbConfigOptional, queryDbByDate, queryDbByDateCached, normalizePages,
   notionFetch, getApiKey, clearNotionCache,
   parseArgs, todayJST, loadEnv, getHomeAddress,
   pickTaskIcon, pickCover,
@@ -95,6 +95,8 @@ function parseEventFile(filePath: string): FileEntry[] {
       const sub = lines[j].replace(/^\s{2,}-\s/, "").trim();
       if (sub.startsWith("💬")) {
         feedbackLine = sub.replace(/^💬\s*/, "");
+      } else if (sub.startsWith("🕐")) {
+        // Skip travel time annotation (regenerated from actualStart/actualEnd)
       } else {
         descLines.push(sub);
       }
@@ -147,6 +149,7 @@ interface MergedEntry {
   hasIcon: boolean;
   hasCover: boolean;
   dbName: ScheduleDbName | "";
+  changed: boolean;
 }
 
 function mergeEntries(notionEntries: NormalizedEntry[], fileEntries: FileEntry[], dbName: ScheduleDbName): { merged: MergedEntry[]; added: number; updated: number; kept: number; dropped: string[] } {
@@ -196,6 +199,7 @@ function mergeEntries(notionEntries: NormalizedEntry[], fileEntries: FileEntry[]
         hasIcon: ne.hasIcon,
         hasCover: ne.hasCover,
         dbName,
+        changed,
       });
     } else {
       // Notion only — new entry
@@ -217,6 +221,7 @@ function mergeEntries(notionEntries: NormalizedEntry[], fileEntries: FileEntry[]
         hasIcon: ne.hasIcon,
         hasCover: ne.hasCover,
         dbName,
+        changed: true,
       });
     }
   }
@@ -247,6 +252,7 @@ function mergeEntries(notionEntries: NormalizedEntry[], fileEntries: FileEntry[]
         hasIcon: true,
         hasCover: true,
         dbName: "",
+        changed: false,
       });
     }
   }
@@ -278,11 +284,92 @@ function mergeEntries(notionEntries: NormalizedEntry[], fileEntries: FileEntry[]
         hasIcon: true,
         hasCover: true,
         dbName: "",
+        changed: false,
       });
     }
   }
 
   return { merged, added, updated, kept, dropped };
+}
+
+// --- Cross-DB overlap resolution ---
+
+const DB_PRIORITY: Record<ScheduleDbName, number> = {
+  events: 100,
+  todo: 80,
+  guitar: 60,
+  meals: 40,
+  routine: 20,
+  groceries: 10,
+};
+
+function timeToMinutes(time: string): number {
+  if (!time) return 0;
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function hasTimeOverlap(a: MergedEntry, b: MergedEntry): boolean {
+  if (a.allDay || b.allDay) return false;
+  if (!a.startTime || !b.startTime || !a.endTime || !b.endTime) return false;
+  const aStart = timeToMinutes(a.startTime);
+  const aEnd = timeToMinutes(a.endTime);
+  const bStart = timeToMinutes(b.startTime);
+  const bEnd = timeToMinutes(b.endTime);
+  return aStart < bEnd && bStart < aEnd;
+}
+
+interface OverlapRemoval {
+  entry: MergedEntry;
+  db: ScheduleDbName;
+  reason: string;
+}
+
+/**
+ * Cross-DB overlap resolution: higher-priority DB entries win.
+ * Modifies entriesByDb in-place (removes losers).
+ */
+function resolveOverlaps(
+  entriesByDb: Map<ScheduleDbName, MergedEntry[]>,
+): OverlapRemoval[] {
+  const allEntries: { entry: MergedEntry; db: ScheduleDbName }[] = [];
+  for (const [db, entries] of entriesByDb) {
+    for (const entry of entries) {
+      if (!entry.allDay && entry.startTime && entry.endTime) {
+        allEntries.push({ entry, db });
+      }
+    }
+  }
+
+  // Sort by priority descending
+  allEntries.sort((a, b) => (DB_PRIORITY[b.db] || 0) - (DB_PRIORITY[a.db] || 0));
+
+  const removals: OverlapRemoval[] = [];
+  const removedSet = new Set<MergedEntry>();
+
+  for (let i = 0; i < allEntries.length; i++) {
+    if (removedSet.has(allEntries[i].entry)) continue;
+    for (let j = i + 1; j < allEntries.length; j++) {
+      if (removedSet.has(allEntries[j].entry)) continue;
+      if (allEntries[i].db === allEntries[j].db) continue;
+
+      if (hasTimeOverlap(allEntries[i].entry, allEntries[j].entry)) {
+        removedSet.add(allEntries[j].entry);
+        removals.push({
+          entry: allEntries[j].entry,
+          db: allEntries[j].db,
+          reason: `${allEntries[i].entry.title}（${allEntries[i].db}）と時間が重複`,
+        });
+      }
+    }
+  }
+
+  // Remove losers from entriesByDb
+  for (const [db, entries] of entriesByDb) {
+    entriesByDb.set(db, entries.filter(e => !removedSet.has(e)));
+  }
+
+  return removals;
 }
 
 // --- Render ---
@@ -662,6 +749,20 @@ async function main() {
   for (const date of dates) {
     const isPast = date < today;
 
+    // Phase 1: Pull and merge all DBs (defer file writing)
+    interface DbResult {
+      merged: MergedEntry[];
+      final: MergedEntry[];
+      filePath: string;
+      added: number;
+      updated: number;
+      kept: number;
+      pastRemoved: number;
+      dropped: string[];
+      db: ScheduleDbName;
+    }
+    const dateResults: DbResult[] = [];
+
     for (const db of eventDbs) {
       const dbConf = getScheduleDbConfigOptional(db);
       if (!dbConf) continue;
@@ -677,48 +778,84 @@ async function main() {
 
       const { merged, added, updated, kept, dropped } = mergeEntries(notionEntries, fileEntries, db);
 
-      // For past dates: remove uncompleted entries
       let final = merged;
-      let removed = 0;
+      let pastRemoved = 0;
       if (isPast) {
         final = merged.filter(e => e.done);
-        removed = merged.length - final.length;
+        pastRemoved = merged.length - final.length;
       }
 
-      // Enrich entries with travel time and icon/cover
+      dateResults.push({
+        merged, final: [...final], filePath, added, updated,
+        kept: kept - pastRemoved, pastRemoved, dropped, db,
+      });
+    }
+
+    // Phase 2: Cross-DB overlap resolution (future dates only)
+    let overlapRemovals: OverlapRemoval[] = [];
+    if (!isPast && dateResults.length > 1) {
+      const entriesByDb = new Map<ScheduleDbName, MergedEntry[]>();
+      for (const r of dateResults) {
+        entriesByDb.set(r.db, r.final);
+      }
+      overlapRemovals = resolveOverlaps(entriesByDb);
+      for (const r of dateResults) {
+        r.final = entriesByDb.get(r.db) || r.final;
+      }
+    }
+
+    // Phase 3: Enrich, log, and write files
+    for (const r of dateResults) {
       if (!noEnrich && !isPast) {
-        const enrichCount = await enrichEntries(final, date, dryRun);
+        const enrichCount = await enrichEntries(r.final, date, dryRun);
         totalEnriched += enrichCount;
       }
 
-      totalAdded += added;
-      totalUpdated += updated;
-      totalKept += kept - removed; // adjust kept count
-      totalRemoved += removed;
+      totalAdded += r.added;
+      totalUpdated += r.updated;
+      totalKept += r.kept;
+      totalRemoved += r.pastRemoved;
 
-      const relPath = filePath.replace(ROOT + "/", "");
-      console.log(`${relPath} [${db}]:`);
-      for (const e of merged) {
+      const relPath = r.filePath.replace(ROOT + "/", "");
+      console.log(`${relPath} [${r.db}]:`);
+      const logEntries = isPast ? r.merged : r.final;
+      for (const e of logEntries) {
         const isRemoved = isPast && !e.done;
         const tag = isRemoved ? "REMOVE"
           : e.source === "notion" ? "ADD"
-          : e.source === "both" ? "SYNC"
+          : e.source === "both" ? (e.changed ? "UPDATE" : "KEEP")
           : "KEEP";
         const time = e.allDay ? "終日" : `${e.startTime}-${e.endTime}`;
         const fb = e.feedbackLine ? ` 💬 ${e.feedbackLine}` : "";
-        const travel = e.actualStart ? ` (実際: ${e.actualStart}-${e.actualEnd})` : "";
+        const travel = e.actualStart && e.changed ? ` (実際: ${e.actualStart}-${e.actualEnd})` : "";
         console.log(`  ${tag}: ${e.done ? "✅" : "⬜"} ${time} ${e.title}${travel}${fb}`);
       }
-      for (const d of dropped) {
+      for (const d of r.dropped) {
         console.log(`  DROP: ${d} (not in Notion)`);
       }
 
       if (!dryRun) {
-        const content = renderFile(date, final);
-        const dir = dirname(filePath);
+        const content = renderFile(date, r.final);
+        const dir = dirname(r.filePath);
         if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-        writeFileSync(filePath, content);
+        writeFileSync(r.filePath, content);
       }
+    }
+
+    // Phase 4: Delete overlapping entries from Notion
+    if (overlapRemovals.length > 0) {
+      console.log(`\n⚡ Overlap resolution for ${date}:`);
+      for (const removal of overlapRemovals) {
+        const time = `${removal.entry.startTime}-${removal.entry.endTime}`;
+        console.log(`  DELETE: ${time} ${removal.entry.title} [${removal.db}] — ${removal.reason}`);
+        if (!dryRun && removal.entry.notionId) {
+          clearNotionCache();
+          await notionFetch(getApiKey(), `/pages/${removal.entry.notionId}`, {
+            archived: true,
+          }, "PATCH");
+        }
+      }
+      totalRemoved += overlapRemovals.length;
     }
   }
 
@@ -766,15 +903,54 @@ async function main() {
           const content = renderTasksFile(header, updatedInbox, footer, newEntries, baseDate);
           writeFileSync(TASKS_FILE, content);
 
-          // Clear date for past uncompleted todos in Notion
+          // Delete past uncompleted todos from Notion (archive page)
           clearNotionCache();
           for (const ne of pastUncompleted) {
-            console.log(`  → Clearing date for: ${ne.title}`);
+            console.log(`  → Deleting: ${ne.title}`);
             await notionFetch(getApiKey(), `/pages/${ne.id}`, {
-              properties: { [config.dateProp]: { date: null } },
+              archived: true,
             }, "PATCH");
           }
         }
+      }
+    }
+  }
+
+  // --- Enrich future unenriched pages (icon/cover) across all DBs ---
+  if (!noEnrich) {
+    const futureEnd = new Date(today + "T12:00:00+09:00");
+    futureEnd.setDate(futureEnd.getDate() + 60);
+    const futureEndDate = futureEnd.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
+    // Dates already processed above — skip them in the enrich pass
+    const processedSet = new Set(dates);
+
+    for (const db of EVENT_DBS) {
+      const dbConf = getScheduleDbConfigOptional(db);
+      if (!dbConf) continue;
+      const data = await queryDbByDate(dbConf.apiKey, dbConf.dbId, dbConf.config, today, futureEndDate);
+      const pages = (data.results || []) as any[];
+      for (const page of pages) {
+        // Skip pages already enriched in the date-based pass
+        const dateStr = page.properties?.[dbConf.config.dateProp]?.date?.start?.split("T")[0] || "";
+        if (processedSet.has(dateStr)) continue;
+
+        const hasIcon = !!page.icon;
+        const hasCover = !!page.cover;
+        if (hasIcon && hasCover) continue;
+
+        const titleArr = page.properties?.[dbConf.config.titleProp]?.title || [];
+        const title = titleArr.map((t: any) => t.plain_text || "").join("");
+
+        if (!dryRun) {
+          const updates: Record<string, unknown> = {};
+          if (!hasIcon) updates.icon = pickTaskIcon(title);
+          if (!hasCover) updates.cover = pickCover();
+          console.log(`  ENRICH: ${title} [${db}] — adding icon/cover`);
+          await notionFetch(getApiKey(), `/pages/${page.id}`, updates, "PATCH");
+        } else {
+          console.log(`  ENRICH: ${title} [${db}] — would add icon/cover`);
+        }
+        totalEnriched++;
       }
     }
   }

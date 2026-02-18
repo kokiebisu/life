@@ -59,6 +59,26 @@
   - 見積もりはデイリープランのタスク横に記載する
   - 見積もりによって空き時間に収まるかどうかの判断材料にする
 
+### Recurring（定期タスク）
+
+`planning/tasks.md` の `## Recurring` セクションに定期タスクのテンプレートを定義する。
+
+**フォーマット:**
+```markdown
+- タスク名 | 頻度 | タイミング
+```
+
+**頻度の種類:**
+- `monthly` — 毎月（例: `monthly | 20日`）
+- `weekly` — 毎週（例: `weekly | 月曜`）
+- `biweekly` — 隔週（例: `biweekly | 金曜`）
+
+**ルール:**
+- daily script が該当日にマッチしたら Inbox に `- [ ]` として自動コピー + Notion todo DB に登録
+- Recurring セクションのエントリは完了しても消さない（テンプレートとして残る）
+- 会話中にユーザーが定期タスクを言ったら Recurring に追加する（Inbox ではなく）
+- 初回は直近の該当日分を Inbox にも追加しておく
+
 ### 完了タスクの Archive（daily で実行）
 
 daily script（または daily プランニングセッション）で以下を実行する:

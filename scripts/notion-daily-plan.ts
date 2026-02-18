@@ -33,6 +33,7 @@ const WEEKDAY_NAMES = ["日", "月", "火", "水", "木", "金", "土"];
 interface RoutinePoolItem {
   label: string;
   minutes: number;
+  ratio?: number;
   priority: number;
   splittable: boolean;
   minBlock: number;
@@ -151,7 +152,8 @@ function loadScheduleConfig(): ScheduleConfig {
       activeHours: config.activeHours,
       routines: config.routines.map((r: any) => ({
         label: r.label,
-        minutes: r.minutes,
+        minutes: r.minutes ?? 0,
+        ratio: r.ratio,
         priority: r.priority,
         splittable: r.splittable ?? false,
         minBlock: r.minBlock ?? 30,
@@ -785,8 +787,23 @@ async function main() {
     const mins = timeToMinutes(s.end) - timeToMinutes(s.start);
     confirmedMinutesByLabel.set(key, (confirmedMinutesByLabel.get(key) || 0) + mins);
   }
+  // Resolve ratio-based routines: distribute free time by ratio
+  const totalFreeMinutes = freeSlots.reduce((sum, s) => sum + s.minutes, 0);
+  const fixedRoutines = scheduleConfig.routines.filter((r) => r.minutes > 0 && !r.ratio);
+  const ratioRoutines = scheduleConfig.routines.filter((r) => r.ratio);
+  const fixedTotal = fixedRoutines.reduce((sum, r) => sum + r.minutes, 0);
+  const poolForRatio = Math.max(0, totalFreeMinutes - fixedTotal);
+
+  const resolvedRoutines: RoutinePoolItem[] = [
+    ...fixedRoutines,
+    ...ratioRoutines.map((r) => ({
+      ...r,
+      minutes: Math.max(r.minBlock, Math.floor(poolForRatio * r.ratio!)),
+    })),
+  ];
+
   const remainingRoutines: RoutinePoolItem[] = [];
-  for (const r of scheduleConfig.routines) {
+  for (const r of resolvedRoutines) {
     const confirmed = confirmedMinutesByLabel.get(r.label.toLowerCase()) || 0;
     if (confirmed <= 0) {
       remainingRoutines.push(r);

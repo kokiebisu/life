@@ -69,6 +69,9 @@ Notion MCP (`notion-update-page`) で日時プロパティを設定するとき�
 - guitar DB はカリキュラム型: Lesson 1, 2, 3... のページが事前に作成済み
 - **新規ページを作らない。** 日付未設定の既存 Lesson ページを探して日付をセットする
 - `notion-sync-schedule.ts` が自動で処理する（`findNextLesson` で未スケジュール Lesson を検索）
+- ❌ 間違い: 「ギター受け取り」「弦の購入」等のギター関連の用事を guitar DB に登録
+- ✅ 正解: ギター関連でもレッスン・練習以外は events DB / todo DB に入れる
+- guitar DB に入れるのは「Lesson N: ...」形式のカリキュラムページのみ
 
 **電話・窓口での問い合わせ・手続きも todo DB に入れる:**
 - ❌ 間違い: 「国保の保険料を試算してもらう（役所の窓口 or 電話）」を events DB に登録

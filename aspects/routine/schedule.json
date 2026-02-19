@@ -6,7 +6,7 @@
     { "label": "開発", "ratio": 0.55, "priority": 1, "splittable": true, "minBlock": 60 },
     { "label": "ジム", "ratio": 0.15, "priority": 2, "splittable": false, "minBlock": 60 },
     { "label": "ギター練習", "ratio": 0.15, "priority": 3, "splittable": false, "minBlock": 60 },
-    { "label": "就寝前読書", "ratio": 0.15, "priority": 4, "splittable": true, "minBlock": 30, "preferred": "end" },
+    { "label": "就寝前読書", "ratio": 0.15, "priority": 4, "splittable": true, "minBlock": 30, "preferred": "end", "earliestStart": "21:00" },
     { "label": "Devotion（夜）", "minutes": 30, "priority": 0, "splittable": false, "preferred": "end" }
   ],
   "conflictRules": {

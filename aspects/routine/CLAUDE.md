@@ -13,6 +13,7 @@
 - `routines[].splittable`: true なら複数ブロックに分割可（`minBlock` 以上）
 - `routines[].splittable`: false なら連続1ブロック必須
 - `routines[].preferred`: `"start"` / `"end"` — 活動時間帯の先頭・末尾に優先配置
+- `routines[].earliestStart`: `"21:00"` など — この時刻より前には配置しない（空きがなければスキップ）
 
 ルーティンの追加・削除・比率変更は **schedule.json を編集するだけ** でスクリプトに反映される。
 

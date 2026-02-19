@@ -67,6 +67,7 @@ interface RoutinePoolItem {
   splittable: boolean;
   minBlock: number;
   preferred?: "start" | "end";
+  earliestStart?: string; // "21:00" — skip if no slot available after this time
 }
 
 interface FreeSlot {
@@ -235,6 +236,7 @@ function loadScheduleConfig(): ScheduleConfig {
         splittable: r.splittable ?? false,
         minBlock: r.minBlock ?? 30,
         preferred: r.preferred,
+        earliestStart: r.earliestStart,
       })),
       conflictRules: config.conflictRules,
     };
@@ -817,6 +819,9 @@ function fillRoutinesByPriority(
     let minutesLeft = routine.minutes;
     const minBlock = routine.minBlock;
     const fromEnd = routine.preferred === "end";
+    const earliestStartMin = routine.earliestStart
+      ? timeToMinutes(routine.earliestStart)
+      : 0;
 
     // Iterate segments: from end (reversed) or from start
     const segOrder = fromEnd ? [...segments].reverse() : segments;
@@ -824,7 +829,11 @@ function fillRoutinesByPriority(
     if (routine.splittable) {
       for (const seg of segOrder) {
         if (minutesLeft <= 0) break;
-        const available = seg.end - seg.start;
+        // Apply earliestStart constraint: skip segments entirely before the threshold
+        if (seg.end <= earliestStartMin) continue;
+        // Clamp segment start to earliestStart
+        const effectiveStart = Math.max(seg.start, earliestStartMin);
+        const available = seg.end - effectiveStart;
         if (available < minBlock) continue;
 
         const allocate = Math.min(minutesLeft, available);
@@ -841,19 +850,22 @@ function fillRoutinesByPriority(
           seg.end -= allocate;
         } else {
           result.push({
-            start: minutesToTime(seg.start),
-            end: minutesToTime(seg.start + allocate),
+            start: minutesToTime(effectiveStart),
+            end: minutesToTime(effectiveStart + allocate),
             label: routine.label,
             source: "routine",
           });
-          seg.start += allocate;
+          seg.start = effectiveStart + allocate;
         }
         minutesLeft -= allocate;
       }
     } else {
       // Need a single contiguous block
       for (const seg of segOrder) {
-        const available = seg.end - seg.start;
+        // Apply earliestStart constraint
+        if (seg.end <= earliestStartMin) continue;
+        const effectiveStart = Math.max(seg.start, earliestStartMin);
+        const available = seg.end - effectiveStart;
         if (available >= routine.minutes) {
           if (fromEnd) {
             result.push({
@@ -865,12 +877,12 @@ function fillRoutinesByPriority(
             seg.end -= routine.minutes;
           } else {
             result.push({
-              start: minutesToTime(seg.start),
-              end: minutesToTime(seg.start + routine.minutes),
+              start: minutesToTime(effectiveStart),
+              end: minutesToTime(effectiveStart + routine.minutes),
               label: routine.label,
               source: "routine",
             });
-            seg.start += routine.minutes;
+            seg.start = effectiveStart + routine.minutes;
           }
           minutesLeft = 0;
           break;

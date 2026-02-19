@@ -11,6 +11,14 @@ pull 時に以下を自動検出・補完する:
 
 `--no-enrich` でスキップ可能。dry-run でもエンリッチのプレビューが表示される。
 
+## 重複解決（Conflict Resolution）
+
+pull 後、`schedule.json` の `conflictRules` に基づいて自動解決された `conflictResolutions` を確認:
+
+- `delete` → `notion-delete.ts` で Notion ページ削除
+- `shift` → `notion-update-page` で時間変更
+- `shrink` → `notion-update-page` で時間変更
+
 ## Steps
 
 1. dry-run でプレビュー → ユーザーに確認

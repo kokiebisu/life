@@ -48,6 +48,7 @@ A sacred space for daily spiritual practice and personal connection with God.
 ### 箴言の進め方
 
 - 毎回次の章に進む（箴言16章 → 17章 → 18章...）
+- **開始時に必ず `Glob` で `aspects/church/devotions/2*.md` を検索し、最新ファイルを読んで前回の章を確認する**（推測しない）
 
 ### 日付
 

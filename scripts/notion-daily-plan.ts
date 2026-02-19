@@ -480,6 +480,13 @@ function computeAdjustedRatios(
 
 // --- Schedule Building ---
 
+const ASPECT_TO_DB: Record<string, ScheduleDbName> = {
+  planning: "events",
+  diet: "meals",
+  guitar: "guitar",
+  routine: "routine",
+};
+
 function buildConfirmedSchedule(
   localEvents: LocalEvent[],
   todayTasks: NormalizedEntry[],
@@ -491,7 +498,7 @@ function buildConfirmedSchedule(
   for (const ev of localEvents) {
     if (ev.allDay) {
       const desc = ev.description ? ` — ${ev.description}` : "";
-      allDay.push({ label: `${ev.title}${desc}`, aspect: ev.aspect });
+      allDay.push({ label: `${ev.title}${desc}`, aspect: ev.aspect, dbSource: ASPECT_TO_DB[ev.aspect] });
       continue;
     }
     const desc = ev.description ? ` — ${ev.description}` : "";
@@ -501,6 +508,7 @@ function buildConfirmedSchedule(
       label: `[${ev.aspect}] ${ev.title}${desc}`,
       source: "event",
       aspect: ev.aspect,
+      dbSource: ASPECT_TO_DB[ev.aspect],
     });
   }
 
@@ -537,19 +545,25 @@ function buildConfirmedSchedule(
     });
   }
 
-  // Deduplicate: Notion entries take priority over local events
+  // Deduplicate: Notion entries take priority over local events (label match only)
   const notionEvents = timedEvents.filter((e) => e.source === "notion");
+  const usedNotionIds = new Set<string>();
   const deduped = timedEvents.filter((e) => {
     if (e.source !== "event") return true;
     const normalizedLocal = e.label.replace(/^\[[^\]]+\]\s*/, "").toLowerCase();
-    return !notionEvents.some((n) => {
+    const match = notionEvents.find((n) => {
+      if (n.notionId && usedNotionIds.has(n.notionId)) return false;
       const normalizedNotion = n.label.toLowerCase();
       return (
-        overlaps(e.start, e.end, n.start, n.end) &&
-        (normalizedNotion.includes(normalizedLocal) ||
-          normalizedLocal.includes(normalizedNotion))
+        normalizedNotion.includes(normalizedLocal) ||
+        normalizedLocal.includes(normalizedNotion)
       );
     });
+    if (match) {
+      if (match.notionId) usedNotionIds.add(match.notionId);
+      return false;
+    }
+    return true;
   });
 
   deduped.sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
@@ -613,7 +627,7 @@ function resolveTimelineConflicts(
         // Find first gap after winner ends where loser fits
         let placed = false;
         let candidate = winnerEnd;
-        const maxCandidate = timeToMinutes(loser.start) + maxShift;
+        const maxCandidate = Math.max(timeToMinutes(loser.start), winnerEnd) + maxShift;
 
         while (candidate + loserDuration <= Math.min(hardEnd, maxCandidate + loserDuration)) {
           const candidateEnd = candidate + loserDuration;
@@ -671,15 +685,36 @@ function resolveTimelineConflicts(
       }
       // "keep" → both stay; if both are "keep", shift the lower-priority one
       else if (action === "keep") {
-        // Both keep → shift the loser anyway
         const winnerEnd = timeToMinutes(winner.end);
         const loserDuration = timeToMinutes(loser.end) - timeToMinutes(loser.start);
-        loser.start = minutesToTime(winnerEnd);
-        loser.end = minutesToTime(winnerEnd + loserDuration);
-        resolution.action = "shift";
-        resolution.newStart = loser.start;
-        resolution.newEnd = loser.end;
-        resolution.warning = "両方 keep のため低優先側をシフト";
+        const hardEnd = 24 * 60; // keep entries are important: allow up to midnight
+        const maxShift = 120;
+        const maxCandidate = Math.max(timeToMinutes(loser.start), winnerEnd) + maxShift;
+
+        let placed = false;
+        let candidate = winnerEnd;
+        while (candidate + loserDuration <= Math.min(hardEnd, maxCandidate + loserDuration)) {
+          const candidateEnd = candidate + loserDuration;
+          const hasConflict = resolved.some(
+            (s) => s !== loser && overlaps(minutesToTime(candidate), minutesToTime(candidateEnd), s.start, s.end),
+          );
+          if (!hasConflict) {
+            loser.start = minutesToTime(candidate);
+            loser.end = minutesToTime(candidateEnd);
+            resolution.action = "shift";
+            resolution.newStart = loser.start;
+            resolution.newEnd = loser.end;
+            resolution.warning = "両方 keep のため低優先側をシフト";
+            placed = true;
+            break;
+          }
+          candidate += 5;
+        }
+
+        if (!placed) {
+          // Cannot find gap → keep original position with warning
+          resolution.warning = "シフト先が見つからず元の位置を維持: " + loser.label;
+        }
       }
 
       resolutions.push(resolution);

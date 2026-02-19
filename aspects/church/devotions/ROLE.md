@@ -27,14 +27,66 @@ A sacred space for daily spiritual practice and personal connection with God.
 - 聖書箇所を引用するときは**全文を書く**（参照だけで省略しない）
 - 引用はブロック引用（`>`）で記載し、末尾に書名・章・節を明記する
 
-### 記録のフォーマット
+### 記録のフォーマット（統一テンプレート）
 
-デボーションファイルには以下を含める:
-- 章の概要・Key Verses
-- 深掘りした節の解説
-- SOAP（Scripture / Observation / Application / Prayer）
-- **実践ガイド** — 学んだことを日常でどう適用するか。場面別のフレーズ例・具体的な行動指針を含める
-- 持ち帰り（箇条書きで要点をまとめる）
+以下のフォーマットに従う。スクリプトで自動生成・検証できる。
+
+```markdown
+---
+title: YYYY-MM-DD Devotion
+date: YYYY-MM-DD
+---
+
+# 箴言XX章 — テーマ
+
+**Scripture:** 箴言XX章 | **Key Verses:** X, Y, Z
+
+## 章の概要
+
+（4つの柱で構成を説明）
+
+## Key Verses
+
+（ブロック引用で主要聖句を列挙）
+
+## X節の深掘り — サブテーマ
+
+（1つ以上。ヘブライ語分析・実体験との接続）
+
+## SOAP
+
+**S（Scripture）:**
+**O（Observation）:**
+**A（Application）:**
+**P（Prayer）:**
+
+## 実践ガイド — タイトル
+
+### 基本姿勢
+### 場面別の対処
+
+## 持ち帰り（箴言XX章）
+
+（箇条書き。太字で要点 + 説明）
+```
+
+**注意点:**
+- frontmatter title は **単数形** `Devotion`（`Devotions` ではない）
+- Key Verses は **複数形**（`Key Verse` ではない）
+- SOAP は **`## SOAP`**（h2）。ネストしない
+
+### スクリプト
+
+```bash
+# テンプレート生成（前回の章を自動検出して次の章で作成）
+bun run scripts/devotion-init.ts
+bun run scripts/devotion-init.ts --chapter 20   # 章を指定
+bun run scripts/devotion-init.ts --date 2026-02-20  # 日付を指定
+
+# フォーマット検証
+bun run scripts/devotion-lint.ts                 # 全ファイル
+bun run scripts/devotion-lint.ts 2026-02-16.md   # 特定ファイル
+```
 
 ### Notion 同期（デボーション完了時・必須）
 

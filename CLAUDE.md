@@ -31,6 +31,7 @@
 /event                   # イベント登録
 /cache                   # キャッシュ管理（status / clear / analyze）
 /learn                   # ミスからの学習・再発防止
+/process                 # クイックメモの言語化・配置
 ```
 
 ## Directory Structure

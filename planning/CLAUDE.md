@@ -19,4 +19,5 @@
 
 - roadmap.md: 3ヶ月の全体ロードマップ
 - routine.md: 理想の1日のテンプレート
-- weekly/: 週次プラン（YYYY-Wxx.md）
+- weekly/: 週次プラン（YYYY-Wxx.md）— 月曜に作成・見直し。買い出し・スケジュール・目標
+- weekly/: 週次ふりかえり（YYYY-Wxx-review.md）— `/review` で生成。物語式、Micro Goals付き

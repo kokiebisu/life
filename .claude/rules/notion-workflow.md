@@ -95,6 +95,7 @@ Notion MCP (`notion-update-page`) で日時プロパティを設定するとき�
 
 - `NOTION_ARTICLES_DB` — 記事（タイトル / ソース / URL / Aspect / Status）
 - `NOTION_INVESTMENT_DB` — 投資（Investment / Buy Date / Status / Type / Notes）
+- **クイックメモ DB** — 思考キャプチャ（タイトル / タグ / 日付 / ステータス / リンク先）。詳細は `.claude/rules/thought-capture.md` 参照。`/process` コマンドで処理する
 
 ## ページ本文ルール（Description プロパティ廃止）
 

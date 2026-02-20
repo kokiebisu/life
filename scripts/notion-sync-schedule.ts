@@ -112,6 +112,171 @@ async function main() {
 
   // Label → DB mapping for non-routine entries
   const GUITAR_LABEL = "ギター練習";
+  const GYM_LABEL = "ジム";
+
+  /** Count this week's gym sessions (Mon-Sun) to determine A/B rotation */
+  async function getGymSessionCount(currentDate: string): Promise<number> {
+    const d = new Date(currentDate + "T12:00:00+09:00");
+    const day = d.getDay(); // 0=Sun, 1=Mon, ...
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    const monday = new Date(d);
+    monday.setDate(d.getDate() + mondayOffset);
+    const weekStart = monday.toISOString().slice(0, 10);
+
+    const { apiKey, dbId } = getScheduleDbConfig("routine");
+    const resp = await notionFetch(apiKey, "/databases/" + dbId + "/query", {
+      filter: {
+        and: [
+          { property: "Name", title: { starts_with: GYM_LABEL } },
+          { property: "日付", date: { on_or_after: weekStart } },
+          { property: "日付", date: { before: currentDate } },
+        ],
+      },
+    });
+    return resp.results?.length || 0;
+  }
+
+  /** Generate Notion blocks for gym menu (A or B day) */
+  function gymMenuBlocks(menuType: "A" | "B"): unknown[] {
+    if (menuType === "A") {
+      return [
+        {
+          type: "callout",
+          callout: {
+            rich_text: [
+              { type: "text", text: { content: "A日: ウォーキング + 筋トレ（50分）" }, annotations: { bold: true } },
+            ],
+            icon: { type: "emoji", emoji: "💪" },
+            color: "blue_background",
+          },
+        },
+        { type: "divider", divider: {} },
+        // --- Walking ---
+        {
+          type: "heading_3",
+          heading_3: { rich_text: [{ type: "text", text: { content: "🏃 インクライン・ウォーキング（30分）" } }] },
+        },
+        {
+          type: "quote",
+          quote: { rich_text: [{ type: "text", text: { content: "トレッドミル（ランニングマシン）の傾斜を上げて歩くだけ。走らなくていい。" } }] },
+        },
+        {
+          type: "bulleted_list_item",
+          bulleted_list_item: { rich_text: [
+            { type: "text", text: { content: "傾斜（INCLINE）" }, annotations: { bold: true } },
+            { type: "text", text: { content: " 10〜12%" } },
+          ] },
+        },
+        {
+          type: "bulleted_list_item",
+          bulleted_list_item: { rich_text: [
+            { type: "text", text: { content: "速度" }, annotations: { bold: true } },
+            { type: "text", text: { content: " 5〜6 km/h" } },
+          ] },
+        },
+        {
+          type: "bulleted_list_item",
+          bulleted_list_item: { rich_text: [
+            { type: "text", text: { content: "心拍数" }, annotations: { bold: true } },
+            { type: "text", text: { content: " 120〜140bpm（マシンに表示される）" } },
+          ] },
+        },
+        {
+          type: "bulleted_list_item",
+          bulleted_list_item: { rich_text: [{ type: "text", text: { content: "手すりに掴まらない。息が上がりすぎたら傾斜を下げる" } }] },
+        },
+        { type: "divider", divider: {} },
+        // --- Strength ---
+        {
+          type: "heading_3",
+          heading_3: { rich_text: [{ type: "text", text: { content: "🏋️ 筋トレ（20分）" } }] },
+        },
+        {
+          type: "quote",
+          quote: { rich_text: [{ type: "text", text: { content: "各種目の間に60秒休憩。きつければ回数を減らしてOK。" } }] },
+        },
+        // Push-ups
+        {
+          type: "to_do",
+          to_do: { rich_text: [
+            { type: "text", text: { content: "腕立て伏せ 3×15" }, annotations: { bold: true } },
+            { type: "text", text: { content: "  — 胸の横に手をつき、体をまっすぐ上げ下げ。きつければ膝をつく" } },
+          ], checked: false },
+        },
+        // Dumbbell row
+        {
+          type: "to_do",
+          to_do: { rich_text: [
+            { type: "text", text: { content: "ダンベルロウ 3×15" }, annotations: { bold: true } },
+            { type: "text", text: { content: "  — ベンチに片手+片膝をつき、反対の手でダンベル(3-5kg)を脇腹に引く" } },
+          ], checked: false },
+        },
+        // Squats
+        {
+          type: "to_do",
+          to_do: { rich_text: [
+            { type: "text", text: { content: "スクワット 3×15" }, annotations: { bold: true } },
+            { type: "text", text: { content: "  — 足を肩幅に開き、椅子に座るようにしゃがんで立ち上がる。器具なし" } },
+          ], checked: false },
+        },
+        // Plank
+        {
+          type: "to_do",
+          to_do: { rich_text: [
+            { type: "text", text: { content: "プランク 3×30秒" }, annotations: { bold: true } },
+            { type: "text", text: { content: "  — うつ伏せで肘とつま先だけで体を支え、一直線をキープ。呼吸止めない" } },
+          ], checked: false },
+        },
+      ];
+    } else {
+      return [
+        {
+          type: "callout",
+          callout: {
+            rich_text: [
+              { type: "text", text: { content: "B日: ウォーキングのみ（40分）" }, annotations: { bold: true } },
+            ],
+            icon: { type: "emoji", emoji: "🏃" },
+            color: "green_background",
+          },
+        },
+        { type: "divider", divider: {} },
+        {
+          type: "heading_3",
+          heading_3: { rich_text: [{ type: "text", text: { content: "🏃 インクライン・ウォーキング（40分）" } }] },
+        },
+        {
+          type: "quote",
+          quote: { rich_text: [{ type: "text", text: { content: "A日の筋トレ疲労を回復しながら脂肪を燃やす日。やることはA日と同じウォーキング（時間が10分長いだけ）。" } }] },
+        },
+        {
+          type: "bulleted_list_item",
+          bulleted_list_item: { rich_text: [
+            { type: "text", text: { content: "傾斜（INCLINE）" }, annotations: { bold: true } },
+            { type: "text", text: { content: " 10〜12%" } },
+          ] },
+        },
+        {
+          type: "bulleted_list_item",
+          bulleted_list_item: { rich_text: [
+            { type: "text", text: { content: "速度" }, annotations: { bold: true } },
+            { type: "text", text: { content: " 5〜6 km/h" } },
+          ] },
+        },
+        {
+          type: "bulleted_list_item",
+          bulleted_list_item: { rich_text: [
+            { type: "text", text: { content: "心拍数" }, annotations: { bold: true } },
+            { type: "text", text: { content: " 120〜140bpm を維持" } },
+          ] },
+        },
+        {
+          type: "bulleted_list_item",
+          bulleted_list_item: { rich_text: [{ type: "text", text: { content: "手すりに掴まらない。ペースを一定に保つ" } }] },
+        },
+      ];
+    }
+  }
 
   /** Find the next unscheduled Lesson page in guitar DB (no date set, not completed) */
   async function findNextLesson(): Promise<{ id: string; title: string } | null> {
@@ -162,8 +327,18 @@ async function main() {
     } else {
       // Default: create new page in routine DB
       const { apiKey, dbId, config } = getScheduleDbConfig("routine");
+      const isGym = slot.label === GYM_LABEL;
 
-      console.log(`  ${slot.start}-${slot.end}  ${slot.label}`);
+      // Determine gym menu type (A/B rotation)
+      let gymMenu: "A" | "B" | null = null;
+      if (isGym) {
+        const count = await getGymSessionCount(date);
+        // A→B→A pattern: even count = A, odd count = B
+        gymMenu = count % 2 === 0 ? "A" : "B";
+        console.log(`  ${slot.start}-${slot.end}  ${slot.label}（${gymMenu}日: ${gymMenu === "A" ? "ウォーキング+筋トレ" : "ウォーキングのみ"}）`);
+      } else {
+        console.log(`  ${slot.start}-${slot.end}  ${slot.label}`);
+      }
 
       if (dryRun) continue;
 
@@ -177,12 +352,19 @@ async function main() {
         },
       };
 
-      await notionFetch(apiKey, "/pages", {
+      const createBody: Record<string, unknown> = {
         parent: { database_id: dbId },
         properties,
         icon: pickTaskIcon(slot.label),
         cover: pickCover(),
-      });
+      };
+
+      // Add gym menu as page content
+      if (isGym && gymMenu) {
+        createBody.children = gymMenuBlocks(gymMenu);
+      }
+
+      await notionFetch(apiKey, "/pages", createBody);
     }
   }
 

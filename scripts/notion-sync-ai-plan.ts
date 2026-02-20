@@ -20,6 +20,27 @@ import {
 
 const ROOT = join(import.meta.dir, "..");
 
+interface ScheduleJsonRoutine {
+  label: string;
+  [key: string]: unknown;
+}
+
+/** Load routine labels from schedule.json to validate against */
+function loadRoutineLabels(): string[] {
+  const configPath = join(ROOT, "aspects", "routine", "schedule.json");
+  if (!existsSync(configPath)) return [];
+  const config = JSON.parse(readFileSync(configPath, "utf-8"));
+  return (config.routines || []).map((r: ScheduleJsonRoutine) => r.label.toLowerCase());
+}
+
+/** Check if a label matches any routine in schedule.json (prefix match) */
+function isRoutineLabel(label: string, routineLabels: string[]): boolean {
+  const normalized = label.toLowerCase();
+  return routineLabels.some(
+    (r) => normalized.startsWith(r) || r.startsWith(normalized),
+  );
+}
+
 interface PlanEntry {
   start: string; // "09:00"
   end: string;   // "09:30"
@@ -88,9 +109,24 @@ async function main() {
     return;
   }
 
-  const planEntries = parseDailyPlan(planFile);
-  if (planEntries.length === 0) {
+  const rawEntries = parseDailyPlan(planFile);
+  if (rawEntries.length === 0) {
     console.log("No routine (🔹) entries found in daily plan");
+    return;
+  }
+
+  // Filter: only sync entries whose labels match schedule.json routines
+  const routineLabels = loadRoutineLabels();
+  const planEntries = rawEntries.filter((e) => {
+    if (isRoutineLabel(e.label, routineLabels)) return true;
+    console.log(
+      `  IGNORE: ${e.label} ${e.start}-${e.end} (not in schedule.json routines)`,
+    );
+    return false;
+  });
+
+  if (planEntries.length === 0) {
+    console.log("No matching routine entries after filtering");
     return;
   }
 

@@ -76,6 +76,20 @@ jobs:
           mkdir -p planning/daily
           bun run scripts/notion-daily-plan.ts --date "$DATE" --ai > "$OUTPUT"
 
+      - name: Sync AI plan routines back to Notion
+        env:
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          NOTION_TASKS_DB: ${{ secrets.NOTION_TASKS_DB }}
+          NOTION_EVENTS_DB: ${{ secrets.NOTION_EVENTS_DB }}
+          NOTION_GUITAR_DB: ${{ secrets.NOTION_GUITAR_DB }}
+          NOTION_MEALS_DB: ${{ secrets.NOTION_MEALS_DB }}
+          NOTION_GROCERIES_DB: ${{ secrets.NOTION_GROCERIES_DB }}
+          NOTION_TODO_DB: ${{ secrets.NOTION_TODO_DB }}
+        run: |
+          DATE="${{ inputs.date || '' }}"
+          if [ -z "$DATE" ]; then DATE=$(TZ=Asia/Tokyo date +%Y-%m-%d); fi
+          bun run scripts/notion-sync-ai-plan.ts --date "$DATE"
+
       - name: Commit and push
         run: |
           DATE="${{ inputs.date || '' }}"

@@ -119,9 +119,10 @@ function titlesMatch(local: string, notion: string): boolean {
 
 function findMatchingPage(
   event: ParsedEvent,
+  date: string,
   notionPages: any[],
   config: ScheduleDbConfig,
-): { page: any; matchType: "tsu-id" | "title" } | null {
+): { page: any; matchType: "tsu-id" | "title" | "time-slot" } | null {
   // Priority 1: TSU-ID match
   if (event.tsuId && config.descProp) {
     for (const page of notionPages) {
@@ -140,6 +141,21 @@ function findMatchingPage(
   for (const page of notionPages) {
     if (titlesMatch(event.title, notionTitle(page))) {
       return { page, matchType: "title" };
+    }
+  }
+
+  // Priority 3: Time-slot match (same start+end time → same event, title may have changed)
+  if (event.startTime && event.endTime) {
+    const expectedStart = `${date}T${event.startTime}:00+09:00`;
+    const expectedEnd = `${date}T${event.endTime}:00+09:00`;
+    for (const page of notionPages) {
+      const dateInfo = page.properties?.[config.dateProp]?.date;
+      if (!dateInfo?.start) continue;
+      const pageStart = dateInfo.start.replace(/\.000\+/, "+");
+      const pageEnd = dateInfo.end?.replace(/\.000\+/, "+");
+      if (pageStart === expectedStart && pageEnd === expectedEnd) {
+        return { page, matchType: "time-slot" };
+      }
     }
   }
 
@@ -302,9 +318,21 @@ async function main() {
     const notionPages: any[] = data.results || [];
 
     for (const event of dbEvents) {
-      const match = findMatchingPage(event, notionPages, config);
+      const match = findMatchingPage(event, date, notionPages, config);
 
       if (match) {
+        // Time-slot match + completed → Notion side is truth, skip
+        if (match.matchType === "time-slot") {
+          const existingStatus = match.page.properties?.[config.statusProp]?.status?.name;
+          if (existingStatus === config.statusDone) {
+            const existingTitle = (match.page.properties?.[config.titleProp]?.title || [])
+              .map((t: any) => t.plain_text || "").join("");
+            console.log(`  SKIP: ${event.title} (completed as "${existingTitle}" at same time slot)`);
+            skipped++;
+            continue;
+          }
+        }
+
         // Existing page in target DB — check for diff
         const diff = diffProperties(event, date, match.page, config);
         if (diff) {

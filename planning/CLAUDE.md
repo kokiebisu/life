@@ -19,5 +19,16 @@
 
 - roadmap.md: 3ヶ月の全体ロードマップ
 - routine.md: 理想の1日のテンプレート
-- weekly/: 週次プラン（YYYY-Wxx.md）— 月曜に作成・見直し。買い出し・スケジュール・目標
-- weekly/: 週次ふりかえり（YYYY-Wxx-review.md）— `/review` で生成。物語式、Micro Goals付き
+- weekly/: 週次プラン（YYYY-Wxx.md）— 月曜に作成・見直し。スケジュール・目標
+- weekly/: 週次ふりかえり（YYYY-Wxx-review.md）— 物語式、Micro Goals付き
+
+## 月曜の自動ふりかえり（必須）
+
+月曜にデイリープランを作成するとき、**先週の review ファイルが存在しなければ自動生成する。**
+
+1. `planning/weekly/YYYY-Wxx-review.md`（先週の週番号）が存在するか確認
+2. なければ `/review` の手順に従って先週分を生成
+3. 生成後、ふりかえりの要点（Micro Goals）をデイリープランの冒頭に表示
+4. その後、通常のデイリープラン作成に進む
+
+これにより、ユーザーは月曜朝に自然と先週の振り返りを読んでから新しい週を始められる。

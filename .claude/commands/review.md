@@ -75,6 +75,10 @@ cd /workspaces/life/projects/sumitsugi && git log --oneline --since="YYYY-MM-DD"
 月曜〜日曜を1週間とする（ISO week）。
 金曜夜〜日曜に実行することを想定（週の途中でも実行可能）。
 
+## 自動トリガー
+
+手動で `/review` を打たなくても、**月曜のデイリープラン作成時に先週の review が未生成なら自動で実行される**（`planning/CLAUDE.md` 参照）。
+
 ## 注意
 
 - ロードマップ（roadmap.md）の月間目標と照合して、大きな方向性がずれていないか確認する

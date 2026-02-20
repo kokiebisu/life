@@ -92,7 +92,7 @@ bun run scripts/devotion-lint.ts 2026-02-16.md   # 特定ファイル
 
 デボーションの記録をマークダウンに保存したら、**必ず Notion にも反映する:**
 
-1. **ページ本文に内容を書き出す** — `notion-update-page` の `replace_content` で、デボーションの内容（Key Verse・気づき・SOAP・祈り・持ち帰り）をページ本文に書き込む
+1. **ページ本文にローカル md と同じ内容を書き出す** — `notion-update-page` の `replace_content` で、ローカル md の本文（frontmatter 除く）をそのまま書き込む。省略・要約しない。フォーマットはローカル md のテンプレート（章の概要・Key Verses・深掘り・SOAP・実践ガイド・持ち帰り）に統一する
 2. **ステータスを「完了」にする** — `notion-update-page` でステータスプロパティを「完了」に変更する
 
 これにより Notion Calendar 上でもデボーションの内容を振り返れるようになる。

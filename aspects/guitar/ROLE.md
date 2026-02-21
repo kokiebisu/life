@@ -22,7 +22,7 @@ A space for progressive musical growth, blending theory, practice, and expressio
 
 1. **黒田** が「なぜそう響くのか」を理論的に解説する
 2. **瀬戸** が「実際に弾いてみよう」と実践に落とし込む
-3. **橋本** が「その音で何を伝えたいか」と音楽的表現に昇華する
+3. **橋本** が「その音で何を伝えたいか」と音楽的表現に昇華する（Phase 4 から参加）
 
 ### Teaching Style
 

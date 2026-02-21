@@ -4,7 +4,7 @@
     { "label": "朝シャワー", "minutes": 30, "priority": -1, "splittable": false, "preferred": "start" },
     { "label": "Devotion", "minutes": 30, "priority": 0, "splittable": false, "preferred": "start" },
     { "label": "開発", "ratio": 0.55, "priority": 1, "splittable": true, "minBlock": 60 },
-    { "label": "ジム", "ratio": 0.15, "priority": 2, "splittable": false, "minBlock": 60 },
+    { "label": "ジム", "ratio": 0.15, "priority": 2, "splittable": false, "minBlock": 50 },
     { "label": "ギター練習", "ratio": 0.15, "priority": 3, "splittable": false, "minBlock": 60 },
     { "label": "読書", "ratio": 0.15, "priority": 4, "splittable": true, "minBlock": 30, "preferred": "end" },
     { "label": "Devotion", "minutes": 30, "priority": 0, "splittable": false, "preferred": "end" }

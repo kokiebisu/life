@@ -28,6 +28,7 @@
 /pr                      # 変更をグループ化してPR作成
 /tidy                    # 指示ファイルの重複・配置を整理
 /calendar                # Notion カレンダー操作
+/cleanup                 # 未完了エントリの整理（デフォルト: 昨日）
 /event                   # イベント登録
 /cache                   # キャッシュ管理（status / clear / analyze）
 /learn                   # ミスからの学習・再発防止

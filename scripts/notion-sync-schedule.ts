@@ -144,7 +144,7 @@ async function main() {
           type: "callout",
           callout: {
             rich_text: [
-              { type: "text", text: { content: "A日: ウォーキング + 筋トレ（50分）" }, annotations: { bold: true } },
+              { type: "text", text: { content: "A日: マシン筋トレ + ウォーキング（50分）" }, annotations: { bold: true } },
             ],
             icon: { type: "emoji", emoji: "💪" },
             color: "blue_background",
@@ -154,77 +154,63 @@ async function main() {
         // --- Walking ---
         {
           type: "heading_3",
-          heading_3: { rich_text: [{ type: "text", text: { content: "🏃 インクライン・ウォーキング（30分）" } }] },
+          heading_3: { rich_text: [{ type: "text", text: { content: "🏃 インクライン・ウォーキング（20分）" } }] },
         },
         {
           type: "quote",
-          quote: { rich_text: [{ type: "text", text: { content: "トレッドミル（ランニングマシン）の傾斜を上げて歩くだけ。走らなくていい。" } }] },
+          quote: { rich_text: [{ type: "text", text: { content: "ウォームアップ兼有酸素。傾斜を上げて歩くだけ。走らなくていい。" } }] },
         },
         {
           type: "bulleted_list_item",
           bulleted_list_item: { rich_text: [
-            { type: "text", text: { content: "傾斜（INCLINE）" }, annotations: { bold: true } },
-            { type: "text", text: { content: " 10〜12%" } },
-          ] },
-        },
-        {
-          type: "bulleted_list_item",
-          bulleted_list_item: { rich_text: [
+            { type: "text", text: { content: "傾斜" }, annotations: { bold: true } },
+            { type: "text", text: { content: " 10〜12% / " } },
             { type: "text", text: { content: "速度" }, annotations: { bold: true } },
-            { type: "text", text: { content: " 5〜6 km/h" } },
-          ] },
-        },
-        {
-          type: "bulleted_list_item",
-          bulleted_list_item: { rich_text: [
+            { type: "text", text: { content: " 5〜6 km/h / " } },
             { type: "text", text: { content: "心拍数" }, annotations: { bold: true } },
-            { type: "text", text: { content: " 120〜140bpm（マシンに表示される）" } },
+            { type: "text", text: { content: " 120〜140bpm" } },
           ] },
-        },
-        {
-          type: "bulleted_list_item",
-          bulleted_list_item: { rich_text: [{ type: "text", text: { content: "手すりに掴まらない。息が上がりすぎたら傾斜を下げる" } }] },
         },
         { type: "divider", divider: {} },
-        // --- Strength ---
+        // --- Machine Strength ---
         {
           type: "heading_3",
-          heading_3: { rich_text: [{ type: "text", text: { content: "🏋️ 筋トレ（20分）" } }] },
+          heading_3: { rich_text: [{ type: "text", text: { content: "🏋️ マシン筋トレ（30分）" } }] },
         },
         {
           type: "quote",
-          quote: { rich_text: [{ type: "text", text: { content: "各種目の間に60秒休憩。きつければ回数を減らしてOK。" } }] },
+          quote: { rich_text: [{ type: "text", text: { content: "各種目の間に60秒休憩。15回3セットが楽にできたら次回から重量UP。" } }] },
         },
-        // Push-ups
+        // Bench press
         {
           type: "to_do",
           to_do: { rich_text: [
-            { type: "text", text: { content: "腕立て伏せ 3×15" }, annotations: { bold: true } },
-            { type: "text", text: { content: "  — 胸の横に手をつき、体をまっすぐ上げ下げ。きつければ膝をつく" } },
+            { type: "text", text: { content: "ベンチプレス 3×15" }, annotations: { bold: true } },
+            { type: "text", text: { content: "  — バーのみ(20kg)〜。セーフティバー必須。胸に下ろして押し上げる" } },
           ], checked: false },
         },
-        // Dumbbell row
+        // Lat pulldown
         {
           type: "to_do",
           to_do: { rich_text: [
-            { type: "text", text: { content: "ダンベルロウ 3×15" }, annotations: { bold: true } },
-            { type: "text", text: { content: "  — ベンチに片手+片膝をつき、反対の手でダンベル(3-5kg)を脇腹に引く" } },
+            { type: "text", text: { content: "ラットプルダウン 3×15" }, annotations: { bold: true } },
+            { type: "text", text: { content: "  — 15kg〜。バーを鎖骨まで引き下ろす。肘を脇腹に向かって引く意識" } },
           ], checked: false },
         },
-        // Squats
+        // Leg press
         {
           type: "to_do",
           to_do: { rich_text: [
-            { type: "text", text: { content: "スクワット 3×15" }, annotations: { bold: true } },
-            { type: "text", text: { content: "  — 足を肩幅に開き、椅子に座るようにしゃがんで立ち上がる。器具なし" } },
+            { type: "text", text: { content: "レッグプレス 3×15" }, annotations: { bold: true } },
+            { type: "text", text: { content: "  — 30kg〜。膝を伸ばしきらない。足の裏全体で押す" } },
           ], checked: false },
         },
-        // Plank
+        // Abdominal
         {
           type: "to_do",
           to_do: { rich_text: [
-            { type: "text", text: { content: "プランク 3×30秒" }, annotations: { bold: true } },
-            { type: "text", text: { content: "  — うつ伏せで肘とつま先だけで体を支え、一直線をキープ。呼吸止めない" } },
+            { type: "text", text: { content: "アブドミナル 3×15" }, annotations: { bold: true } },
+            { type: "text", text: { content: "  — おへそを覗き込むように丸める。腕で引っ張らない" } },
           ], checked: false },
         },
       ];
@@ -247,27 +233,17 @@ async function main() {
         },
         {
           type: "quote",
-          quote: { rich_text: [{ type: "text", text: { content: "A日の筋トレ疲労を回復しながら脂肪を燃やす日。やることはA日と同じウォーキング（時間が10分長いだけ）。" } }] },
+          quote: { rich_text: [{ type: "text", text: { content: "A日の筋トレ疲労を回復しながら脂肪を燃やす日。走らなくていい。" } }] },
         },
         {
           type: "bulleted_list_item",
           bulleted_list_item: { rich_text: [
-            { type: "text", text: { content: "傾斜（INCLINE）" }, annotations: { bold: true } },
-            { type: "text", text: { content: " 10〜12%" } },
-          ] },
-        },
-        {
-          type: "bulleted_list_item",
-          bulleted_list_item: { rich_text: [
+            { type: "text", text: { content: "傾斜" }, annotations: { bold: true } },
+            { type: "text", text: { content: " 10〜12% / " } },
             { type: "text", text: { content: "速度" }, annotations: { bold: true } },
-            { type: "text", text: { content: " 5〜6 km/h" } },
-          ] },
-        },
-        {
-          type: "bulleted_list_item",
-          bulleted_list_item: { rich_text: [
+            { type: "text", text: { content: " 5〜6 km/h / " } },
             { type: "text", text: { content: "心拍数" }, annotations: { bold: true } },
-            { type: "text", text: { content: " 120〜140bpm を維持" } },
+            { type: "text", text: { content: " 120〜140bpm" } },
           ] },
         },
         {
@@ -335,7 +311,7 @@ async function main() {
         const count = await getGymSessionCount(date);
         // A→B→A pattern: even count = A, odd count = B
         gymMenu = count % 2 === 0 ? "A" : "B";
-        console.log(`  ${slot.start}-${slot.end}  ${slot.label}（${gymMenu}日: ${gymMenu === "A" ? "ウォーキング+筋トレ" : "ウォーキングのみ"}）`);
+        console.log(`  ${slot.start}-${slot.end}  ${slot.label}（${gymMenu}日: ${gymMenu === "A" ? "マシン筋トレ+ウォーキング" : "ウォーキングのみ"}）`);
       } else {
         console.log(`  ${slot.start}-${slot.end}  ${slot.label}`);
       }

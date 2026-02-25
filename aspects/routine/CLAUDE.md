@@ -64,6 +64,11 @@ bun run scripts/notion-daily-plan.ts --week-stats  # 週間バランス表のみ
 | 夜（21:30-22:00）   | Devotion                               |
 | 就寝前              | 日記                                   |
 
+## 命名ルール
+
+- **Devotion は常に「Devotion」とだけ表記する。**「Devotion（朝）」「Devotion（夜）」のようなサフィックスは付けない
+- 1日に朝・夜の2回あっても、どちらも「Devotion」。時間帯で区別できるので名前で区別する必要はない
+
 ## ポイント
 
 - **午前は最も集中力が高い時間。** 開発に充てる

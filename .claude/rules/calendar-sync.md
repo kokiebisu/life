@@ -14,7 +14,7 @@
 
 `notion-pull.ts` はDB間の時間重複を自動的に解決する。優先度の高いDB のエントリが低いDBのエントリに勝ち、重複する低優先エントリは Notion から削除される。
 
-**DB 優先度（高→低）:** events > todo > guitar > meals > routine > groceries
+**DB 優先度（高→低）:** events > todo > guitar > routine > meals > groceries
 
 **例:**
 - デート（events, 19:00-22:00）と夕食（meals, 19:00-20:00）→ 夕食を削除（デートで食事する）

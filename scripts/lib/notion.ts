@@ -70,7 +70,7 @@ export function getDbIdOptional(envKey: string): string | null {
 
 // --- Schedule DB Config (calendar-based DBs) ---
 
-export type ScheduleDbName = "routine" | "events" | "guitar" | "meals" | "groceries" | "todo";
+export type ScheduleDbName = "routine" | "events" | "guitar" | "sound" | "meals" | "groceries" | "todo";
 
 export interface ScheduleDbConfig {
   envKey: string;
@@ -79,12 +79,14 @@ export interface ScheduleDbConfig {
   descProp: string;
   statusProp: string;
   statusDone: string;
+  extraFilter?: Record<string, unknown>;
 }
 
 export const SCHEDULE_DB_CONFIGS: Record<ScheduleDbName, ScheduleDbConfig> = {
   routine: { envKey: "NOTION_TASKS_DB", titleProp: "Name", dateProp: "日付", descProp: "", statusProp: "ステータス", statusDone: "Done" },
   events:  { envKey: "NOTION_EVENTS_DB", titleProp: "名前", dateProp: "日付", descProp: "", statusProp: "ステータス", statusDone: "完了" },
-  guitar:  { envKey: "NOTION_GUITAR_DB", titleProp: "名前", dateProp: "日付", descProp: "", statusProp: "ステータス", statusDone: "完了" },
+  guitar:  { envKey: "NOTION_CURRICULUM_DB", titleProp: "名前", dateProp: "日付", descProp: "", statusProp: "ステータス", statusDone: "完了", extraFilter: { property: "カリキュラム", select: { equals: "ギター" } } },
+  sound:   { envKey: "NOTION_CURRICULUM_DB", titleProp: "名前", dateProp: "日付", descProp: "", statusProp: "ステータス", statusDone: "完了", extraFilter: { property: "カリキュラム", select: { equals: "音響" } } },
   meals:      { envKey: "NOTION_MEALS_DB", titleProp: "名前", dateProp: "日付", descProp: "", statusProp: "ステータス", statusDone: "完了" },
   groceries:  { envKey: "NOTION_GROCERIES_DB", titleProp: "件名", dateProp: "日付", descProp: "", statusProp: "ステータス", statusDone: "完了" },
   todo:    { envKey: "NOTION_TODO_DB", titleProp: "タスク名", dateProp: "日付", descProp: "", statusProp: "ステータス", statusDone: "完了" },
@@ -176,6 +178,10 @@ export function getGuitarConfig() {
   return getScheduleDbConfig("guitar");
 }
 
+export function getSoundConfig() {
+  return getScheduleDbConfig("sound");
+}
+
 export function getTodoConfig() {
   return getScheduleDbConfig("todo");
 }
@@ -205,13 +211,13 @@ export async function queryDbByDate(
   startDate: string,
   endDate: string,
 ): Promise<any> {
+  const filters: Record<string, unknown>[] = [
+    { property: config.dateProp, date: { on_or_after: startDate + "T00:00:00+09:00" } },
+    { property: config.dateProp, date: { on_or_before: endDate + "T23:59:59+09:00" } },
+  ];
+  if (config.extraFilter) filters.push(config.extraFilter);
   return notionFetch(apiKey, `/databases/${dbId}/query`, {
-    filter: {
-      and: [
-        { property: config.dateProp, date: { on_or_after: startDate + "T00:00:00+09:00" } },
-        { property: config.dateProp, date: { on_or_before: endDate + "T23:59:59+09:00" } },
-      ],
-    },
+    filter: { and: filters },
     sorts: [{ property: config.dateProp, direction: "ascending" }],
   });
 }
@@ -249,13 +255,17 @@ export async function queryDbByStatus(
   config: ScheduleDbConfig,
   statuses: string[],
 ): Promise<any> {
+  const statusFilter = {
+    or: statuses.map((s) => ({
+      property: config.statusProp,
+      status: { equals: s },
+    })),
+  };
+  const filter = config.extraFilter
+    ? { and: [statusFilter, config.extraFilter] }
+    : statusFilter;
   return notionFetch(apiKey, `/databases/${dbId}/query`, {
-    filter: {
-      or: statuses.map((s) => ({
-        property: config.statusProp,
-        status: { equals: s },
-      })),
-    },
+    filter,
     sorts: [{ property: config.dateProp, direction: "ascending" }],
   });
 }
@@ -342,7 +352,8 @@ export function todayJST(): string {
 // --- Icon & Cover helpers ---
 
 const TASK_ICON_KEYWORDS: [RegExp, string][] = [
-  [/ギター|guitar|lesson|レッスン/i, "🎸"],
+  [/ギター|guitar/i, "🎸"],
+  [/音響|PA|sound.*lesson/i, "🎛️"],
   [/教会|礼拝|church|service/i, "⛪"],
   [/ジム|筋トレ|運動|gym|workout/i, "💪"],
   [/バレー|volleyball/i, "🏐"],

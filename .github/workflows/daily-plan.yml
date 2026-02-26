@@ -26,7 +26,7 @@ jobs:
           NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
           NOTION_TASKS_DB: ${{ secrets.NOTION_TASKS_DB }}
           NOTION_EVENTS_DB: ${{ secrets.NOTION_EVENTS_DB }}
-          NOTION_GUITAR_DB: ${{ secrets.NOTION_GUITAR_DB }}
+          NOTION_CURRICULUM_DB: ${{ secrets.NOTION_CURRICULUM_DB }}
           NOTION_MEALS_DB: ${{ secrets.NOTION_MEALS_DB }}
           NOTION_GROCERIES_DB: ${{ secrets.NOTION_GROCERIES_DB }}
           NOTION_TODO_DB: ${{ secrets.NOTION_TODO_DB }}
@@ -50,7 +50,7 @@ jobs:
           NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
           NOTION_TASKS_DB: ${{ secrets.NOTION_TASKS_DB }}
           NOTION_EVENTS_DB: ${{ secrets.NOTION_EVENTS_DB }}
-          NOTION_GUITAR_DB: ${{ secrets.NOTION_GUITAR_DB }}
+          NOTION_CURRICULUM_DB: ${{ secrets.NOTION_CURRICULUM_DB }}
           NOTION_MEALS_DB: ${{ secrets.NOTION_MEALS_DB }}
           NOTION_GROCERIES_DB: ${{ secrets.NOTION_GROCERIES_DB }}
           NOTION_TODO_DB: ${{ secrets.NOTION_TODO_DB }}
@@ -67,7 +67,7 @@ jobs:
           NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
           NOTION_TASKS_DB: ${{ secrets.NOTION_TASKS_DB }}
           NOTION_EVENTS_DB: ${{ secrets.NOTION_EVENTS_DB }}
-          NOTION_GUITAR_DB: ${{ secrets.NOTION_GUITAR_DB }}
+          NOTION_CURRICULUM_DB: ${{ secrets.NOTION_CURRICULUM_DB }}
           NOTION_MEALS_DB: ${{ secrets.NOTION_MEALS_DB }}
           NOTION_GROCERIES_DB: ${{ secrets.NOTION_GROCERIES_DB }}
           NOTION_TODO_DB: ${{ secrets.NOTION_TODO_DB }}

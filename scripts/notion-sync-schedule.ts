@@ -254,17 +254,17 @@ async function main() {
     }
   }
 
-  /** Find the next unscheduled Lesson page in guitar DB (no date set, not completed) */
-  async function findNextLesson(): Promise<{ id: string; title: string } | null> {
-    const { apiKey, dbId } = getScheduleDbConfig("guitar");
+  /** Find the next unscheduled Lesson page in curriculum DB (no date set, not completed) */
+  async function findNextLesson(dbName: "guitar" | "sound" = "guitar"): Promise<{ id: string; title: string } | null> {
+    const { apiKey, dbId, config } = getScheduleDbConfig(dbName);
+    const filters: Record<string, unknown>[] = [
+      { property: "名前", title: { starts_with: "Lesson" } },
+      { property: "日付", date: { is_empty: true } },
+      { property: "ステータス", status: { does_not_equal: "完了" } },
+    ];
+    if (config.extraFilter) filters.push(config.extraFilter);
     const resp = await notionFetch(apiKey, "/databases/" + dbId + "/query", {
-      filter: {
-        and: [
-          { property: "名前", title: { starts_with: "Lesson" } },
-          { property: "日付", date: { is_empty: true } },
-          { property: "ステータス", status: { does_not_equal: "完了" } },
-        ],
-      },
+      filter: { and: filters },
       sorts: [{ property: "名前", direction: "ascending" }],
       page_size: 1,
     });

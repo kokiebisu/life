@@ -260,6 +260,7 @@ async function fetchAllDbEntries(date: string): Promise<NormalizedEntry[]> {
     "routine",
     "events",
     "guitar",
+    "sound",
     "meals",
     "groceries",
     "todo",
@@ -486,6 +487,7 @@ const ASPECT_TO_DB: Record<string, ScheduleDbName> = {
   planning: "events",
   diet: "meals",
   guitar: "guitar",
+  sound: "sound",
   routine: "routine",
 };
 

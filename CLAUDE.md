@@ -64,6 +64,7 @@ memory-bank/             # セッション間の記憶（decisions.md）
 | fukuoka | 田中誠 | 福岡移住検討 |
 | reading | 村上葉月 | 読書記録 |
 | routine | - | 習慣・ルーティン → Notion: 習慣DB |
+| sound | 3人チーム | 教会音響PA → Notion: カリキュラムDB |
 | church | - | 教会関連 |
 
 **その他:**

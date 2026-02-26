@@ -112,18 +112,18 @@ async function cleanExistingRoutines(date: string, dryRun: boolean): Promise<num
   return deleted;
 }
 
-// --- Guitar Handling ---
+// --- Curriculum (Guitar/Sound) Handling ---
 
-async function findNextLesson(): Promise<{ id: string; title: string } | null> {
-  const { apiKey, dbId } = getScheduleDbConfig("guitar");
+async function findNextLesson(dbName: "guitar" | "sound" = "guitar"): Promise<{ id: string; title: string } | null> {
+  const { apiKey, dbId, config } = getScheduleDbConfig(dbName);
+  const filters: Record<string, unknown>[] = [
+    { property: "名前", title: { starts_with: "Lesson" } },
+    { property: "日付", date: { is_empty: true } },
+    { property: "ステータス", status: { does_not_equal: "完了" } },
+  ];
+  if (config.extraFilter) filters.push(config.extraFilter);
   const resp = await notionFetch(apiKey, "/databases/" + dbId + "/query", {
-    filter: {
-      and: [
-        { property: "名前", title: { starts_with: "Lesson" } },
-        { property: "日付", date: { is_empty: true } },
-        { property: "ステータス", status: { does_not_equal: "完了" } },
-      ],
-    },
+    filter: { and: filters },
     sorts: [{ property: "名前", direction: "ascending" }],
     page_size: 1,
   });
@@ -133,10 +133,10 @@ async function findNextLesson(): Promise<{ id: string; title: string } | null> {
   return { id: page.id, title };
 }
 
-async function findExistingGuitarEntry(date: string): Promise<{ id: string; title: string } | null> {
-  const { apiKey, dbId, config } = getScheduleDbConfig("guitar");
+async function findExistingCurriculumEntry(dbName: "guitar" | "sound", date: string): Promise<{ id: string; title: string } | null> {
+  const { apiKey, dbId, config } = getScheduleDbConfig(dbName);
   const data = await queryDbByDate(apiKey, dbId, config, date, date);
-  const entries = normalizePages(data.results, config, "guitar");
+  const entries = normalizePages(data.results, config, dbName);
   if (entries.length > 0) return { id: entries[0].id, title: entries[0].title };
   return null;
 }
@@ -337,7 +337,7 @@ async function main() {
 
     // --- Guitar: schedule Lesson in guitar DB ---
     if (entry.label === GUITAR_LABEL) {
-      const existing = await findExistingGuitarEntry(date);
+      const existing = await findExistingCurriculumEntry("guitar", date);
       if (existing) {
         console.log(`  UPDATE: ${existing.title} → ${entry.start}-${entry.end} [guitar]`);
         if (!dryRun) {

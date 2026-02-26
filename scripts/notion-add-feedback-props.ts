@@ -17,11 +17,11 @@ async function addFeedbackProperty(dbId: string, label: string) {
 }
 
 async function main() {
-  const guitarDbId = getDbId("NOTION_GUITAR_DB");
+  const curriculumDbId = getDbId("NOTION_CURRICULUM_DB");
   const mealsDbId = getDbId("NOTION_MEALS_DB");
 
   await Promise.all([
-    addFeedbackProperty(guitarDbId, "Guitar DB"),
+    addFeedbackProperty(curriculumDbId, "Curriculum DB"),
     addFeedbackProperty(mealsDbId, "Meals DB"),
   ]);
 

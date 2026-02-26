@@ -7,6 +7,7 @@
  * 対象 DB:
  *   events  → planning/events/YYYY-MM-DD.md
  *   guitar  → aspects/guitar/events/YYYY-MM-DD.md
+ *   sound   → aspects/sound/events/YYYY-MM-DD.md
  *   meals   → aspects/diet/events/YYYY-MM-DD.md
  *   todo    → planning/tasks.md (Inbox/Archive)
  *
@@ -34,13 +35,14 @@ const ROOT = join(import.meta.dir, "..");
 
 // --- DB → file path mapping ---
 
-const EVENT_DBS: ScheduleDbName[] = ["events", "guitar", "meals", "routine", "groceries"];
+const EVENT_DBS: ScheduleDbName[] = ["events", "guitar", "sound", "meals", "routine", "groceries"];
 const TASKS_FILE = join(ROOT, "planning/tasks.md");
 
 function dbToDir(db: ScheduleDbName): string {
   switch (db) {
     case "events": return "planning/events";
     case "guitar": return "aspects/guitar/events";
+    case "sound": return "aspects/sound/events";
     case "meals": return "aspects/diet/events";
     case "routine": return "aspects/routine/events";
     case "groceries": return "aspects/diet/groceries";
@@ -319,6 +321,7 @@ const DB_PRIORITY: Record<ScheduleDbName, number> = {
   events: 100,
   todo: 80,
   guitar: 60,
+  sound: 60,
   meals: 40,
   routine: 20,
   groceries: 10,

@@ -29,6 +29,7 @@ const DB_LABEL: Record<ScheduleDbName, string> = {
   routine: "習慣",
   events: "イベント",
   guitar: "ギター",
+  sound: "音響",
   meals: "食事",
   groceries: "買い出し",
   todo: "やること",

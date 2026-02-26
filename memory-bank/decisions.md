@@ -15,6 +15,15 @@
 
 ---
 
+### [2026-02-26] Guitar DB → Curriculum DB 統合
+
+**決定:** `NOTION_GUITAR_DB` を `NOTION_CURRICULUM_DB` にリネームし、「カリキュラム」select プロパティ（ギター / 音響）で複数カリキュラムを同一 DB で管理する。ScheduleDbName に `"sound"` を追加し、extraFilter で自動分離
+**理由:** 教会音響PA カリキュラム（24 Lessons）を追加する際、guitar と同じ構造で管理したい。DB を分けると管理コストが増える。同じ DB で「カリキュラム」プロパティで分類すれば、既存スクリプトの変更が最小限で済む
+**代替案:** 新規 NOTION_SOUND_DB を作成 / guitar DB を curriculum にリネームして内部型も統一
+**影響:** scripts/lib/notion.ts に extraFilter 追加。guitar/sound が同じ DB を共有しつつ queryDbByDate で自動フィルタ。findNextLesson にカリキュラム種別パラメータ追加。.env.local と GitHub Actions を NOTION_CURRICULUM_DB に更新
+
+---
+
 ### [2026-02-12] Notion 4-DB リファクタ
 
 **決定:** 単一の NOTION_TASKS_DB を4つの DB（習慣・イベント・ギター・食事）に分離。各スクリプトを対応させ、イベントファイルを planning/events/ に統合

@@ -86,7 +86,7 @@ async function main() {
     console.error("Usage:");
     console.error("  bun run scripts/notion-add.ts --title <title> --date YYYY-MM-DD --start HH:MM --end HH:MM");
     console.error("  bun run scripts/notion-add.ts --title <title> --date YYYY-MM-DD --allday");
-    console.error("  Options: --db <routine|events|guitar|meals> --end-date YYYY-MM-DD");
+    console.error("  Options: --db <routine|events|guitar|sound|meals> --end-date YYYY-MM-DD");
     console.error("  Options: --actual-start HH:MM --actual-end HH:MM --location <住所>");
     process.exit(1);
   }

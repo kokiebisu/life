@@ -8,9 +8,49 @@
  *   bun run scripts/notion-add.ts --title "買い出し" --date 2026-02-14 --start 10:00 --end 11:00
  *   bun run scripts/notion-add.ts --title "イベント" --date 2026-02-14 --start 14:00 --end 16:00 --db events
  *   bun run scripts/notion-add.ts --title "ギター練習" --date 2026-02-14 --start 17:00 --end 18:00 --db guitar
+ *
+ * meals DB の場合、ページ作成後に自動で notion-recipe-gen.ts を実行してレシピを書き込む。
+ * レシピ不要な場合（外食・他人作等）は --no-recipe を付ける。
  */
 
 import { type ScheduleDbName, getScheduleDbConfig, notionFetch, queryDbByDateCached, invalidateNotionCache, parseArgs, pickTaskIcon, pickCover } from "./lib/notion";
+
+// --- Meals auto-recipe ---
+
+/** レシピ不要と判断するキーワード（タイトルに含まれていたらスキップ） */
+const SKIP_RECIPE_PATTERNS = [
+  /作$/, /作）$/, /作\)$/,  // 「〇〇作」「〇〇作）」
+  /外食/,
+  /コンビニ/,
+  /スキップ/,
+  /カップ/,
+  /買い食い/,
+  /残り物/,
+  /テイクアウト/,
+  /出前/,
+  /デリバリー/,
+];
+
+function shouldSkipRecipe(title: string): boolean {
+  return SKIP_RECIPE_PATTERNS.some((p) => p.test(title));
+}
+
+async function runRecipeGen(pageId: string): Promise<void> {
+  console.log(`\n🍳 レシピ自動生成中...`);
+  const proc = Bun.spawn(
+    ["bun", "run", "scripts/notion-recipe-gen.ts", "--page-id", pageId],
+    {
+      cwd: import.meta.dir + "/..",
+      env: process.env,
+      stdout: "inherit",
+      stderr: "inherit",
+    },
+  );
+  const exitCode = await proc.exited;
+  if (exitCode !== 0) {
+    console.error(`⚠️  レシピ生成に失敗しました（exit code: ${exitCode}）。ページは作成済みです。`);
+  }
+}
 
 function normalizeTitle(title: string): string {
   return title.replace(/[（）()]/g, "").replace(/\s+/g, "").replace(/ー/g, "").toLowerCase();
@@ -140,19 +180,26 @@ async function main() {
   const icon = pickTaskIcon(opts.title, defaultEmoji);
   const cover = pickCover();
 
-  return notionFetch(apiKey, "/pages", { parent: { database_id: dbId }, properties, icon, cover })
-    .then((data: any) => {
-      invalidateNotionCache(dbId, opts.date);
-      const title = (data.properties[config.titleProp]?.title || [])
-        .map((t: any) => t.plain_text || "").join("");
-      const date = data.properties[config.dateProp]?.date;
-      console.log(`追加しました: ${title} [${dbName}]`);
-      if (date?.end) {
-        console.log(`  ${date.start} 〜 ${date.end}`);
-      } else if (date?.start) {
-        console.log(`  ${date.start}`);
-      }
-    });
+  const data: any = await notionFetch(apiKey, "/pages", { parent: { database_id: dbId }, properties, icon, cover });
+  invalidateNotionCache(dbId, opts.date);
+  const title = (data.properties[config.titleProp]?.title || [])
+    .map((t: any) => t.plain_text || "").join("");
+  const date = data.properties[config.dateProp]?.date;
+  console.log(`追加しました: ${title} [${dbName}]`);
+  if (date?.end) {
+    console.log(`  ${date.start} 〜 ${date.end}`);
+  } else if (date?.start) {
+    console.log(`  ${date.start}`);
+  }
+
+  // meals DB → 自動レシピ生成
+  if (dbName === "meals" && !flags.has("no-recipe")) {
+    if (shouldSkipRecipe(opts.title)) {
+      console.log(`📝 レシピ不要（${opts.title}）— スキップ`);
+    } else {
+      await runRecipeGen(data.id);
+    }
+  }
 }
 
 main().catch((err) => {

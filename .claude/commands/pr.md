@@ -355,3 +355,45 @@ Update DASHBOARD.md if applicable.
 - **Use `gh pr create`** - Not just `git push`
 - **Parallel when possible** - Use Agent Teams for 2+ independent groups
 - **Sequential fallback** - Always works, even without Agent Teams
+
+## PR Workflow Details
+
+### Complete PR Lifecycle
+1. Create/update PR
+2. Wait for CI checks (`gh pr checks`) — all must pass
+3. If CI fails: fix iteratively, go back to 2
+4. Check for PR review comments (`gh pr view <number> --comments`)
+5. Address relevant comments, push fixes, go back to 2
+6. Merge (`gh pr merge <number> --squash --delete-branch`)
+7. Switch to main (`git checkout main && git pull origin main`)
+8. Clean up merged branches (see below)
+
+### When to merge automatically
+- Docs, config, small fixes, refactoring (no behavior changes)
+
+### Wait for user approval when
+- Breaking changes, major structural decisions, large features
+
+### Creating Multiple PRs from Grouped Changes
+For each group:
+1. `git checkout -b <branch-name>`
+2. `git add <specific-files>` (NOT `git add .`)
+3. `git status` — verify only intended files
+4. `git commit -m "..."`
+5. `git push -u origin HEAD && gh pr create ...`
+6. `gh pr merge <number> --squash --delete-branch`
+7. `git checkout main && git pull origin main`
+8. Repeat
+
+### Post-Merge Cleanup
+```bash
+# List local branches (excluding main)
+git branch | grep -v "^\* main$" | grep -v "^  main$" | sed 's/^[* ] //'
+# Cross-reference with merged PRs
+gh pr list --state merged --json headRefName --jq '.[].headRefName'
+# Delete merged branches
+git branch -D <merged-branches>
+# Prune stale remotes
+git remote prune origin
+```
+Notes: `git branch --merged` doesn't detect squash-merged — use `gh pr list`. Use `-D` for squash-merged. Never delete main/master.

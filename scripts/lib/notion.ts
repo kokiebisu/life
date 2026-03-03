@@ -414,3 +414,17 @@ export function pickCover(): { type: "external"; external: { url: string } } {
   const url = GRADIENT_COVERS[Math.floor(Math.random() * GRADIENT_COVERS.length)];
   return { type: "external", external: { url } };
 }
+
+// --- Title Normalization ---
+
+/** タイトルを正規化（括弧・スペース・長音除去 + 小文字化） */
+export function normalizeTitle(title: string): string {
+  return title.replace(/[（）()]/g, "").replace(/\s+/g, "").replace(/ー/g, "").toLowerCase();
+}
+
+/** ISO日時文字列から HH:MM を抽出 */
+export function getTimeFromISO(iso: string | undefined | null): string | null {
+  if (!iso) return null;
+  const m = iso.match(/T(\d{2}:\d{2})/);
+  return m ? m[1] : null;
+}

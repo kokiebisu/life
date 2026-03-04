@@ -97,6 +97,8 @@ function parseDailyMeals(date: string, content: string): MealEntry[] {
   const weekday = getWeekday(date);
   const meals: MealEntry[] = [];
   const lines = content.split("\n");
+
+  // Try table format first: | 朝 | メニュー |
   for (const line of lines) {
     const match = line.match(/^\|\s*(朝|昼|間食|夜)\s*\|\s*(.+?)\s*\|/);
     if (match) {
@@ -106,6 +108,62 @@ function parseDailyMeals(date: string, content: string): MealEntry[] {
       meals.push({ date, weekday, meal, menu, isEatingOut });
     }
   }
+
+  // Fallback: section header format: ## 朝食 HH:MM-HH:MM
+  if (meals.length === 0) {
+    const mealMap: Record<string, string> = {
+      "朝食": "朝", "昼食": "昼", "間食": "間食", "夕食": "夜",
+    };
+    let currentMealKey: string | null = null;
+    let currentMealTime: string | null = null;
+    let menuTitle: string | null = null;
+    let ingredients: string[] = [];
+
+    const flushMeal = () => {
+      if (currentMealKey && menuTitle) {
+        const details = ingredients.length > 0
+          ? `${menuTitle}\n  材料: ${ingredients.join("、")}`
+          : menuTitle;
+        const isEatingOut = /外食/.test(menuTitle);
+        const mealLabel = currentMealTime
+          ? `${currentMealKey}(${currentMealTime})`
+          : currentMealKey;
+        meals.push({ date, weekday, meal: mealLabel, menu: details, isEatingOut });
+      }
+      currentMealKey = null;
+      currentMealTime = null;
+      menuTitle = null;
+      ingredients = [];
+    };
+
+    for (const line of lines) {
+      const headerMatch = line.match(/^##\s*(朝食|昼食|間食|夕食)\s+(\d{1,2}:\d{2})/);
+      if (headerMatch) {
+        flushMeal();
+        currentMealKey = mealMap[headerMatch[1]] || headerMatch[1];
+        currentMealTime = headerMatch[2];
+        continue;
+      }
+      // Also match headers without time
+      const headerNoTime = line.match(/^##\s*(朝食|昼食|間食|夕食)\s*$/);
+      if (headerNoTime) {
+        flushMeal();
+        currentMealKey = mealMap[headerNoTime[1]] || headerNoTime[1];
+        continue;
+      }
+      if (!currentMealKey) continue;
+      // Collect ingredient lines (- item) but skip kcal/calorie lines
+      if (line.startsWith("- ") && !/kcal/i.test(line)) {
+        ingredients.push(line.replace(/^-\s+/, "").trim());
+      }
+      // First non-empty, non-list, non-heading line is the menu title
+      else if (!menuTitle && line.trim() && !line.startsWith("*") && !line.startsWith("#")) {
+        menuTitle = line.trim();
+      }
+    }
+    flushMeal();
+  }
+
   return meals;
 }
 

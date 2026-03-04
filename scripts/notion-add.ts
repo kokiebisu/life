@@ -48,7 +48,7 @@ async function runRecipeGen(pageId: string): Promise<void> {
   );
   const exitCode = await proc.exited;
   if (exitCode !== 0) {
-    console.error(`⚠️  レシピ生成に失敗しました（exit code: ${exitCode}）。ページは作成済みです。`);
+    throw new Error(`レシピ生成に失敗しました（exit code: ${exitCode}）。ページは作成済みです。`);
   }
 }
 

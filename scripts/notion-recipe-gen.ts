@@ -77,24 +77,31 @@ const SYSTEM_PROMPT = `あなたはレシピフォーマットアシスタント
   "skillTheme": "焼く - フライパンの火加減"
 }`;
 
-function buildUserPrompt(recipeHtml: string, recipeUrl: string): string {
-  return `以下のレシピサイトの内容を構造化JSONに変換してください。
-
-## レシピURL
-${recipeUrl}
-
-## レシピ内容
-${recipeHtml}`;
-}
-
-async function generateRecipeJson(
-  recipeHtml: string,
-  recipeUrl: string,
+async function searchAndGenerateRecipe(
+  menuName: string,
 ): Promise<RecipeData> {
-  const userPrompt = buildUserPrompt(recipeHtml, recipeUrl);
+  console.log(`🔍 Searching and generating recipe for: ${menuName}`);
+
+  const userPrompt = `「${menuName}」のレシピを探して、構造化JSONを生成してください。
+
+## 手順
+1. WebSearch で「${menuName} レシピ クラシル」を検索
+2. 検索結果から最も適切なレシピページの URL を取得
+3. WebFetch でそのページの内容を取得
+4. 取得した内容を元に、指定フォーマットの JSON を生成
+
+## 重要
+- 必ず実在するレシピサイトから情報を取得してください
+- JSON のみを出力してください（他のテキスト不要）`;
+
   const response = await callClaude(
     [{ role: "user", content: userPrompt }],
-    { system: SYSTEM_PROMPT, model: "claude-sonnet-4-5-20250929" },
+    {
+      system: SYSTEM_PROMPT,
+      model: "claude-sonnet-4-5-20250929",
+      allowedTools: ["WebSearch", "WebFetch"],
+      maxTurns: 10,
+    },
   );
 
   const jsonMatch = response.match(/\{[\s\S]*\}/);
@@ -102,7 +109,16 @@ async function generateRecipeJson(
     throw new Error("Claude API response does not contain valid JSON");
   }
 
-  return JSON.parse(jsonMatch[0]) as RecipeData;
+  const data = JSON.parse(jsonMatch[0]) as RecipeData;
+
+  // Validate required fields
+  if (!data.sourceUrl || !data.ingredients?.length || !data.steps?.length) {
+    throw new Error(
+      `Recipe data incomplete: sourceUrl=${!!data.sourceUrl}, ingredients=${data.ingredients?.length ?? 0}, steps=${data.steps?.length ?? 0}`,
+    );
+  }
+
+  return data;
 }
 
 // --- Notion block building ---
@@ -265,56 +281,6 @@ async function getPageTitle(apiKey: string, pageId: string): Promise<string> {
   return titleArr.map((t: any) => t.plain_text || "").join("");
 }
 
-// --- Recipe search ---
-
-async function searchRecipeUrl(menuName: string): Promise<string> {
-  console.log(`🔍 Searching for recipe: ${menuName}`);
-
-  const query = `クラシル ${menuName}`;
-  const proc = Bun.spawn(
-    ["claude", "websearch", query, "-p", "レシピのURLだけを1つ返してください（クラシル優先）。他の説明は不要です。"],
-    {
-      env: { ...process.env, CLAUDECODE: "" },
-      stdout: "pipe",
-      stderr: "pipe",
-    },
-  );
-
-  const output = await new Response(proc.stdout).text();
-  await proc.exited;
-
-  // Extract URL from output
-  const urlMatch = output.match(/https?:\/\/[^\s]+/);
-  if (!urlMatch) {
-    throw new Error(`Could not find recipe URL for: ${menuName}`);
-  }
-
-  return urlMatch[0];
-}
-
-async function fetchRecipeContent(url: string): Promise<string> {
-  const prompt = `レシピの内容を抽出してください。以下の情報を含めてください：
-- タイトル
-- 調理時間
-- 材料リスト（分量も含む）
-- 作り方の手順
-- コツ・ポイント`;
-
-  const proc = Bun.spawn(
-    ["claude", "webfetch", url, "-p", prompt],
-    {
-      env: { ...process.env, CLAUDECODE: "" },
-      stdout: "pipe",
-      stderr: "pipe",
-    },
-  );
-
-  const output = await new Response(proc.stdout).text();
-  await proc.exited;
-
-  return output;
-}
-
 // --- Notion update ---
 
 async function updateNotionPage(
@@ -377,17 +343,8 @@ async function main() {
   // Extract menu name from title (remove meal prefix like "昼 ")
   const menuName = pageTitle.replace(/^(朝|昼|間食|夜)\s*/, "");
 
-  // Search for recipe URL
-  const url = await searchRecipeUrl(menuName);
-  console.log(`✅ Found recipe: ${url}`);
-
-  // Fetch recipe
-  console.log(`🌐 Fetching recipe content...`);
-  const recipeHtml = await fetchRecipeContent(url);
-
-  // Generate JSON
-  console.log("🤖 Generating structured recipe...");
-  const recipeData = await generateRecipeJson(recipeHtml, url);
+  // Search + fetch + generate in one Claude call
+  const recipeData = await searchAndGenerateRecipe(menuName);
 
   console.log(`\n📋 Recipe: ${recipeData.title}`);
   console.log(`⏱️  Cooking time: ${recipeData.cookingTime}`);
@@ -408,8 +365,17 @@ async function main() {
   console.log(`\n📝 Updating Notion page...`);
   await updateNotionPage(apiKey, targetPageId, blocks);
 
+  // Verify page content was written
+  const verification = await notionFetch(
+    apiKey,
+    `/blocks/${targetPageId}/children?page_size=1`,
+  );
+  if (!verification.results?.length) {
+    throw new Error("Page update verification failed: no blocks found after update");
+  }
+
   console.log(`✅ Recipe added to: ${pageTitle}`);
-  console.log(`🔗 ${url}`);
+  console.log(`🔗 ${recipeData.sourceUrl}`);
 }
 
 main().catch((err) => {

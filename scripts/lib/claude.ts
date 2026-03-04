@@ -14,6 +14,8 @@ interface ClaudeOptions {
   model?: string;
   maxTokens?: number;
   system?: string;
+  allowedTools?: string[];
+  maxTurns?: number;
 }
 
 export async function callClaude(
@@ -26,7 +28,11 @@ export async function callClaude(
   // Build the input from messages
   const input = messages.map((m) => m.content).join("\n\n");
 
-  const args = ["-p", "--model", model, "--max-turns", "3"];
+  const maxTurns = options.maxTurns || 3;
+  const args = ["-p", "--model", model, "--max-turns", String(maxTurns)];
+  if (options.allowedTools?.length) {
+    args.push("--allowedTools", options.allowedTools.join(","));
+  }
   if (options.system) {
     args.push("--system-prompt", options.system);
   }

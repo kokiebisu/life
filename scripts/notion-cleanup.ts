@@ -33,8 +33,15 @@ async function main() {
     if (!dbSetup) return;
     const { apiKey, dbId, config } = dbSetup;
 
+    // Exclude all "done" statuses (some DBs use "Done", others "完了")
+    const doneStatuses = new Set([config.statusDone, "Done", "完了"]);
+    const statusFilters = [...doneStatuses].map((s) => ({
+      property: config.statusProp,
+      status: { does_not_equal: s },
+    }));
+
     const filters: Record<string, unknown>[] = [
-      { property: config.statusProp, status: { does_not_equal: config.statusDone } },
+      ...statusFilters,
       { property: config.dateProp, date: { is_not_empty: true } },
     ];
 

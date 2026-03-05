@@ -1,16 +1,16 @@
-Category,Item,Qty,Guitar,Status,Notes
-Cable,Analysis Plus Yellow Oval,2,,Owned,Instrument cable
-Strap,Moody Leather Suede Strap,1,Acoustic,Owned,
-Capo,Kyser Quick-Change (Black),1,,Owned,
-Preamp,UAFX Enigmatic '82,1,,Owned,Mesa Boogie Mark IIC+ モデリング
-Case,Martin 5-Ply Hardshell,1,Martin Custom,Owned,付属
-Case,FCS Strat/Tele Brown,1,Strat Custom,Owned,付属
-Headphones,Sennheiser HD 490 Pro,1,,Owned,Open-back studio headphones
-Audio Interface,Universal Audio Volt,1,,Owned,
-Humidity,Boveda,2,Martin Custom / Strat Custom,Owned,ケース内で湿度管理
-Stand,ギタースタンド（ラッカー対応）,1,Strat,Wishlist,練習頻度UP。~3000-5000円
-Tuner,クリップチューナー,1,,Wishlist,~3000円
-Strap,エレキ用ストラップ,1,Strat,Wishlist,
-Strings,替え弦 Light,1,Martin Custom,Wishlist,予備。~1500円
-Strings,替え弦 10-46,1,Strat Custom,Wishlist,予備。~1500円
-Maintenance,指板オイル・クロス等,1,,Wishlist,楽器の寿命を延ばす。~2000円
+Category,Brand,Item,Qty,Guitar,Status,Notes
+Cable,Analysis Plus,Yellow Oval,2,,Owned,Instrument cable
+Strap,Moody,Leather Suede Strap,1,Acoustic,Owned,
+Capo,Kyser,Quick-Change (Black),1,,Owned,
+Preamp,UAFX,Enigmatic '82,1,,Owned,Mesa Boogie Mark IIC+ モデリング
+Case,Martin,5-Ply Hardshell,1,Martin Custom,Owned,付属
+Case,Fender,FCS Strat/Tele Brown,1,Strat Custom,Owned,付属
+Headphones,Sennheiser,HD 490 Pro,1,,Owned,Open-back studio headphones
+Audio Interface,Universal Audio,Volt,1,,Owned,
+Humidity,Boveda,,2,Martin Custom / Strat Custom,Owned,ケース内で湿度管理
+Stand,,ギタースタンド（ラッカー対応）,1,Strat,Wishlist,練習頻度UP。~3000-5000円
+Tuner,,クリップチューナー,1,,Wishlist,~3000円
+Strap,,エレキ用ストラップ,1,Strat,Wishlist,
+Strings,,替え弦 Light,1,Martin Custom,Wishlist,予備。~1500円
+Strings,,替え弦 10-46,1,Strat Custom,Wishlist,予備。~1500円
+Maintenance,,指板オイル・クロス等,1,,Wishlist,楽器の寿命を延ばす。~2000円

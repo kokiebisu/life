@@ -120,10 +120,10 @@
 
 ```bash
 # 標準（レシピ自動生成あり）
-bun run scripts/notion-add.ts --db meals --title "昼食（鶏むね肉ソテー）" --date 2026-02-26 --start 12:00 --end 13:00
+bun run scripts/notion-add.ts --db meals --title "鶏むね肉ソテー" --date 2026-02-26 --start 12:00 --end 13:00
 
 # レシピ不要な場合（外食・他人作など）
-bun run scripts/notion-add.ts --db meals --title "夕食（豚キムチ・はらちゃん作）" --date 2026-02-26 --start 20:00 --end 21:00 --no-recipe
+bun run scripts/notion-add.ts --db meals --title "豚キムチ・はらちゃん作" --date 2026-02-26 --start 20:00 --end 21:00 --no-recipe
 ```
 
 **自動スキップされるパターン:** 外食、コンビニ、〇〇作、カップ、残り物、テイクアウト、出前、デリバリー

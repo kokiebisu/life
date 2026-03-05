@@ -55,10 +55,10 @@ TZ=Asia/Tokyo date "+%Y-%m-%d %H:%M %a"
 
 ```bash
 # 自炊（レシピあり）
-bun run scripts/notion-add.ts --db meals --title "昼食（メニュー名）" --date YYYY-MM-DD --start HH:MM --end HH:MM
+bun run scripts/notion-add.ts --db meals --title "メニュー名" --date YYYY-MM-DD --start HH:MM --end HH:MM
 
 # 残り物・コンビニ・外食（レシピなし）
-bun run scripts/notion-add.ts --db meals --title "昼食（メニュー名）" --date YYYY-MM-DD --start HH:MM --end HH:MM --no-recipe
+bun run scripts/notion-add.ts --db meals --title "メニュー名" --date YYYY-MM-DD --start HH:MM --end HH:MM --no-recipe
 ```
 
 完了済みの場合は `--status 完了` をつける。

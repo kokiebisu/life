@@ -1,81 +1,86 @@
-# Cleanup - 未完了エントリの整理
+# Cleanup - 過去の未完了エントリ整理
 
-過去数日分（デフォルト: 3日間）の未完了エントリをまとめて整理する。
+過去の未完了エントリを全て洗い出し、routine は自動削除、それ以外は1件ずつ対話的に処理する。
 
 ## Steps
 
-1. **対象期間のエントリを取得する**
+1. **過去の未完了エントリを取得する**
    ```bash
-   # デフォルト: 過去3日分を一括取得
-   for i in 1 2 3; do
-     bun run scripts/notion-list.ts --date $(TZ=Asia/Tokyo date -d "$i days ago" +%Y-%m-%d) --json
-   done
+   # 全期間の過去未完了
+   bun run scripts/notion-cleanup.ts
 
-   # 引数で日付指定（その日のみ）
-   bun run scripts/notion-list.ts --date $ARGUMENTS --json
+   # 日付指定の場合
+   bun run scripts/notion-cleanup.ts --date $ARGUMENTS
    ```
 
-2. **未完了エントリを抽出する**
-   - ステータスが「完了」「Done」**以外**のものを抽出
-   - 完了済みエントリは無視する
-   - 日付ごとにグループ化して見やすく表示する
-
-3. **カテゴリ別に整理方針を決める**
-
-   | DB | 方針 | 理由 |
-   |----|------|------|
-   | routine | 削除 | スケジュール同期が再配置する |
-   | meals | 削除 | 過去の食事は不要 |
-   | guitar | 削除（日付クリア） | カリキュラムは次回同期時に再配置 |
-   | todo | 今日に移動（終日） | やるべきことは持ち越す |
-   | events | ユーザーに確認 | キャンセル or 別日に移動 |
-   | groceries | 削除 | 過去の買い出しは不要 |
-
-4. **整理方針をユーザーに提示して確認を取る**
-   - 全日分をまとめて一覧で見せる
-   - events がある場合は個別に対応を確認する
-   - todo が複数日に分散していても、まとめて今日に移動する提案をする
-
-5. **実行する**
-   - routine / meals / groceries の削除:
-     ```bash
-     bun run scripts/notion-delete.ts <page-id1> <page-id2> ...
-     ```
-   - guitar の日付クリア: `notion-update-page` で日付を null に
-   - todo の移動: `notion-update-page` で日付を今日に変更（終日）
-   - events: ユーザーの指示に従う
-
-6. **結果を確認する**
+2. **routine エントリを自動削除する**
+   - source が `routine` のエントリを全て抽出
+   - `notion-delete.ts` で一括削除
+   - 削除したエントリ名と件数を報告
    ```bash
-   # 今日のエントリに移動分が反映されていることを確認
+   bun run scripts/notion-delete.ts <routine-id1> <routine-id2> ...
+   ```
+
+3. **残りのエントリを1件ずつ対話的に処理する**
+   - 日付が古い順に1件ずつ提示する
+   - 各エントリについて以下を表示:
+     - DB名（events/todo/meals/groceries/guitar/sound）
+     - タイトル
+     - 日付
+     - ステータス
+   - 選択肢を提示（推奨を明記する）:
+     1. 削除（guitar/sound の場合は日付クリア）
+     2. 今日に移動
+     3. 別日に移動（日付を聞く）
+     4. 完了にする
+   - DB種別に応じた推奨:
+     - meals → 削除を推奨（過去の食事は不要）
+     - groceries → 削除を推奨（過去の買い出しは不要）
+     - todo → 今日に移動を推奨（やるべきことは持ち越す）
+     - events → 削除を推奨（過去のイベントは不要）
+     - guitar/sound → 削除（日付クリア）を推奨
+
+4. **各エントリの処理を実行する**
+   - 削除: `bun run scripts/notion-delete.ts <page-id>`
+   - 日付クリア（guitar/sound）: `notion-update-page` で日付を null に
+   - 今日に移動: `notion-update-page` で日付を今日（終日）に変更
+   - 別日に移動: `notion-update-page` で指定日（終日）に変更
+   - 完了にする: `notion-update-page` でステータスを完了に変更
+
+5. **キャッシュをクリアする**
+   ```bash
+   bun run scripts/cache-status.ts --clear
+   ```
+
+6. **結果サマリを報告する**
+   - 削除○件、移動○件、完了○件
+   - 今日のエントリを表示して確認:
+   ```bash
    bun run scripts/notion-list.ts --date $(TZ=Asia/Tokyo date +%Y-%m-%d)
    ```
 
-7. **結果を報告する**
-   - 削除件数・移動件数をサマリで報告
-
 ## 引数
 
-- `$ARGUMENTS` が空 → 過去3日分（昨日・一昨日・3日前）をまとめて整理
-- `$ARGUMENTS` が日付（YYYY-MM-DD） → その日のみを対象にする
+- `$ARGUMENTS` が空 → 全期間の過去未完了
+- `$ARGUMENTS` が日付（YYYY-MM-DD） → その日のみ対象
 
 ## 注意
 
 - 完了済みエントリには触らない
-- guitar DB のエントリは削除ではなく日付クリア（Lesson ページは再利用するため）
-- todo を移動するとき、時間指定は外して終日にする（今日のスケジュールで改めて配置）
-- 同じ todo が複数日に跨って未完了のまま残っている場合、重複移動しないよう ID で管理する
+- guitar/sound の「削除」は日付クリア（Lesson ページは再利用するため）
+- todo を移動するとき、時間指定は外して終日にする
+- 全件必ず処理する（スキップなし）
+- routine は自動削除（ユーザー確認不要）
+
+## tasks.md との同期
+
+- todo を「完了にする」場合、`planning/tasks.md` に対応エントリがあれば `[x]` に変更して Archive に移動
+- todo を「削除」する場合、`planning/tasks.md` の対応エントリも削除
 
 ## 予定キャンセル時
 
-1. **Notion**: `notion-delete.ts` でページごと完全削除
-2. **イベントファイル**: キャンセルセクションに記録を残す
-
-## 一括削除後は代替エントリを登録する（厳守）
-
-- カリキュラム改訂・入れ替え等で複数ページを削除した場合、削除だけで完了扱いにしない
-- 新しいエントリを Notion に登録するまでがセット
-- 削除後に `notion-list.ts` で対象 DB が空なら登録漏れの可能性が高い
+1. Notion: `notion-delete.ts` でページごと完全削除
+2. イベントファイル: キャンセルセクションに記録を残す
 
 ## Recurring（定期タスク）
 

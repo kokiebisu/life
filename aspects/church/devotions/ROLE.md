@@ -12,6 +12,7 @@ A sacred space for daily spiritual practice and personal connection with God.
 ## Guidance
 
 ### Daily Practice（毎朝7:00-8:00、1時間インタラクティブ）
+- **デボーション開始前に `opening-prayer.md` の祈りを読む（または唱える）**
 - ユーザーが箇所を選ぶ（または提案から選ぶ）
 - 一緒に読み、気になった節を対話で深掘りする
 - 今の自分の状況・感情と結びつけて語り合う

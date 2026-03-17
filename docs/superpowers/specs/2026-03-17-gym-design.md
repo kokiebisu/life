@@ -7,11 +7,48 @@
 
 ## 概要
 
-ジムセッションの予定登録と実績ログ記録を行う Claude Code スキル。
-
 ```
 /gym plan [日付] [時間]   → ジム予定を Notion routine DB に登録
 /gym log                  → 実績を Notion ジムログDB + ローカル MD に記録
+```
+
+**アーキテクチャ方針:**
+- `/gym plan` はスタンダードなスケジュールエントリ → `notion-add.ts --db routine` を使用
+- `/gym log` はカスタムプロパティ（種目・重量・セット数・回数）を持つ → Notion MCP（`notion-create-pages`）を直接使用。`notion-add.ts` はスタンダードな `title/date/status` 構造のみ対応のため不適
+
+---
+
+## 一回限りのセットアップ（実装前に必須）
+
+### 1. Notion ジムログDB を作成する
+
+Notion で新しいデータベースを作成し、以下のプロパティを設定する:
+
+| プロパティ名 | 型 | 設定 |
+|------------|-----|------|
+| 名前 | title | - |
+| 日付 | date | - |
+| 種目 | select | 選択肢: ベンチプレス / スクワット / デッドリフト |
+| 重量 | number | フォーマット: 数値 |
+| セット数 | number | フォーマット: 数値 |
+| 回数 | number | フォーマット: 数値 |
+| メモ | rich_text | - |
+
+作成後、DB の ID を取得する。
+
+### 2. 環境変数を設定する
+
+`.env.local` に追加:
+```
+NOTION_GYM_DB=<作成したジムログDBのID>
+```
+
+Skill 実行時は `.env.local` を読んで `NOTION_GYM_DB` の値を取得し、`notion-create-pages` の `database_id` パラメータに渡す。
+
+### 3. `aspects/diet/CLAUDE.md` のディレクトリ構成表を更新する
+
+```
+| `gym-logs/YYYY-MM-DD.md` | ジムセッションの実績ログ |
 ```
 
 ---
@@ -24,26 +61,27 @@
 
 ### 登録先
 
-- **Notion routine DB**（`NOTION_TASKS_DB`）
-  - 理由: ジムは週3回の繰り返し習慣であり、events（一回限り）より routine が適切
+**Notion routine DB**（`NOTION_TASKS_DB`）
+- 理由: ジムは週3回の繰り返し習慣。routine DB は `Name / 日付 / ステータス` を持ち、特定日付のエントリ登録に対応
 
 ### 動作
 
 1. 引数をパース
    - 日付未指定: 今日 or ユーザーに確認
-   - 時間未指定: `gym-menu.md` に記載のトリガー時間（12:30〜13:20、往復含む計90分）をデフォルト
-2. `validate-entry.ts` で重複チェック
-3. `notion-add.ts --db routine` でページ作成
-   - タイトル: `ジム（BIG3）`
-   - 日付・開始/終了時刻を設定
-4. 登録完了を報告
+   - 時間未指定: デフォルト `12:30-14:00`（`gym-menu.md` のトリガー時間 12:30 + 合計90分）
+   - 開始時刻指定あり: 開始時刻 + 90分で終了時刻を計算（例: `15:00` → `16:30`）
+2. `validate-entry.ts --date YYYY-MM-DD --title "ジム（BIG3）" --start HH:MM --end HH:MM` で重複チェック
+3. `notion-add.ts --db routine` でページ作成（タイトル: `ジム（BIG3）`）
+   - 時刻は JST 形式で渡す: `--start 2026-03-20T12:30:00+09:00 --end 2026-03-20T14:00:00+09:00`
+4. `bun run scripts/cache-status.ts --clear`
+5. 登録完了を報告
 
 ### 引数例
 
 ```
 /gym plan             → 今日 12:30-14:00 で登録（確認あり）
 /gym plan 3/20        → 3/20 12:30-14:00 で登録
-/gym plan 3/20 15:00  → 3/20 15:00-16:30 で登録（90分固定）
+/gym plan 3/20 15:00  → 3/20 15:00-16:30 で登録（開始時刻 + 90分）
 ```
 
 ---
@@ -52,27 +90,24 @@
 
 ### 目的
 
-実際のジムセッション（BIG3）の重量・セット数・回数を記録し、プログレッシブオーバーロードの推移を追跡可能にする。
+BIG3の重量・セット数・回数を記録し、プログレッシブオーバーロードの推移を追跡可能にする。
 
 ### 保存先
 
 1. **Notion ジムログDB**（`NOTION_GYM_DB`）- 重量推移の追跡用
 2. **ローカル MD**（`aspects/diet/gym-logs/YYYY-MM-DD.md`）- バックアップ・ローカル参照用
 
-### Notion ジムログDB プロパティ
+### Notion ジムログDB への登録
 
-| プロパティ | 型 | 内容 |
-|-----------|-----|------|
-| 名前 | title | `ジム 3/17` など（セッション単位） |
-| 日付 | date | セッション日 |
-| 種目 | select | ベンチプレス / スクワット / デッドリフト |
-| 重量 | number | kg（例: 22.5） |
-| セット数 | number | 例: 3 |
-| 回数 | number | 例: 15 |
-| メモ | rich_text | 体感・フォームメモ（任意） |
+ジムログ DB はカスタムプロパティを持つため `validate-entry.ts`（standard schedule DBs のみ対応）は使用しない。重複チェックは `notion-search` MCP で行う。
 
-- 1セッション = 3エントリ（種目ごとに1ページ）
-- DB ビュー「種目別」を作成し、ベンチ/スクワット/デッドリフトでフィルタ + 日付ソートで推移を確認
+**1セッション = 3回の `notion-create-pages` 呼び出し**（ベンチプレス・スクワット・デッドリフト各1回）
+
+各 `notion-create-pages` 呼び出しに必ず含めるもの:
+- `database_id`: `.env.local` から読んだ `NOTION_GYM_DB` の値
+- `icon`: `{"type": "emoji", "emoji": "🏋️"}`
+- `cover`: 適切な外部画像URL（例: Unsplash のジム系画像）
+- `date:日付`: `YYYY-MM-DD` 形式（時刻なし、タイムゾーン不要）
 
 ### ローカル MD フォーマット
 
@@ -90,36 +125,35 @@
 ## デッドリフト
 - 重量: 20kg × 15回 × 3セット
 
-メモ: （体感・フォームのメモ）
+メモ: （体感・フォームメモ）
 ```
 
 ### 動作
 
 1. 今日の日付を確認（`TZ=Asia/Tokyo date`）
-2. 直近セッションのログを取得（`gym-logs/` の最新ファイル）して前回の重量を提示
-3. BIG3の種目ごとに重量・セット数・回数をユーザーに確認
-4. `validate-entry.ts` で重複チェック（同日同種目）
-5. Notion ジムログDB に3エントリ登録（`notion-add.ts --db gym` または Notion MCP）
-6. ローカル MD ファイルを作成・保存
-7. 「前回比」を計算して報告（例: ベンチプレス +2.5kg）
+2. `aspects/diet/gym-logs/` ディレクトリが未作成の場合は `mkdir -p` で作成
+3. 直近セッションのログを取得（`gym-logs/` の最新ファイル）して前回の重量を提示
+4. BIG3の種目ごとに重量・セット数・回数をユーザーに確認
+5. `notion-search` で同日・同種目の重複確認。既存があればユーザーに確認してから登録（種目単位で判定）
+6. `notion-create-pages` でジムログDB に3エントリ登録（icon・cover・NOTION_GYM_DB を設定）
+7. `bun run scripts/cache-status.ts --clear`
+8. ローカル MD ファイルを `aspects/diet/gym-logs/YYYY-MM-DD.md` に作成・保存
+9. 「前回比」を計算して報告（例: ベンチプレス +2.5kg）
 
 ---
 
 ## ファイル構成
 
 ```
-aspects/diet/gym-logs/          # ジムログ MD（新規作成）
+aspects/diet/gym-logs/          # 新規作成（初回 mkdir -p）
   YYYY-MM-DD.md
 aspects/diet/gym-menu.md        # 既存: BIG3メニュー・方針
+aspects/diet/CLAUDE.md          # 既存: gym-logs/ エントリを追加する
 .claude/skills/gym/
   SKILL.md                      # スキル定義
 ```
 
-### 環境変数（新規）
-
-```
-NOTION_GYM_DB=<ジムログDBのID>
-```
+**`scripts/lib/notion.ts` への変更は不要。** ジムログ DB は Notion MCP を直接使用するため、`SCHEDULE_DB_CONFIGS` への追加は行わない。
 
 ---
 

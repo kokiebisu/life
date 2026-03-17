@@ -16,7 +16,7 @@ TZ=Asia/Tokyo date "+%Y-%m-%d %H:%M %a"
 
 Notion events DB で今後のイベント（外食・飲み会等）を確認する:
 ```bash
-bun run scripts/notion-list.ts --days 7 --json
+bun run scripts/notion-list.ts --days 7 --db events --json
 ```
 
 状況把握後、除外される食事枠をユーザーに提示してから食数を聞く:

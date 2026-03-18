@@ -34,9 +34,18 @@ bun run scripts/validate-entry.ts --date YYYY-MM-DD --title "ジム" --start HH:
 - 終了コード 1（類似エントリあり）→ ユーザーに確認してから登録するか判断する
 - 終了コード 0 → 次のステップへ
 
+### メニュー決定
+
+登録前に以下を実行してメニューを決める:
+
+1. `aspects/diet/gym-logs/` の最新ログを確認して前回の種目・重量を取得
+2. `aspects/diet/gym-menu.md` の公式メニューを参照
+3. 前回から2週間以上空いている場合は「軽めで再開」を推奨
+4. 今日の種目リストと推奨重量を決定する
+
 ### 登録
 
-Notion MCP の `notion-create-pages` でジムDB（`data_source_id: 326ce17f-7b98-806a-be76-000b67b58628`）に登録する:
+**種目ごとに1エントリずつ**、開始時刻から15分刻みで Notion MCP の `notion-create-pages` でジムDB（`data_source_id: 326ce17f-7b98-806a-be76-000b67b58628`）に登録する:
 
 ```
 parent: data_source_id = 326ce17f-7b98-806a-be76-000b67b58628
@@ -44,10 +53,19 @@ icon: 🏋️
 cover: https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200
 properties:
   名前: ジム
-  date:日付:start: YYYY-MM-DDT12:30:00+09:00  （JST 必須）
-  date:日付:end:   YYYY-MM-DDT14:00:00+09:00
+  date:日付:start: YYYY-MM-DDThh:mm:00+09:00  （JST 必須・種目ごとに15分ずらす）
+  date:日付:end:   YYYY-MM-DDThh:mm:00+09:00  （start + 15分）
   date:日付:is_datetime: 1
+  種目: 種目名（select）
+  重量: 推奨重量の数値
+  セット数: セット数
+  回数: 回数
 ```
+
+例: 開始 13:00、3種目の場合
+- 種目1（ベンチプレス）: 13:00〜13:15
+- 種目2（スクワット）: 13:15〜13:30
+- 種目3（ウォーキング）: 13:30〜13:45
 
 ※ `notion-add.ts --db routine` は使わない。ジム予定はジムDBで管理する。
 
@@ -57,18 +75,18 @@ properties:
 bun run scripts/cache-status.ts --clear
 ```
 
-### メニュー提案
-
-登録完了後、以下を元にメニューを提案する:
-
-1. `aspects/diet/gym-logs/` の最新ログを確認して前回の種目・重量を取得
-2. `aspects/diet/gym-menu.md` の公式メニューを参照
-3. 前回から2週間以上空いている場合は「軽めで再開」を推奨
-4. 前回比・推奨重量を表で提示する
-
 ### 完了報告
 
-「ジムを [日付] [時間] で routine DB に登録しました」と報告する。
+登録した種目一覧と推奨重量を表で報告する:
+
+```
+ジムを [日付] [時間〜] で登録しました（X種目）
+
+| 種目 | 推奨重量 | セット×回数 | 前回 |
+|------|---------|------------|------|
+| ベンチプレス | 20kg | 3×15 | 初回 |
+| ...  | ...  | ... | ... |
+```
 
 ---
 

@@ -5,7 +5,7 @@
  * 使い方:
  *   bun run scripts/validate-entry.ts --date YYYY-MM-DD --title "タイトル"
  *   bun run scripts/validate-entry.ts --date YYYY-MM-DD --title "Devotion" --start 08:00 --end 08:30
- *   bun run scripts/validate-entry.ts --date YYYY-MM-DD --title "ジム" --db routine
+ *   bun run scripts/validate-entry.ts --date YYYY-MM-DD --title "Devotion" --db devotion
  *
  * 終了コード:
  *   0 = 類似エントリなし（登録OK）
@@ -15,14 +15,14 @@
 import { type ScheduleDbName, parseArgs, findSimilarEntries } from "./lib/notion";
 
 const DB_LABELS: Record<ScheduleDbName, string> = {
-  routine: "習慣", events: "イベント", todo: "やること",
+  devotion: "デボーション", events: "イベント", todo: "やること",
   guitar: "ギター", sound: "音響", meals: "食事", groceries: "買い出し",
 };
 
 async function main() {
   const { opts } = parseArgs();
   if (!opts.date || !opts.title) {
-    console.error("Usage: bun run scripts/validate-entry.ts --date YYYY-MM-DD --title \"タイトル\" [--db routine] [--start HH:MM] [--end HH:MM]");
+    console.error("Usage: bun run scripts/validate-entry.ts --date YYYY-MM-DD --title \"タイトル\" [--db devotion] [--start HH:MM] [--end HH:MM]");
     process.exit(2);
   }
 

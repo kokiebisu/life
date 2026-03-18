@@ -3,7 +3,7 @@ notion_id: 327ce17f-7b98-8127-9bce-e88efae78e60
 date: 2026-03-18
 start: 14:40
 end: 16:51
-category: system-design
+category: Software Engineering
 book: システム設計の面接試験
 chapter: "4"
 ---

@@ -1,7 +1,7 @@
 # Study DB 設計ドキュメント
 
 **日付:** 2026-03-18
-**ステータス:** Draft
+**ステータス:** Draft v2
 
 ---
 
@@ -25,8 +25,36 @@
 | Chapter | Text | — | 章・節（任意） |
 | ステータス | Status | ✅ | 学習中 / 完了 |
 
-- 登録時に必ずアイコン・カバー画像を付ける
+- 登録時に必ずアイコン（📖）・カバー画像（Unsplash: books/study 系）を付ける
 - 日時は必ず `+09:00` を付ける（UTC ずれ防止）
+
+### `ScheduleDbConfig` マッピング
+
+`scripts/lib/notion.ts` の `ScheduleDbName` 型と `SCHEDULE_DB_CONFIGS` に以下を追加：
+
+```typescript
+// ScheduleDbName に追加
+type ScheduleDbName = ... | 'study'
+
+// SCHEDULE_DB_CONFIGS に追加
+study: {
+  envKey: 'NOTION_STUDY_DB',
+  titleProp: '名前',
+  dateProp: '日付',
+  descProp: '',
+  statusProp: 'ステータス',
+  statusDone: '完了',
+}
+```
+
+---
+
+## カスタムプロパティの設定方法
+
+`notion-add.ts` は `titleProp` / `dateProp` / `statusProp` のみ対応。`カテゴリ`（Select）・`本`・`Chapter` は `notion-add.ts` では設定できないため、以下の2ステップで登録する：
+
+1. `notion-add.ts --db study --start HH:MM --end HH:MM` でページ作成（名前・日付・ステータスのみ）
+2. `notion-update-page` で `カテゴリ`・`本`・`Chapter` プロパティを設定 + ページ本文を書き込む
 
 ---
 
@@ -35,20 +63,20 @@
 `notion-update-page` の `replace_content` で以下の構造を書き込む：
 
 ```
-[Callout] セッション情報
-  - 📅 日付・時刻
-  - 🏷 カテゴリ
+[Callout 📚] セッション情報
+  - 📅 日付・時刻（例: 2026-03-18 14:00 → 15:00）
+  - 🏷 カテゴリ（例: algorithms）
   - 📗 本（あれば）
   - 📌 Chapter（あれば）
 
 [Divider]
 
-## ノート
+[Heading 2] ノート
 （学習内容・メモ）
 
 [Divider]
 
-## まとめ
+[Heading 2] まとめ
 （key takeaways）
 ```
 
@@ -58,14 +86,17 @@
 
 **パス:** `aspects/study/{category}/notes/YYYY-MM-DD.md`
 
+同日・同カテゴリで複数セッションがある場合: `YYYY-MM-DD-2.md`、`YYYY-MM-DD-3.md` と連番を付ける。
+
 ```
 aspects/study/
-  algorithms/notes/YYYY-MM-DD.md
-  system-design/notes/YYYY-MM-DD.md
+  algorithms/notes/2026-03-18.md
+  algorithms/notes/2026-03-18-2.md   ← 同日2回目
+  system-design/notes/2026-03-18.md
   startup/notes/YYYY-MM-DD.md
-  law/notes/YYYY-MM-DD.md
-  tech/notes/YYYY-MM-DD.md
-  other/notes/YYYY-MM-DD.md
+  law/notes/
+  tech/notes/
+  other/notes/
 ```
 
 **MD フォーマット:**
@@ -113,7 +144,7 @@ status: 完了
 ### フロー
 
 1. **情報収集**（未指定のものを確認）
-   - カテゴリ（必須）
+   - カテゴリ（必須）: algorithms / system-design / startup / law / tech / other
    - 開始時刻（必須）
    - 終了時刻（任意、未定なら後で更新）
    - 本・Chapter（任意）
@@ -121,23 +152,29 @@ status: 完了
 2. **重複チェック**
    - `validate-entry.ts` で同日同時刻の重複を確認
 
-3. **Notion 登録**
-   - `notion-add.ts --db study` でエントリ作成
-   - アイコン・カバー画像を付ける
-   - `notion-update-page` の `replace_content` でページ装飾を書き込む
+3. **Notion 登録**（2ステップ）
+   - `notion-add.ts --db study --start HH:MM --end HH:MM` でページ作成
+     - アイコン（📖）は `notion-add.ts` が「勉強」タイトルから自動設定するため追加不要
+   - `notion-update-page` で `カテゴリ`・`本`・`Chapter` プロパティ + カバー画像を設定
+   - `notion-update-page`（`replace_content`）でページ装飾（Callout + ノート + まとめ）を書き込む
 
 4. **ローカル MD 作成**
-   - `aspects/study/{category}/notes/YYYY-MM-DD.md` を作成
+   - `aspects/study/{category}/notes/YYYY-MM-DD.md` を作成（同日2回目は `-2.md`）
    - フロントマターに `notion_id` を記録
+   - `bun run scripts/cache-status.ts --clear` を実行
 
 5. **セッション開始**
    - 「セッション開始！何を学びますか？」と問いかける
-   - 対話しながらノートを随時 Notion + MD に書き込む
+   - ノートはローカル MD にリアルタイムで書き込む
+   - Notion ページへの書き込みはセッション中の区切り（「ちょっと休憩」「メモして」）または終了時にまとめて行う
 
 6. **セッション終了**
-   - 「終わり」等の合図でステータスを「完了」に更新
+   - 「終わり」「完了」「終了」「おわり」「セッション終了」のいずれかでセッション終了とみなす
+   - ステータスを「完了」に更新（`notion-update-page`）
    - 終了時刻を記録
-   - まとめセクションを書き込む
+   - ノート・まとめを Notion ページに書き込む（`replace_content`）
+   - MD も最終内容で更新
+   - `bun run scripts/cache-status.ts --clear`
 
 ---
 
@@ -145,15 +182,17 @@ status: 完了
 
 ### 新規作成
 
-- [ ] Notion Study DB（手動で作成 or `notion-create-database` で作成）
-- [ ] `.env` に `NOTION_STUDY_DB` 追加
-- [ ] `scripts/notion-add.ts` に `study` DB 対応を追加
+- [ ] Notion Study DB（`notion-create-database` または手動で作成）
+- [ ] `.env` に `NOTION_STUDY_DB` を追加
 - [ ] `.claude/skills/study.md` スキルファイル作成
 
 ### 既存ファイル更新
 
-- [ ] `.claude/rules/notion-workflow.md` に Study DB を追記
-- [ ] `aspects/study/README.md` に `/study` コマンドの説明を追記
+- [ ] `scripts/lib/notion.ts` — `ScheduleDbName` に `study` を追加、`SCHEDULE_DB_CONFIGS` にエントリ追加
+- [ ] `scripts/validate-entry.ts` — `DB_LABELS` に `study: '学習'` を追加（重複チェック自体は `SCHEDULE_DB_CONFIGS` 追加で自動対応）
+- [ ] `.claude/rules/notion-workflow.md` — Study DB を Schedule DB テーブルと「重複バリデーション」対象リスト（`study`）に追記
+- [ ] `aspects/study/` — `startup/notes/`, `law/notes/`, `tech/notes/`, `other/notes/` ディレクトリを作成（`algorithms/` と `system-design/` は既存）
+- [ ] `aspects/study/README.md` — 「学習セッションの記録」セクションを追加し `/study` コマンドの説明を記載
 
 ---
 
@@ -161,4 +200,3 @@ status: 完了
 
 - 既存の `roadmap.md` / `algorithms/README.md` の Notion 移行（別タスク）
 - `review-log.json` の活用（現状空のまま）
-- 複数セッション/日の扱い（同日2回勉強した場合は別ファイルに `-2` suffix で対応）

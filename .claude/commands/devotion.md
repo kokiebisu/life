@@ -26,11 +26,12 @@ $ARGUMENTS — 章番号 or 日付（省略可。省略時は自動検出）
    # 日付を指定
    bun run scripts/devotion-init.ts --date $ARGUMENTS
    ```
-   - スクリプトが章番号の自動検出・重複チェックを行う。これを飛ばすと章の重複や番号ズレが起きる
+   - スクリプトが書籍・章番号の自動検出・重複チェックを行う。これを飛ばすと章の重複や番号ズレが起きる
+   - 章数上限を超えた場合は自動で次の書籍の第1章に進む
 
 3. **opening-prayer.md を全文表示する**（厳守）
    - `aspects/church/devotions/opening-prayer.md` を読み、**全セクションを省略せず**表示する
-   - Opening Prayer と Daily Prayer の両方を表示すること
+   - 祈り文を全文省略せず表示すること
 
 4. **箴言の該当章を全文掲載する**
    - 章の全節を省略せず掲載する（聖書箇所の引用ルール: 勝手に抜粋しない）
@@ -71,7 +72,7 @@ $ARGUMENTS — 章番号 or 日付（省略可。省略時は自動検出）
    ```
 
 3. **Notion に同期する**
-   - Notion routine DB の当日の Devotion エントリを探す:
+   - Notion **Devotion DB**（`NOTION_DEVOTION_DB`）の当日のエントリを探す:
      ```bash
      bun run scripts/notion-list.ts --date $(TZ=Asia/Tokyo date +%Y-%m-%d) --json
      ```

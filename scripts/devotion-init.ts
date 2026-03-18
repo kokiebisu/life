@@ -3,8 +3,8 @@
  * devotion-init.ts — Devotion テンプレート生成
  *
  * Usage:
- *   bun run scripts/devotion-init.ts              # 自動で次の章・今日の日付
- *   bun run scripts/devotion-init.ts --chapter 20 # 章を指定（箴言）
+ *   bun run scripts/devotion-init.ts              # 自動で次の書籍・章・今日の日付
+ *   bun run scripts/devotion-init.ts --chapter 20 # 章を指定（書籍は自動検出）
  *   bun run scripts/devotion-init.ts --book "Mark" --chapter 1 # 書籍と章を指定
  *   bun run scripts/devotion-init.ts --date 2026-02-20 # 日付を指定
  */
@@ -87,33 +87,93 @@ const BOOK_NAME_JA: Record<string, string> = {
   Revelation: "ヨハネの黙示録",
 };
 
-function detectNextChapter(book: string): { chapter: number } {
+// 逆引きマッピング: 日本語 → 英語キー
+const BOOK_NAME_EN: Record<string, string> = Object.fromEntries(
+  Object.entries(BOOK_NAME_JA).map(([en, ja]) => [ja, en])
+);
+
+// 各書籍の章数
+const BOOK_CHAPTERS: Record<string, number> = {
+  Genesis: 50, Exodus: 40, Leviticus: 27, Numbers: 36, Deuteronomy: 34,
+  Joshua: 24, Judges: 21, Ruth: 4, "1 Samuel": 31, "2 Samuel": 24,
+  "1 Kings": 22, "2 Kings": 25, "1 Chronicles": 29, "2 Chronicles": 36,
+  Ezra: 10, Nehemiah: 13, Esther: 10, Job: 42, Psalms: 150,
+  Proverbs: 31, Ecclesiastes: 12, "Song of Solomon": 8,
+  Isaiah: 66, Jeremiah: 52, Lamentations: 5, Ezekiel: 48, Daniel: 12,
+  Hosea: 14, Joel: 3, Amos: 9, Obadiah: 1, Jonah: 4, Micah: 7,
+  Nahum: 3, Habakkuk: 3, Zephaniah: 3, Haggai: 2, Zechariah: 14, Malachi: 4,
+  Matthew: 28, Mark: 16, Luke: 24, John: 21, Acts: 28,
+  Romans: 16, "1 Corinthians": 16, "2 Corinthians": 13,
+  Galatians: 6, Ephesians: 6, Philippians: 4, Colossians: 4,
+  "1 Thessalonians": 5, "2 Thessalonians": 3,
+  "1 Timothy": 6, "2 Timothy": 4, Titus: 3, Philemon: 1,
+  Hebrews: 13, James: 5, "1 Peter": 5, "2 Peter": 3,
+  "1 John": 5, "2 John": 1, "3 John": 1, Jude: 1, Revelation: 22,
+};
+
+const BOOK_ORDER = Object.keys(BOOK_CHAPTERS);
+
+/** 最新のデボーションファイルから書籍と章番号を自動検出する */
+function detectLatestBookAndChapter(): { book: string; chapter: number } | null {
+  const files = readdirSync(DEVOTIONS_DIR)
+    .filter((f) => /^2\d{3}-\d{2}-\d{2}\.md$/.test(f))
+    .sort();
+
+  for (let i = files.length - 1; i >= 0; i--) {
+    const content = readFileSync(join(DEVOTIONS_DIR, files[i]), "utf-8");
+    // "# マルコの福音書5章 — ..." のような見出しにマッチ
+    const match = content.match(/^# (.+?)(\d+)章/m);
+    if (match) {
+      const bookJa = match[1].trim();
+      const chapter = parseInt(match[2], 10);
+      const book = BOOK_NAME_EN[bookJa];
+      if (book) return { book, chapter };
+    }
+  }
+  return null;
+}
+
+/** 自動で次の書籍・章を決定する（章数上限を超えたら次の書籍へ） */
+function detectAutoNext(): { book: string; chapter: number } {
+  const latest = detectLatestBookAndChapter();
+  if (!latest) {
+    console.error("Error: Could not detect current book/chapter. Use --book and --chapter to specify.");
+    process.exit(1);
+  }
+
+  const { book, chapter } = latest;
+  const maxChapter = BOOK_CHAPTERS[book] ?? 999;
+  const nextChapter = chapter + 1;
+
+  if (nextChapter <= maxChapter) {
+    return { book, chapter: nextChapter };
+  }
+
+  // 章数上限を超えた → 次の書籍の第1章へ
+  const currentIndex = BOOK_ORDER.indexOf(book);
+  const nextBook = currentIndex === -1 || currentIndex === BOOK_ORDER.length - 1
+    ? BOOK_ORDER[0]
+    : BOOK_ORDER[currentIndex + 1];
+
+  const bookJa = BOOK_NAME_JA[book] ?? book;
+  const nextBookJa = BOOK_NAME_JA[nextBook] ?? nextBook;
+  console.log(`ℹ ${bookJa}は全${maxChapter}章完了。次の書籍: ${nextBookJa}`);
+
+  return { book: nextBook, chapter: 1 };
+}
+
+/** 指定書籍の次の章を検出する */
+function detectNextChapterForBook(book: string): number {
   const bookJa = BOOK_NAME_JA[book] || book;
   const files = readdirSync(DEVOTIONS_DIR)
     .filter((f) => /^2\d{3}-\d{2}-\d{2}\.md$/.test(f))
     .sort();
 
-  if (files.length === 0) {
-    console.error("Error: No existing devotion files found. Use --chapter to specify.");
-    process.exit(1);
-  }
-
-  // 最新ファイルから対象書籍の章を検出
   for (let i = files.length - 1; i >= 0; i--) {
     const content = readFileSync(join(DEVOTIONS_DIR, files[i]), "utf-8");
     const match = content.match(new RegExp(`^# ${bookJa}(\\d+)章`, "m"));
     if (match) {
-      return { chapter: parseInt(match[1], 10) + 1 };
-    }
-  }
-
-  // 箴言のフォールバック（旧形式）
-  if (book === "Proverbs") {
-    const latest = files[files.length - 1];
-    const content = readFileSync(join(DEVOTIONS_DIR, latest), "utf-8");
-    const match = content.match(/^# 箴言(\d+)章/m);
-    if (match) {
-      return { chapter: parseInt(match[1], 10) + 1 };
+      return parseInt(match[1], 10) + 1;
     }
   }
 
@@ -181,13 +241,37 @@ ${bookJa}${chapter}章は4つの柱で構成される:
 const { opts } = parseArgs();
 
 const date = opts["date"] || todayJST();
-const book = opts["book"] || "Proverbs";
-const chapter = opts["chapter"]
-  ? parseInt(opts["chapter"], 10)
-  : detectNextChapter(book).chapter;
+
+let book: string;
+let chapter: number;
+
+if (opts["chapter"]) {
+  // 章を明示指定
+  book = opts["book"] || (() => {
+    const latest = detectLatestBookAndChapter();
+    return latest?.book ?? "Proverbs";
+  })();
+  chapter = parseInt(opts["chapter"], 10);
+} else if (opts["book"]) {
+  // 書籍を明示指定、章は自動検出
+  book = opts["book"];
+  chapter = detectNextChapterForBook(book);
+} else {
+  // 書籍・章ともに自動検出
+  const next = detectAutoNext();
+  book = next.book;
+  chapter = next.chapter;
+}
 
 if (isNaN(chapter) || chapter < 1) {
   console.error("Error: Invalid chapter number.");
+  process.exit(1);
+}
+
+const maxChapter = BOOK_CHAPTERS[book];
+if (maxChapter && chapter > maxChapter) {
+  const bookJa = BOOK_NAME_JA[book] ?? book;
+  console.error(`Error: ${bookJa}は${maxChapter}章までです（指定: ${chapter}章）。`);
   process.exit(1);
 }
 

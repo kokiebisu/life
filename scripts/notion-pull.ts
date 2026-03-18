@@ -1067,20 +1067,6 @@ async function main() {
       }
     }
 
-    // Sync routine schedule
-    for (const date of dates) {
-      const schedProc = Bun.spawn(
-        ["bun", "run", "scripts/notion-sync-schedule.ts", "--date", date],
-        { stdout: "pipe", stderr: "pipe", cwd: ROOT },
-      );
-      const schedOut = await new Response(schedProc.stdout).text();
-      await schedProc.exited;
-      if (schedOut.trim() && !schedOut.includes("全てのルーティンは登録済み")) {
-        for (const line of schedOut.trim().split("\n")) {
-          console.log(`  ${line}`);
-        }
-      }
-    }
   }
 }
 

@@ -77,18 +77,18 @@ export interface ScheduleDbConfig {
   titleProp: string;
   dateProp: string;
   descProp: string;
-  statusProp: string;
-  statusDone: string;
+  statusProp?: string;
+  statusDone?: string;
   extraFilter?: Record<string, unknown>;
 }
 
 export const SCHEDULE_DB_CONFIGS: Record<ScheduleDbName, ScheduleDbConfig> = {
-  devotion: { envKey: "NOTION_DEVOTION_DB", titleProp: "Name", dateProp: "日付", descProp: "", statusProp: "ステータス", statusDone: "Complete" },
-  events:  { envKey: "NOTION_EVENTS_DB", titleProp: "名前", dateProp: "日付", descProp: "", statusProp: "ステータス", statusDone: "完了" },
+  devotion: { envKey: "NOTION_DEVOTION_DB", titleProp: "Name", dateProp: "日付", descProp: "" },
+  events:  { envKey: "NOTION_EVENTS_DB", titleProp: "名前", dateProp: "日付", descProp: "" },
   guitar:  { envKey: "NOTION_CURRICULUM_DB", titleProp: "名前", dateProp: "日付", descProp: "", statusProp: "ステータス", statusDone: "完了", extraFilter: { property: "カリキュラム", select: { equals: "ギター" } } },
   sound:   { envKey: "NOTION_CURRICULUM_DB", titleProp: "名前", dateProp: "日付", descProp: "", statusProp: "ステータス", statusDone: "完了", extraFilter: { property: "カリキュラム", select: { equals: "音響" } } },
-  meals:      { envKey: "NOTION_MEALS_DB", titleProp: "名前", dateProp: "日付", descProp: "", statusProp: "ステータス", statusDone: "完了" },
-  groceries:  { envKey: "NOTION_GROCERIES_DB", titleProp: "件名", dateProp: "日付", descProp: "", statusProp: "ステータス", statusDone: "完了" },
+  meals:      { envKey: "NOTION_MEALS_DB", titleProp: "名前", dateProp: "日付", descProp: "" },
+  groceries:  { envKey: "NOTION_GROCERIES_DB", titleProp: "件名", dateProp: "日付", descProp: "" },
   todo:    { envKey: "NOTION_TODO_DB", titleProp: "タスク名", dateProp: "日付", descProp: "", statusProp: "ステータス", statusDone: "完了" },
 };
 
@@ -263,6 +263,14 @@ export async function queryDbByStatus(
   config: ScheduleDbConfig,
   statuses: string[],
 ): Promise<any> {
+  if (!config.statusProp) {
+    // No status property — return all entries (optionally filtered by extraFilter)
+    const body: Record<string, unknown> = {
+      sorts: [{ property: config.dateProp, direction: "ascending" }],
+    };
+    if (config.extraFilter) body.filter = config.extraFilter;
+    return notionFetch(apiKey, `/databases/${dbId}/query`, body);
+  }
   const statusFilter = {
     or: statuses.map((s) => ({
       property: config.statusProp,
@@ -294,7 +302,7 @@ export function normalizePages(pages: any[], config: ScheduleDbConfig, source: S
       title: titleArr.map((t: any) => t.plain_text || "").join(""),
       start: dateObj?.start || "",
       end: dateObj?.end || null,
-      status: props[config.statusProp]?.status?.name || "",
+      status: (config.statusProp ? props[config.statusProp]?.status?.name : undefined) || "",
       description: descArr.map((t: any) => t.plain_text || "").join(""),
       feedback: feedbackArr.map((t: any) => t.plain_text || "").join(""),
       actualStart: actualStartArr.map((t: any) => t.plain_text || "").join("") || null,

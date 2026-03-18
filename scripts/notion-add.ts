@@ -99,7 +99,6 @@ async function main() {
   if (!opts.title || !opts.date) {
     console.error("Usage:");
     console.error("  bun run scripts/notion-add.ts --title <title> --date YYYY-MM-DD --start HH:MM --end HH:MM");
-    console.error("  bun run scripts/notion-add.ts --title <title> --date YYYY-MM-DD --allday");
     console.error("  Options: --db <routine|events|guitar|sound|meals> --end-date YYYY-MM-DD");
     console.error("  Options: --actual-start HH:MM --actual-end HH:MM --location <住所>");
     process.exit(1);
@@ -112,26 +111,18 @@ async function main() {
     [config.titleProp]: { title: [{ text: { content: opts.title } }] },
   };
 
-  if (flags.has("allday")) {
-    const dateObj: Record<string, string> = { start: opts.date };
-    if (opts["end-date"]) {
-      dateObj.end = opts["end-date"];
-    }
-    properties[config.dateProp] = { date: dateObj };
-  } else {
-    if (!opts.start) {
-      console.error("Error: --start required (or use --allday)");
-      process.exit(1);
-    }
-    const endDate = opts["end-date"] || opts.date;
-    const dateObj: Record<string, string> = {
-      start: `${opts.date}T${opts.start}:00+09:00`,
-    };
-    if (opts.end) {
-      dateObj.end = `${endDate}T${opts.end}:00+09:00`;
-    }
-    properties[config.dateProp] = { date: dateObj };
+  if (!opts.start) {
+    console.error("Error: --start required");
+    process.exit(1);
   }
+  const endDate = opts["end-date"] || opts.date;
+  const dateObj: Record<string, string> = {
+    start: `${opts.date}T${opts.start}:00+09:00`,
+  };
+  if (opts.end) {
+    dateObj.end = `${endDate}T${opts.end}:00+09:00`;
+  }
+  properties[config.dateProp] = { date: dateObj };
 
   // 移動時間管理プロパティ（開始時間/終了時間/場所）
   if (opts["actual-start"]) {

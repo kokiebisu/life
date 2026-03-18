@@ -35,14 +35,15 @@ async function main() {
     if (!dbSetup) return;
     const { apiKey, dbId, config } = dbSetup;
 
-    // Exclude done statuses (config.statusDone + "完了" as fallback for DBs with Japanese status)
-    const doneStatuses = new Set([config.statusDone, "完了"]);
-    const statusFilters = [...doneStatuses].map((s) => ({
-      property: config.statusProp,
-      status: { does_not_equal: s },
-    }));
+    const filters: Record<string, unknown>[] = [];
 
-    const filters: Record<string, unknown>[] = [...statusFilters];
+    if (config.statusProp) {
+      // Exclude done statuses (config.statusDone + "完了" as fallback for DBs with Japanese status)
+      const doneStatuses = new Set([config.statusDone, "完了"].filter(Boolean));
+      for (const s of doneStatuses) {
+        filters.push({ property: config.statusProp, status: { does_not_equal: s } });
+      }
+    }
 
     if (noDate) {
       // Date-less incomplete entries only

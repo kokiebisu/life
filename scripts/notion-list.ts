@@ -33,6 +33,7 @@ const DB_LABEL: Record<ScheduleDbName, string> = {
   meals: "食事",
   groceries: "買い出し",
   todo: "やること",
+  other: "その他",
 };
 
 async function main() {

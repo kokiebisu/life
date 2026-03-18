@@ -5,7 +5,7 @@ start: "14:12"
 end: "14:36"
 category: system-design
 book: System Design Interview（Alex Xu）
-chapter: Vol.1 Ch.4
+chapter: "4"
 ---
 
 # 勉強 - 2026-03-17

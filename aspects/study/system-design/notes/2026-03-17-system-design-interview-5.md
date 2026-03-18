@@ -5,7 +5,7 @@ start: "14:36"
 end: "15:00"
 category: system-design
 book: System Design Interview（Alex Xu）
-chapter: DBスケーリング
+chapter: "1"
 ---
 
 # 勉強 - 2026-03-17

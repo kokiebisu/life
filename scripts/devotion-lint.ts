@@ -11,7 +11,7 @@ import { readdirSync, readFileSync } from "fs";
 import { join } from "path";
 import { parseArgs } from "./lib/notion";
 
-const DEVOTIONS_DIR = join(import.meta.dir, "../aspects/church/devotions");
+const DEVOTIONS_DIR = join(import.meta.dir, "../aspects/devotions");
 
 interface LintResult {
   file: string;

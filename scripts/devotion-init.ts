@@ -13,7 +13,7 @@ import { readdirSync, readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { parseArgs, todayJST } from "./lib/notion";
 
-const DEVOTIONS_DIR = join(import.meta.dir, "../aspects/church/devotions");
+const DEVOTIONS_DIR = join(import.meta.dir, "../aspects/devotions");
 
 // 書籍名の日本語マッピング
 const BOOK_NAME_JA: Record<string, string> = {

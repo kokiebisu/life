@@ -16,7 +16,7 @@ $ARGUMENTS — 章番号 or 日付（省略可。省略時は自動検出）
 
 1. **前回の章を確認する**
    ```bash
-   ls aspects/church/devotions/2*.md | sort | tail -1
+   ls aspects/devotions/2*.md | sort | tail -1
    ```
    最新ファイルを読んで前回の章番号を取得する（推測しない）
 
@@ -36,7 +36,7 @@ $ARGUMENTS — 章番号 or 日付（省略可。省略時は自動検出）
    - 章数上限を超えた場合は自動で次の書籍の第1章に進む
 
 3. **opening-prayer.md を全文表示する**（厳守）
-   - `aspects/church/devotions/opening-prayer.md` を読み、**全セクションを省略せず**表示する
+   - `aspects/devotions/opening-prayer.md` を読み、**全セクションを省略せず**表示する
    - 祈り文を全文省略せず表示すること
 
 4. **箴言の該当章を全文掲載する**
@@ -69,7 +69,7 @@ $ARGUMENTS — 章番号 or 日付（省略可。省略時は自動検出）
 ユーザーが「閉じよう」「まとめよう」等と言ったら:
 
 1. **対話の内容をテンプレートに沿って記録する**
-   - `aspects/church/devotions/YYYY-MM-DD.md` を ROLE.md のフォーマットで完成させる
+   - `aspects/devotions/YYYY-MM-DD.md` を ROLE.md のフォーマットで完成させる
    - frontmatter、章の概要、Key Verses、深掘り、SOAP、実践ガイド、持ち帰り
 
 2. **フォーマット検証**
@@ -107,7 +107,7 @@ $ARGUMENTS — 章番号 or 日付（省略可。省略時は自動検出）
 
 ## 注意
 
-- ROLE.md（`aspects/church/devotions/ROLE.md`）が正式なガイダンス。迷ったら参照する
+- ROLE.md（`aspects/devotions/ROLE.md`）が正式なガイダンス。迷ったら参照する
 - 聖書箇所を引用するときは**全文を書く**（参照だけで省略しない）
 - 記録のフォーマットは ROLE.md のテンプレートに厳密に従う
 - frontmatter title は単数形 `Devotion`（`Devotions` ではない）

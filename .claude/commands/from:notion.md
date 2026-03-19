@@ -13,7 +13,7 @@ pull 時に以下を自動検出・補完する:
 
 ## 重複解決（Conflict Resolution）
 
-pull 後、`schedule.json` の `conflictRules` に基づいて自動解決された `conflictResolutions` を確認:
+pull 後、自動解決された `conflictResolutions` を確認:
 
 - `delete` → `notion-delete.ts` で Notion ページ削除
 - `shift` → `notion-update-page` で時間変更
@@ -70,7 +70,6 @@ bun run scripts/notion-pull.ts --no-enrich
 | guitar    | `aspects/guitar/events/YYYY-MM-DD.md`  |
 | sound     | `aspects/sound/events/YYYY-MM-DD.md`   |
 | meals     | `aspects/diet/events/YYYY-MM-DD.md`    |
-| routine   | `aspects/devotion/events/YYYY-MM-DD.md` |
 | groceries | `aspects/diet/groceries/YYYY-MM-DD.md` |
 | todo      | `planning/tasks.md`（Inbox / Archive） |
 

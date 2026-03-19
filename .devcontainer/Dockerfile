@@ -20,6 +20,7 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
   jq \
   nano \
   vim \
+  poppler-utils \
   # Add GitHub CLI repository
   && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | gpg --dearmor -o /usr/share/keyrings/githubcli-archive-keyring.gpg \
   && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
@@ -76,5 +77,5 @@ RUN curl -fsSL https://starship.rs/install.sh | sh -s -- -y --bin-dir /home/node
 ENV PATH=/home/node/.local/bin:$PATH
 RUN echo 'export PATH="$HOME/.local/bin:$PATH"' >> /home/node/.bashrc && \
     echo 'export PATH="$HOME/.local/bin:$PATH"' >> /home/node/.zshrc && \
-    echo 'eval "$(starship init bash)"' >> /home/node/.bashrc && \
-    echo 'eval "$(starship init zsh)"' >> /home/node/.zshrc
+    echo 'command -v starship &>/dev/null && eval "$(starship init bash)"' >> /home/node/.bashrc && \
+    echo 'command -v starship &>/dev/null && eval "$(starship init zsh)"' >> /home/node/.zshrc

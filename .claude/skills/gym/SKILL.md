@@ -51,6 +51,7 @@ bun run scripts/validate-entry.ts --date YYYY-MM-DD --title "ジム" --start HH:
 登録前に以下を実行してメニューを決める:
 
 1. `aspects/diet/gym-logs/` の直近3ファイルを確認して前回・前々回の種目・重量・部位を取得
+   - **最新ログが昨日より古い場合（2日以上ギャップあり）**: Notion ジムDB を `notion-search` で直近7日分を検索し、ローカルに存在しないセッションがあれば **先に `gym-logs/YYYY-MM-DD.md` を作成して同期する**。その後、同期済みのログをメニュー判断に使う。
 2. `aspects/diet/gym-menu.md` の公式メニューを参照
 3. 前回から2週間以上空いている場合は「軽めで再開」を推奨
 4. **連日ルール（厳守）**: 前日と同じ部位を連日やらない

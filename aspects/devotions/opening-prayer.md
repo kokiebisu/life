@@ -4,7 +4,11 @@ Pray this before each devotion session.
 
 ---
 
-Father, I am your child and a soldier in your army. Please guide my heart and allow your words to be louder than my emotions — and louder than the lies of the enemy. I don't want to do my will or choose with my own eyes, but allow me to borrow your eyes through the lens of the Gospel — to choose that spouse that you created for me, that's my helper, that's my prudent wife, because a prudent wife is from the Lord. Thank you God, and I leave everything to you, Lord. Amen.
+父よ、私はあなたの子であり、あなたの軍の兵士です。私の心を導いてください。あなたの言葉が、私の感情よりも、そして敵の嘘よりも大きく響くようにしてください。私は自分の意志で選びたくありません。自分の目で選びたくありません。福音のレンズを通して、あなたの目を借りて、あなたが私のために創られた伴侶を、私の助け手を、思慮深い妻を選ばせてください。思慮深い妻は主からのものだから。
+
+あなたは私の心の焦りを知っています。年齢への不安、あなたのタイミングへの不確かさ。あなたを第一にしたいと思いながら、心が揺れています。それでも、あなたはこの心ごと受け取ってくださると信じています。私にできることを誠実にやります。結果はあなたに委ねます。
+
+ありがとうございます、神様。すべてをあなたにゆだねます。アーメン。
 
 ---
 

@@ -95,7 +95,7 @@ $ARGUMENTS — 章番号 or 日付（省略可。省略時は自動検出）
      その後 `notion-update-page` で以下を設定する:
      - Book（書籍名）と Chapter（数値）。Book の選択肢にない書籍は `notion-update-data-source` で追加してから設定する
      - icon: 🙏
-     ※ Name は必ず「**デボーション**」（日本語）
+     ※ Name は必ず「**デボーション**」（日本語）。分割登録（Part2・祈りのみ等）の場合も「**デボーション Part2**」のように「デボーション」をベースにする
 
 4. **Prayer Request を祈る（厳守）**
    - `aspects/church/prayer-requests.md` を読む

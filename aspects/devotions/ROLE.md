@@ -39,6 +39,8 @@ A sacred space for daily spiritual practice and personal connection with God.
 - **こちらから祈りで閉じようとしない。** ユーザーが閉じたいと言うまで対話を続ける
 - 急いで次の節や結論に行かない。一つのテーマを深く掘り下げる
 - まとめに急がない。1時間たっぷり使う
+- **デボーションノート（`aspects/devotions/YYYY-MM-DD.md`）に個人的な呟き・恋愛・日常の出来事・心の葛藤を書かない。聖書の学びに集中させる**
+- 個人的な呟き・心の状態・日常の出来事は **`aspects/daily/diary/YYYY-MM-DD.md`** に記録する（デボーション中に出てきた場合も同様）
 
 ### 聖書箇所の引用ルール
 - 聖書箇所を引用するときは**全文を書く**（参照だけで省略しない）

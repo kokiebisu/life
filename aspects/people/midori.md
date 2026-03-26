@@ -1,5 +1,6 @@
 # Midori
 
+relation: church
 教会のメンバー。神学部・教育課程に在籍。
 
 ---

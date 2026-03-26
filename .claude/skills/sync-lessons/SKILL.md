@@ -1,6 +1,6 @@
 ---
 name: sync-lessons
-description: Use when syncing lesson content from MD files to Notion curriculum DB pages. TRIGGER proactively when lesson pages in curriculum DB have empty content, when registering lessons to curriculum DB, when user asks about lesson content and Notion page is empty, when touching curriculum pages during /cleanup or /from:notion, or when explicitly invoked via /sync:lessons.
+description: Use when syncing lesson content from MD files to Notion curriculum DB pages. TRIGGER proactively when lesson pages in curriculum DB have empty content, when registering lessons to curriculum DB, when user asks about lesson content and Notion page is empty, when touching curriculum pages during /from:notion, or when explicitly invoked via /sync:lessons.
 ---
 
 # sync-lessons — レッスン内容を Notion ページに同期

@@ -1,5 +1,9 @@
 # Notion ワークフロー
 
+## プロパティ名エラー時の対応（厳守）
+
+`notion-update-page` で `"Property not found"` エラーが出たら、**必ず `notion-fetch` でDBスキーマを確認してから正しいプロパティ名でリトライする。** エラーを無視して先に進まない。
+
 ## Notion MCP サーバー名
 
 - `ReadMcpResourceTool` のサーバー名は **`claude.ai Notion`**（スペース・ドット入り）

@@ -1,5 +1,6 @@
 # 家族
 
+relation: family
 自分の家族への祈り。
 
 ---

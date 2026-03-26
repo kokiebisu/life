@@ -1,5 +1,6 @@
 # Wes & Shiori
 
+relation: church
 教会のカップル/夫婦。長野への引っ越しを予定している。
 
 ---

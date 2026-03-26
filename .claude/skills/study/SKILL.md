@@ -44,10 +44,13 @@ bun run scripts/validate-entry.ts --date YYYY-MM-DD --title "勉強" --start HH:
 
 ## Step 3: Notion 登録（2ステップ）
 
-### Step 3a: `notion-add.ts` でページ作成
+### Step 3a: `notion-add.ts` でページ作成 + テンプレート自動適用
+
+カテゴリ・本・Chapter を渡すと callout メタ情報も自動で書き込まれる:
 
 ```bash
-bun run scripts/notion-add.ts --title "勉強" --date YYYY-MM-DD --start HH:MM --end HH:MM --db study
+bun run scripts/notion-add.ts --title "勉強" --date YYYY-MM-DD --start HH:MM --end HH:MM --db study \
+  --category "<カテゴリ名>" --book "<本のタイトル>" --chapter "<数字>"
 ```
 
 出力から page ID を取得する（Notion API で当日の study DB を query して最新エントリの ID を取得）:
@@ -68,54 +71,16 @@ console.log(data.results[0]?.id);
 "
 ```
 
-### Step 3b: `notion-update-page` でプロパティ + ページ本文を設定
+### Step 3b: `notion-update-page` でプロパティを設定
 
-Notion MCP の `notion-update-page` を使って以下を設定する（page_id は Step 3a で取得した ID）:
+Notion MCP の `notion-update-page` を使って以下を設定する（ページ本文は `notion-add.ts` が書き込み済み）:
 
-**プロパティ設定:**
 ```
 select:カテゴリ: <カテゴリ名>
 select:本: <本のタイトル>  (あれば)
 rich_text:Chapter: <数字のみ e.g. "5">  (あれば)
 icon: 📖
 cover: https://www.notion.so/images/page-cover/gradients_8.png
-```
-
-**ページ本文（`replace_content`）:**
-
-```
-[callout] 📚
-テキスト: 📅 YYYY-MM-DD  HH:MM → HH:MM  |  🏷 {カテゴリ}  |  📗 {本}（あれば）  |  📌 {Chapter}（あれば）
-
-[divider]
-
-[heading_2] 🎯 今日の目標・疑問
-
-[paragraph] （ユーザーから聞いた目標・疑問をここに書く）
-
-[divider]
-
-[heading_2] 📝 ノート
-
-[paragraph] （セッション中に追記）
-
-[divider]
-
-[heading_2] 🔑 キーワード
-
-[paragraph] （重要用語・概念）
-
-[divider]
-
-[heading_2] 💡 まとめ
-
-[paragraph] （セッション終了時に記入）
-
-[divider]
-
-[heading_2] ❓ 残った疑問・次回へ
-
-[paragraph] （理解できなかった点、次のセッションで深めたいこと）
 ```
 
 ---

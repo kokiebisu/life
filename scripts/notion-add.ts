@@ -4,16 +4,96 @@
  *
  * 使い方:
  *   bun run scripts/notion-add.ts --title "ギター練習" --date 2026-02-14 --start 17:30 --end 18:30
- *   bun run scripts/notion-add.ts --title "ギター練習" --date 2026-02-14 --start 17:30 --end 18:30
  *   bun run scripts/notion-add.ts --title "買い出し" --date 2026-02-14 --start 10:00 --end 11:00
  *   bun run scripts/notion-add.ts --title "イベント" --date 2026-02-14 --start 14:00 --end 16:00 --db events
  *   bun run scripts/notion-add.ts --title "ギター練習" --date 2026-02-14 --start 17:00 --end 18:00 --db guitar
+ *   bun run scripts/notion-add.ts --title "勉強" --date 2026-02-14 --start 10:00 --end 12:00 --db study --category "法律" --book "民法入門" --chapter "5"
  *
  * meals DB の場合、ページ作成後に自動で notion-recipe-gen.ts を実行してレシピを書き込む。
  * レシピ不要な場合（外食・他人作等）は --no-recipe を付ける。
+ *
+ * その他の DB（events / guitar / sound / study / other）はページ作成後に自動でテンプレートを書き込む。
+ * テンプレート不要な場合は --no-template を付ける。
  */
 
 import { type ScheduleDbName, getScheduleDbConfig, notionFetch, queryDbByDateCached, invalidateNotionCache, parseArgs, pickTaskIcon, pickCover, normalizeTitle, getTimeFromISO, findSimilarEntries } from "./lib/notion";
+
+// --- Page templates ---
+
+type NotionBlock = Record<string, unknown>;
+
+const h2 = (text: string): NotionBlock => ({
+  type: "heading_2",
+  heading_2: { rich_text: [{ type: "text", text: { content: text } }] },
+});
+const p = (text = ""): NotionBlock => ({
+  type: "paragraph",
+  paragraph: { rich_text: text ? [{ type: "text", text: { content: text } }] : [] },
+});
+const divider = (): NotionBlock => ({ type: "divider", divider: {} });
+const callout = (text: string, emoji: string): NotionBlock => ({
+  type: "callout",
+  callout: { rich_text: [{ type: "text", text: { content: text } }], icon: { type: "emoji", emoji } },
+});
+const bullet = (text: string): NotionBlock => ({
+  type: "bulleted_list_item",
+  bulleted_list_item: { rich_text: [{ type: "text", text: { content: text } }] },
+});
+
+interface TemplateOpts {
+  date: string;
+  start: string;
+  end: string;
+  category?: string;
+  book?: string;
+  chapter?: string;
+}
+
+const DB_TEMPLATES: Partial<Record<ScheduleDbName, (opts: TemplateOpts) => NotionBlock[]>> = {
+  events: () => [
+    h2("今日の内容"),
+    p(),
+    h2("気づき・課題"),
+    p(),
+    h2("詳細"),
+    bullet("場所: "),
+    bullet("参加者: "),
+  ],
+  study: ({ date, start, end, category = "", book = "", chapter = "" }) => {
+    const meta = [
+      `📅 ${date}  ${start} → ${end}`,
+      category ? `🏷 ${category}` : "",
+      book ? `📗 ${book}` : "",
+      chapter ? `📌 ${chapter}` : "",
+    ].filter(Boolean).join("  |  ");
+    return [
+      callout(meta, "📚"),
+      divider(),
+      h2("🎯 今日の目標・疑問"),
+      p(),
+      divider(),
+      h2("📝 ノート"),
+      p(),
+      divider(),
+      h2("🔑 キーワード"),
+      p(),
+      divider(),
+      h2("💡 まとめ"),
+      p(),
+      divider(),
+      h2("❓ 残った疑問・次回へ"),
+      p(),
+    ];
+  },
+};
+
+async function writeTemplate(apiKey: string, pageId: string, dbName: ScheduleDbName, opts: TemplateOpts): Promise<void> {
+  const templateFn = DB_TEMPLATES[dbName];
+  if (!templateFn) return;
+  const blocks = templateFn(opts);
+  await notionFetch(apiKey, `/blocks/${pageId}/children`, { children: blocks }, "PATCH");
+  console.log(`📋 テンプレートを適用しました`);
+}
 
 // --- Meals auto-recipe ---
 
@@ -164,6 +244,18 @@ async function main() {
     } else {
       await runRecipeGen(data.id);
     }
+  }
+
+  // その他の DB → テンプレート自動適用
+  if (dbName !== "meals" && !flags.has("no-template")) {
+    await writeTemplate(apiKey, data.id, dbName, {
+      date: opts.date,
+      start: opts.start || "",
+      end: opts.end || "",
+      category: opts.category,
+      book: opts.book,
+      chapter: opts.chapter,
+    });
   }
 }
 

@@ -7,13 +7,13 @@
 ```
 aspects/people/
   church/     # 教会メンバー → 祈り記録あり
-  family/     # 家族 → 祈り記録あり
+  family.md   # 家族（全員まとめて1ファイル） → 祈り記録あり
   friend/     # 友人 → 祈り記録なし
   job/        # 仕事仲間 → 祈り記録なし
   other/      # その他 → 祈り記録なし
 ```
 
-**ルール:** `church/` または `family/` 配下のファイルには「祈り記録」セクションを含める。
+**ルール:** `church/` 配下のファイルと `family.md` には「祈り記録」セクションを含める。
 
 ## テンプレート
 
@@ -62,7 +62,7 @@ aspects/people/
 **出来事・記録:**
 - その人に関する新しい情報を知ったら日付付きで追記する
 
-**祈り記録（church/ または family/ のみ）:**
+**祈り記録（church/ 配下と family.md のみ）:**
 - 祈りが答えられたら: ステータスを `Answered` に変更し、`**更新:**` に「答えられた: [内容]」を追記
 - 新しい祈りが始まったら: 新しい `### [タイトル]（開始: YYYY-MM-DD）` セクションを追加
 - church の場合は `aspects/church/prayer-requests.md` の Active/Answered テーブルも同時に更新する

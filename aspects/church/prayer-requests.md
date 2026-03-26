@@ -25,8 +25,8 @@
 | Taiki | 健康の回復と伝道の機会 | 2026-03-19 | [taiki.md](../people/church/new-hope/yokohama/taiki.md) |
 | Wes & Shiori | 長野への引っ越し | 2026-03-20 | [wes-shiori.md](../people/church/new-hope/yokohama/wes-shiori.md) |
 | かづき | 恐れの中での正しい選択 | 2026-03-24 | [kazuki.md](../people/church/new-hope/yokohama/kazuki.md) |
-| マリヤ | これからの進路 | 2026-03-20 | [family.md](../people/family/family.md) |
-| 家族 | 家族それぞれの守り | 2026-03-20 | [family.md](../people/family/family.md) |
+| マリヤ | これからの進路 | 2026-03-20 | [family.md](../people/family.md) |
+| 家族 | 家族それぞれの守り | 2026-03-20 | [family.md](../people/family.md) |
 
 ---
 

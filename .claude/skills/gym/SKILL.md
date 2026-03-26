@@ -84,7 +84,7 @@ bun run scripts/validate-entry.ts --date YYYY-MM-DD --title "ジム" --start HH:
    - 例: 「軽すぎた」→ 重量を増やす
    - 例: 「フォームが崩れた」→ 重量維持でフォーム優先
    - フィードバックがない種目は前回重量を基準に通常判断する
-4. `aspects/diet/gym-menu.md` の公式メニューを参照
+4. `aspects/gym/gyms/fitplace/minatomirai.md` のマシン一覧を参照
 5. 前回から2週間以上空いている場合は「軽めで再開」を推奨
 6. **連日ルール（厳守）**: 前日と同じ部位を連日やらない
    - 押す系（ベンチプレス・スクワット・デッドリフト）の翌日 → 引く系（フィックスドプルダウン等）か有酸素のみ

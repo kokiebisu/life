@@ -1,0 +1,14 @@
+{
+  "aspects": {
+    "diet": false,
+    "gym": false,
+    "study": false,
+    "daily": true,
+    "events": true
+  },
+  "user": {
+    "name": "",
+    "timezone": "Asia/Tokyo",
+    "language": "ja"
+  }
+}

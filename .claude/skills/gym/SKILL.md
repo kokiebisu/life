@@ -57,7 +57,7 @@ bun run scripts/validate-entry.ts --date YYYY-MM-DD --title "ジム" --start HH:
 
 メニュー決定の前に、Notion に記録済みだがローカルログがないセッションがないか確認する。
 
-1. `ls -t aspects/diet/gym-logs/*.md | head -1` で最新ローカルログの日付を取得
+1. `ls -t aspects/gym/logs/*.md | head -1` で最新ローカルログの日付を取得
 2. 最新ローカルログの翌日から今日の前日まで（ギャップ期間）を対象に、Notion ジム DB にエントリがあるか確認する
    - ジム DB はローカルスクリプトからアクセス不可のため、`notion-fetch` で `collection://326ce17f-7b98-806a-be76-000b67b58628` を確認し、ギャップ期間内の日付のページを探す
    - 見つかった日付 = 「行ったがローカルログがない日」
@@ -77,14 +77,14 @@ bun run scripts/validate-entry.ts --date YYYY-MM-DD --title "ジム" --start HH:
    - **見つからない場合**: `notion-search` で `ジム M/D`（例: `ジム 3/20`）を検索。それでも見つからない場合はユーザーに確認する（JST/UTC ズレで引っかからないことがある）
    - **ローカル MD にフィードバックがなくても「フィードバックなし」と勝手に結論しない。** Notion を正とする
 2. **Notion から取得したフィードバックをローカル MD に書き込む**
-   - 対応するログファイル（`aspects/diet/gym-logs/YYYY-MM-DD.md`）の末尾に `フィードバック:` セクションとして追記する
+   - 対応するログファイル（`aspects/gym/logs/YYYY-MM-DD.md`）の末尾に `フィードバック:` セクションとして追記する
    - ローカル MD が存在しない日付（Notion にはあるがローカルにない）は、空のログファイルを作成してフィードバックだけ記録する
 3. **フィードバックを解釈してメニューに反映する（コーチ判断）**
    - 例: 「膝が痛かった」→ スクワット重量を下げるか別種目に変更
    - 例: 「軽すぎた」→ 重量を増やす
    - 例: 「フォームが崩れた」→ 重量維持でフォーム優先
    - フィードバックがない種目は前回重量を基準に通常判断する
-4. `aspects/diet/gym-menu.md` の公式メニューを参照
+4. `aspects/gym/gyms/fitplace/minatomirai.md` のマシン一覧を参照
 5. 前回から2週間以上空いている場合は「軽めで再開」を推奨
 6. **連日ルール（厳守）**: 前日と同じ部位を連日やらない
    - 押す系（ベンチプレス・スクワット・デッドリフト）の翌日 → 引く系（フィックスドプルダウン等）か有酸素のみ
@@ -149,10 +149,10 @@ bun run scripts/cache-status.ts --clear
 
 ### 準備
 
-1. `aspects/diet/gym-logs/` ディレクトリが存在しない場合は作成する
+1. `aspects/gym/logs/` ディレクトリが存在しない場合は作成する
 2. 最新のログファイルを確認して前回の種目と重量を取得する:
    ```bash
-   ls -t aspects/diet/gym-logs/*.md 2>/dev/null | head -1
+   ls -t aspects/gym/logs/*.md 2>/dev/null | head -1
    ```
    存在する場合はそのファイルを読み、前回の種目・重量一覧をユーザーに提示する。
 
@@ -229,7 +229,7 @@ bun run scripts/cache-status.ts --clear
 
 ### ローカル MD を保存
 
-`aspects/diet/gym-logs/DATE.md` を以下のフォーマットで作成する:
+`aspects/gym/logs/DATE.md` を以下のフォーマットで作成する:
 
 ```markdown
 # ジムログ YYYY-MM-DD

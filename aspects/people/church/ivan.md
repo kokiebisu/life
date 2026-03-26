@@ -1,6 +1,5 @@
 # Ivan
 
-relation: church
 教会のメンバー。就職・キャリアを模索中。
 
 ---

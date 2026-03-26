@@ -18,11 +18,11 @@ grep -rh "^# " aspects/church/devotions/ | sort | tail -20
 
 ## people/ ファイルの編集ルール
 
-church メンバーの人物ファイルは `aspects/people/<name>.md`（`relation: church`）で管理する。
+church メンバーの人物ファイルは `aspects/people/church/<name>.md` で管理する。
 
-`aspects/people/<name>.md` を編集するとき:
+`aspects/people/church/<name>.md` を編集するとき:
 
 - 祈りが答えられたら: ステータスを `Answered` に変更し、`**更新:**` に「答えられた: [内容]」を追記。`prayer-requests.md` の Answered テーブルにも追記する。
 - 新しい祈りが始まったら: 新しい `### [タイトル]（開始: YYYY-MM-DD）` セクションを追加。`prayer-requests.md` の Active テーブルも更新する。
 - その人の出来事を知ったら: `## 出来事・記録` に日付付きで追記する。
-- **`aspects/people/` ファイルを編集した後は `/to-notion` を実行しない**（Notion 同期対象外）。
+- **`aspects/people/church/` ファイルを編集した後は `/to-notion` を実行しない**（Notion 同期対象外）。

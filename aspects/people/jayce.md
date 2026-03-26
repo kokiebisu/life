@@ -1,5 +1,6 @@
 # Jayce
 
+relation: church
 教会のメンバー。
 
 ---

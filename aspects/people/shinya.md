@@ -1,5 +1,6 @@
 # Shinya
 
+relation: church
 教会のメンバー。
 
 ---

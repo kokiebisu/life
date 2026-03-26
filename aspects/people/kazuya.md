@@ -1,5 +1,6 @@
 # Kazuya
 
+relation: church
 教会のメンバー。写真撮影の仕事あり。
 
 ---

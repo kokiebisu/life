@@ -202,6 +202,31 @@ async function backfillTodo(dryRun: boolean, force: boolean) {
   console.log(`  → ${dryRun ? "would update" : "updated"} ${updated}/${pages.length}`);
 }
 
+async function backfillJob(dryRun: boolean, force: boolean) {
+  const dbId = getDbIdOptional("NOTION_JOB_DB");
+  if (!dbId) { console.log("\n💼 Job (仕事): スキップ（DB未設定）"); return; }
+  const pages = await queryAll(dbId);
+  console.log(`\n💼 Job (仕事): ${pages.length} pages`);
+
+  let updated = 0;
+  for (const page of pages) {
+    if (!force && page.icon && page.cover) continue;
+    const title = (page.properties["名前"]?.title || [])
+      .map((t: any) => t.plain_text || "").join("");
+    const icon = pickTaskIcon(title, "💼");
+    const cover = pickCover();
+
+    updated++;
+    if (dryRun) {
+      console.log(`  [DRY] ${icon.emoji} ${title}`);
+    } else {
+      await updatePage(page.id, icon, cover);
+      console.log(`  ${icon.emoji} ${title}`);
+    }
+  }
+  console.log(`  → ${dryRun ? "would update" : "updated"} ${updated}/${pages.length}`);
+}
+
 async function backfillArticles(dryRun: boolean, force: boolean) {
   const dbId = getDbIdOptional("NOTION_ARTICLES_DB");
   if (!dbId) { console.log("\n📰 Articles: スキップ（DB未設定）"); return; }
@@ -237,7 +262,7 @@ async function main() {
   if (dryRun) console.log("🔍 Dry run mode - no changes will be made\n");
   if (force) console.log("⚡ Force mode - overwriting existing icons/covers\n");
 
-  const targets = db ? [db] : ["tasks", "events", "guitar", "sound", "meals", "todo", "articles"];
+  const targets = db ? [db] : ["tasks", "events", "guitar", "sound", "meals", "todo", "job", "articles"];
 
   for (const target of targets) {
     switch (target) {
@@ -247,6 +272,7 @@ async function main() {
       case "sound": await backfillSound(dryRun, force); break;
       case "meals": await backfillMeals(dryRun, force); break;
       case "todo": await backfillTodo(dryRun, force); break;
+      case "job": await backfillJob(dryRun, force); break;
       case "articles": await backfillArticles(dryRun, force); break;
       default: console.error(`Unknown db: ${target}`); process.exit(1);
     }

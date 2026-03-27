@@ -40,50 +40,36 @@ case "$cmd" in
       exit 0
     fi
 
-    # Snapshot private paths before merge so we can restore them afterward
+    # Read private paths from .life-private
     PRIVATE_FILE=".life-private"
     private_paths=()
     if [ -f "$PRIVATE_FILE" ]; then
       while IFS= read -r line; do
         [[ "$line" =~ ^#.*$ || -z "$line" ]] && continue
-        private_paths+=("$line")
+        private_paths+=("${line%/}")  # strip trailing slash
       done < "$PRIVATE_FILE"
     fi
 
-    # Stash any local changes to private paths so merge doesn't conflict on them
-    if [ ${#private_paths[@]} -gt 0 ]; then
-      git stash push --quiet -m "life-os-sync: private paths" -- "${private_paths[@]}" 2>/dev/null || true
-    fi
-
-    # Run merge; allow conflicts — we'll resolve private paths below
+    # Run merge (allow failures — we fix conflicts below)
     git merge "$UPSTREAM_BRANCH" --no-ff -m "chore: merge life-os/main upstream" || true
 
-    # Restore private paths: keep our version for any files deleted or conflicted by upstream
+    # Restore all private paths to HEAD (our version), resolving any delete/modify conflicts
     if [ ${#private_paths[@]} -gt 0 ]; then
-      git stash pop --quiet 2>/dev/null || true
       for p in "${private_paths[@]}"; do
-        if git ls-files --error-unmatch "$p" &>/dev/null 2>&1 || [ -e "$p" ]; then
-          git checkout HEAD -- "$p" 2>/dev/null || true
-        fi
+        git checkout HEAD -- "$p" 2>/dev/null || true
       done
-      # Stage restored files and resolve any remaining conflicts
       git add "${private_paths[@]}" 2>/dev/null || true
     fi
 
-    # If still in a merge state (unresolved non-private conflicts), let user handle it
-    if git rev-parse -q --verify MERGE_HEAD &>/dev/null; then
-      remaining=$(git diff --name-only --diff-filter=U 2>/dev/null | grep -vF "${private_paths[@]}" || true)
-      if [ -n "$remaining" ]; then
-        echo ""
-        echo "⚠️  Unresolved conflicts in non-private files:"
-        echo "$remaining"
-        echo "Resolve manually, then: git commit && git push origin main"
-      else
-        git commit --no-edit
-        echo ""
-        echo "✅ Done. Push with: git push origin main"
-      fi
+    # Check for remaining unresolved conflicts outside private paths
+    remaining=$(git diff --name-only --diff-filter=U 2>/dev/null || true)
+    if [ -n "$remaining" ]; then
+      echo ""
+      echo "⚠️  Unresolved conflicts in non-private files:"
+      echo "$remaining"
+      echo "Resolve manually, then: git commit && git push origin main"
     else
+      git commit --no-edit 2>/dev/null || git commit -m "chore: merge life-os/main upstream"
       echo ""
       echo "✅ Done. Push with: git push origin main"
     fi

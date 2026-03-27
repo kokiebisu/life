@@ -1,4 +1,7 @@
 {
+  "env": {
+    "LIFE_DESKTOP": "true"
+  },
   "permissions": {
     "allow": [
       "mcp__claude_ai_Notion__notion-update-page",

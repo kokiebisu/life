@@ -3,6 +3,7 @@
 # Usage:
 #   ./scripts/life-os-sync.sh status        # show divergence
 #   ./scripts/life-os-sync.sh pull          # life-os/main → life (merge)
+#   ./scripts/life-os-sync.sh push          # push to origin; auto cherry-pick generic commits to life-os
 #   ./scripts/life-os-sync.sh contrib       # show commits safe to push to life-os
 
 set -e
@@ -75,6 +76,74 @@ case "$cmd" in
     fi
     ;;
 
+  push)
+    git fetch origin --quiet
+    git fetch "$REMOTE" --quiet
+
+    # Load private paths
+    private_paths=()
+    if [ -f ".life-private" ]; then
+      while IFS= read -r line; do
+        [[ "$line" =~ ^#.*$ || -z "$line" ]] && continue
+        private_paths+=("${line%/}")
+      done < ".life-private"
+    fi
+
+    # Classify each unpushed commit
+    generic_commits=()
+    personal_commits=()
+    while IFS= read -r hash; do
+      [ -z "$hash" ] && continue
+      is_personal=false
+      while IFS= read -r file; do
+        for p in "${private_paths[@]}"; do
+          if [[ "$file" == "$p"* || "$file" == "$p" ]]; then
+            is_personal=true
+            break 2
+          fi
+        done
+      done < <(git diff-tree --no-commit-id -r --name-only "$hash")
+      if $is_personal; then
+        personal_commits+=("$hash")
+      else
+        generic_commits+=("$hash")
+      fi
+    done < <(git log --reverse --format="%H" origin/main..HEAD)
+
+    # Summary
+    echo "=== Push classification ==="
+    echo "Generic (→ origin + life-os): ${#generic_commits[@]} commits"
+    echo "Personal (→ origin only):     ${#personal_commits[@]} commits"
+    echo ""
+
+    # Push all to origin
+    git push origin main
+
+    # Cherry-pick generic commits to life-os
+    if [ ${#generic_commits[@]} -gt 0 ]; then
+      echo "Cherry-picking ${#generic_commits[@]} generic commit(s) to life-os..."
+      git checkout -b _life-os-push "$UPSTREAM_BRANCH"
+      failed=false
+      for hash in "${generic_commits[@]}"; do
+        msg=$(git log --format="%s" -1 "$hash")
+        if git cherry-pick "$hash" --quiet; then
+          echo "  ✅ $msg"
+        else
+          echo "  ⚠️  conflict: $msg — skipping"
+          git cherry-pick --abort 2>/dev/null || true
+          failed=true
+        fi
+      done
+      git push "$REMOTE" _life-os-push:main
+      git checkout main
+      git branch -D _life-os-push
+      $failed && echo "" && echo "Some commits had conflicts and were skipped."
+    fi
+
+    echo ""
+    echo "✅ Done."
+    ;;
+
   contrib)
     echo "=== Commits potentially safe to contribute to life-os ==="
     echo "(touches only generic paths: scripts/, aspects/diet|gym|study config, .claude/, CLAUDE.md, etc.)"
@@ -92,7 +161,8 @@ case "$cmd" in
     ;;
 
   *)
-    echo "Usage: $0 [status|pull|contrib]"
+    echo "Usage: $0 [status|pull|push|contrib]"
     exit 1
     ;;
 esac
+# test

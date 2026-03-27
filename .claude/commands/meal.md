@@ -6,6 +6,44 @@
 
 $ARGUMENTS — 食べたもの（省略可。省略時は対話モード）
 
+## Step 0: デスクトップ判定
+
+```bash
+echo $LIFE_DESKTOP
+```
+
+`LIFE_DESKTOP=true` **でない場合は モバイルモード**（Notion・fridge 更新はスキップ）:
+
+1. `TZ=Asia/Tokyo date "+%Y-%m-%d %H:%M"` で日付・時刻を取得
+2. 食事内容を確認（引数ありならそのまま使用、なければ「何食べた？」と聞く）
+3. 食事枠を時刻から推定（〜10:00→朝食 / 10:00〜15:00→昼食 / 15:00〜→夕食）
+4. `aspects/diet/temp/YYYY-MM-DD.md` を読み込む（存在しなければ新規作成）
+5. 対応する食事枠セクションにメニューと時刻を追記して保存
+6. 「temp に記録した（/flush で Notion に同期）」と1行報告して終了
+
+**temp ファイルフォーマット（TEMPLATE.md 準拠）:**
+```markdown
+# 食事ログ YYYY-MM-DD
+
+## 朝食 (HH:MM-HH:MM)
+- メニュー名
+- kcal: xxx
+
+## 昼食 (HH:MM-HH:MM)
+- メニュー名
+- kcal: xxx
+
+## 夕食 (HH:MM-HH:MM)
+- メニュー名
+- kcal: xxx
+
+合計: xxx kcal
+```
+
+`LIFE_DESKTOP=true` の場合は Step 1 以降の通常フローを実行する。
+
+---
+
 ## Step 1: 現在時刻と状況を確認する
 
 ```bash

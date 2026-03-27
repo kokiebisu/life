@@ -9,6 +9,24 @@ description: life-os upstream との同期（pull / status / contrib）。life-o
 
 ## コマンド別の動作
 
+### `/life-os-sync push`（通常の push はこれを使う）
+
+```bash
+./scripts/life-os-sync.sh push
+```
+
+未push のコミットを分類して routing する:
+
+- **Generic commit**（`.life-private` に該当しないファイルのみ変更）→ `origin` と `life-os` の両方に push
+- **Personal commit**（`.life-private` のパスを含む変更）→ `origin` のみ
+- **Mixed commit**（両方を含む）→ `origin` のみ（personal 扱い）
+
+内部動作:
+1. `origin/main..HEAD` の未push コミットを列挙
+2. 各コミットの変更ファイルと `.life-private` を照合して分類
+3. 全コミットを `git push origin main`
+4. generic コミットを `_life-os-push` 一時ブランチに cherry-pick → `git push life-os`
+
 ### `/life-os-sync` または `/life-os-sync status`
 
 ```bash

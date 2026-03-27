@@ -1,0 +1,17 @@
+# .life-private
+# Paths that are personal to this fork and should never be overwritten by upstream (life-os) merges.
+# Lines starting with # are comments. Blank lines are ignored.
+# Paths are relative to repo root. Trailing / means the entire directory.
+
+aspects/church/
+aspects/devotions/
+aspects/guitar/
+aspects/sound/
+aspects/reading/
+aspects/job/
+aspects/investment/
+aspects/people/
+profile/
+planning/
+memory-bank/
+.claude/rules/context.md

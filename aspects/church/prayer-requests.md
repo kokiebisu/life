@@ -25,8 +25,10 @@
 | Taiki | 健康の回復と伝道の機会 | 2026-03-19 | [people/taiki.md](../people/taiki.md) |
 | マリヤ | これからの進路 | 2026-03-20 | [people/mariya.md](../people/mariya.md) |
 | 家族 | 家族それぞれの守り | 2026-03-20 | [people/family.md](../people/family.md) |
-| Wes & Shiori | 長野への引っ越し | 2026-03-20 | [people/wes-shiori.md](../people/wes-shiori.md) |
+| Wes | 長野への引っ越し | 2026-03-20 | [people/wes.md](../people/wes.md) |
+| Shiori | 長野への引っ越し | 2026-03-20 | [people/shiori.md](../people/shiori.md) |
 | かづき | 恐れの中での正しい選択 | 2026-03-24 | [people/kazuki.md](../people/kazuki.md) |
+| Ken | 思慮深い妻と仕事 | 2026-03-27 | [people/me.md](../people/me.md) |
 
 ---
 

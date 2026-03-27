@@ -26,4 +26,3 @@ church メンバーの人物ファイルは `aspects/people/<name>.md`（`relati
 - 新しい祈りが始まったら: 新しい `### [タイトル]（開始: YYYY-MM-DD）` セクションを追加。`prayer-requests.md` の Active テーブルも更新する。
 - その人の出来事を知ったら: `## 出来事・記録` に日付付きで追記する。
 - **`aspects/people/` ファイルを編集した後は `/to-notion` を実行しない**（Notion 同期対象外）。
-

@@ -1,5 +1,18 @@
 # Notion ワークフロー
 
+## タイトル正規化（厳守）
+
+`notion-add.ts` にはタイトル正規化機能が組み込まれている。**タイトルを手動で決める前に `scripts/notion-add.ts` の `TITLE_KEYWORD_LIST` を参照し、既存の canonical タイトルに合わせること。**
+
+- 「開発」「コーディング」「実装」「life-os」→ `開発`
+- 「ジム」「筋トレ」「トレーニング」→ `ジム`
+- 「勉強」「学習」→ `勉強`
+- 「ギター」「練習」→ `ギター練習`
+- 「買い出し」「買い物」→ `買い出し`
+- 他のキーワードは `TITLE_KEYWORD_LIST`（[scripts/notion-add.ts](../../scripts/notion-add.ts)）で確認する
+
+`notion-add.ts` 経由であれば自動適用される。`notion-create-pages` など MCP 直接登録の場合は**手動で確認・統一すること。**
+
 ## Job DB（`NOTION_JOB_DB`）の会社名セット（厳守）
 
 job DB にエントリを作成・更新する際は、**必ず `profile/career.md` の「現在の所属 > 会社名」を読んで `会社名` プロパティにセットすること。**

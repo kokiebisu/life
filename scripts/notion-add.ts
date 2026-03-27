@@ -95,6 +95,35 @@ async function writeTemplate(apiKey: string, pageId: string, dbName: ScheduleDbN
   console.log(`📋 テンプレートを適用しました`);
 }
 
+// --- Title normalization ---
+
+/**
+ * タイトルキーワードリスト
+ * キーワードが入力タイトルに含まれていれば、canonical タイトルに統一する。
+ * 順番に評価し、最初にマッチしたものを使う。
+ */
+const TITLE_KEYWORD_LIST: { keywords: (string | RegExp)[]; canonical: string }[] = [
+  { keywords: ["開発", "コーディング", "実装", "life-os", "プログラミング", "コード"], canonical: "開発" },
+  { keywords: ["ジム", "筋トレ", "トレーニング", "ワークアウト"], canonical: "ジム" },
+  { keywords: ["ランニング", "ジョギング", "走"], canonical: "ランニング" },
+  { keywords: ["デボーション", "礼拝", "QT", "祈り"], canonical: "デボーション" },
+  { keywords: ["勉強", "学習", "study"], canonical: "勉強" },
+  { keywords: ["ギター", "練習"], canonical: "ギター練習" },
+  { keywords: ["買い出し", "買い物", "スーパー"], canonical: "買い出し" },
+  { keywords: ["散歩", "ウォーキング"], canonical: "散歩" },
+];
+
+/** タイトルを TITLE_KEYWORD_LIST に基づいて正規化する */
+function normalizeByKeywordList(title: string): string {
+  for (const entry of TITLE_KEYWORD_LIST) {
+    for (const kw of entry.keywords) {
+      const matched = typeof kw === "string" ? title.includes(kw) : kw.test(title);
+      if (matched) return entry.canonical;
+    }
+  }
+  return title;
+}
+
 // --- Meals auto-recipe ---
 
 /** レシピ不要と判断するキーワード（タイトルに含まれていたらスキップ） */
@@ -186,6 +215,12 @@ async function main() {
 
   const dbName = (opts.db || "devotion") as ScheduleDbName;
   const { apiKey, dbId, config } = getScheduleDbConfig(dbName);
+
+  const normalizedTitle = normalizeByKeywordList(opts.title);
+  if (normalizedTitle !== opts.title) {
+    console.log(`タイトル正規化: "${opts.title}" → "${normalizedTitle}"`);
+    opts.title = normalizedTitle;
+  }
 
   const properties: Record<string, unknown> = {
     [config.titleProp]: { title: [{ text: { content: opts.title } }] },

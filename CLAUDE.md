@@ -17,6 +17,9 @@
 ./dev                    # devcontainer を起動して Claude Code を開く
 ./scripts/sumitsugi-sync.sh            # sumitsugi ↔ LIFE タスク同期
 ./scripts/sumitsugi-sync.sh --dry-run  # 同期プレビュー（変更なし）
+./scripts/life-os-sync.sh status       # life-os との乖離確認
+./scripts/life-os-sync.sh pull         # life-os/main を life に取り込む
+./scripts/life-os-sync.sh contrib      # life-os に貢献できるコミットを確認
 ```
 
 ### Claude Code コマンド
@@ -52,6 +55,13 @@ memory-bank/             # セッション間の記憶（decisions.md）
 
 - コミット形式・PR ワークフロー → `.claude/rules/git-workflow.md`
 - セキュリティガイドライン → `.claude/rules/security.md`
+
+## Fork 管理（life-os との同期）
+
+- **upstream remote:** `life-os` → `https://github.com/kokiebisu/life-os.git`
+- **personal-only の定義:** `docs/life-os-personal-policy.md` 参照
+- **upstream sync:** `./scripts/life-os-sync.sh pull`
+- **life-os への貢献:** `./scripts/life-os-sync.sh contrib` で対象コミットを確認 → cherry-pick で life-os に PR
 
 ## Aspects（生活の側面）
 

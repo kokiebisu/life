@@ -24,7 +24,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 import {
   type ScheduleDbName, type NormalizedEntry,
-  SCHEDULE_DB_CONFIGS, getScheduleDbConfigOptional, queryDbByDate, queryDbByDateCached, normalizePages,
+  SCHEDULE_DB_CONFIGS, getScheduleDbConfigOptional, getDbIdOptional, queryDbByDate, queryDbByDateCached, normalizePages,
   normalizeTitle, notionFetch, getApiKey, clearNotionCache,
   parseArgs, todayJST, loadEnv,
   pickTaskIcon, pickCover,
@@ -874,6 +874,36 @@ async function main() {
           await notionFetch(getApiKey(), `/pages/${page.id}`, updates, "PATCH");
         } else {
           console.log(`  ENRICH: ${title} [${db}] — would add icon/cover`);
+        }
+        totalEnriched++;
+      }
+    }
+
+    // --- Enrich job DB pages (icon/cover) ---
+    const jobDbId = getDbIdOptional("NOTION_JOB_DB");
+    if (jobDbId) {
+      const jobData = await notionFetch(getApiKey(), `/databases/${jobDbId}/query`, {
+        filter: {
+          and: [
+            { property: "日付", date: { on_or_after: today } },
+            { property: "日付", date: { on_or_before: futureEndDate } },
+          ],
+        },
+      });
+      const jobPages = (jobData.results || []) as any[];
+      for (const page of jobPages) {
+        const hasIcon = !!page.icon;
+        const hasCover = !!page.cover;
+        if (hasIcon && hasCover) continue;
+        const title = (page.properties?.["名前"]?.title || []).map((t: any) => t.plain_text || "").join("");
+        if (!dryRun) {
+          const updates: Record<string, unknown> = {};
+          if (!hasIcon) updates.icon = pickTaskIcon(title, "💼");
+          if (!hasCover) updates.cover = pickCover();
+          console.log(`  ENRICH: ${title} [job] — adding icon/cover`);
+          await notionFetch(getApiKey(), `/pages/${page.id}`, updates, "PATCH");
+        } else {
+          console.log(`  ENRICH: ${title} [job] — would add icon/cover`);
         }
         totalEnriched++;
       }

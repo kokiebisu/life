@@ -412,7 +412,7 @@ export function pickArticleIcon(source: string): { type: "emoji"; emoji: string 
   return { type: "emoji", emoji: map[source] || "📰" };
 }
 
-export function pickTaskIcon(title: string, defaultEmoji = "📌"): { type: "emoji"; emoji: string } {
+export function pickTaskIcon(title: string, defaultEmoji = "📅"): { type: "emoji"; emoji: string } {
   for (const [pattern, emoji] of TASK_ICON_KEYWORDS) {
     if (pattern.test(title)) return { type: "emoji", emoji };
   }
@@ -420,8 +420,7 @@ export function pickTaskIcon(title: string, defaultEmoji = "📌"): { type: "emo
 }
 
 export function pickCover(): { type: "external"; external: { url: string } } {
-  const url = GRADIENT_COVERS[Math.floor(Math.random() * GRADIENT_COVERS.length)];
-  return { type: "external", external: { url } };
+  return { type: "external", external: { url: GRADIENT_COVERS[0] } };
 }
 
 // --- Title Normalization ---

@@ -22,17 +22,62 @@ church aspect の MD ファイルを対応する Notion ページに反映する
 - `prayer` → prayer-requests.md のみ
 - `verses` → verses.md のみ
 
+## サブページ一覧（Prayer Requests のサブページ ID）
+
+| 名前 | Notion ページ ID |
+|------|----------------|
+| Shinya | `330ce17f-7b98-817c-8cdd-f92f58399983` |
+| Midori | `330ce17f-7b98-813f-a29b-e8c0c5b92cec` |
+| Jayce | `330ce17f-7b98-813c-b2d3-ff5293de49c5` |
+| Michael | `330ce17f-7b98-8153-a939-d5440288d409` |
+| Kazuya | `330ce17f-7b98-81da-b1f1-ca97304aa3a7` |
+| Tantan | `330ce17f-7b98-8136-bfce-e51bf0f3045e` |
+| P | `330ce17f-7b98-817c-b48a-fd6d14c92238` |
+| Emiri | `330ce17f-7b98-8155-9825-e226803c2f3a` |
+| Yuiho | `330ce17f-7b98-81ee-9756-dccebb40457d` |
+| Taiki | `330ce17f-7b98-8145-a360-cdbea911d2aa` |
+| Wes | `330ce17f-7b98-812a-a912-ed4b20a7535c` |
+| Shiori | `330ce17f-7b98-813c-adfa-c65f2b6e0ced` |
+| かづき | `330ce17f-7b98-81bd-8c8b-cac1ab7e3143` |
+| Nathan | `330ce17f-7b98-815f-a333-ea846f92d07f` |
+| Ivan | `330ce17f-7b98-814f-9b75-c2d9bdf0cc71` |
+| マリヤ | `330ce17f-7b98-8196-a160-f5b8430e14d0` |
+| 家族 | `330ce17f-7b98-8190-b32d-e7fdce7c0df7` |
+| Ken（自分） | `330ce17f-7b98-8176-a27d-f4a84d807dae` |
+
 ## 手順
 
 ### prayer-requests.md の同期
 
-1. `aspects/church/prayer-requests.md` を読む
-2. `notion-update-page`（`replace_content`）で Notion ページを更新
+メインページはグループ見出し＋サブページ一覧のみ。表やテキスト詳細は書かない。
 
-**フォーマット規則:**
-- `## Active` セクション: 各人を `### 名前` + `**内容:** ...` + `**開始日:** YYYY-MM-DD` + `---` で区切る
-- `## Answered` セクション: そのまま反映（中身なければコメントテキストを保持）
-- ページ冒頭の説明文も保持
+1. `aspects/church/prayer-requests.md` を読む
+2. `notion-fetch` でメインページの現在の子ページ一覧を確認
+3. `notion-update-page`（`replace_content`）でメインページを更新
+
+**メインページフォーマット（グループ別サブページ一覧）:**
+```
+## New Hope Yokohama
+<page url="...">Shinya</page>
+...（Yokohama メンバー）
+
+## New Hope Tokyo
+<page url="...">Nathan</page>
+...（Tokyo メンバー）
+
+## 家族
+<page url="...">マリヤ</page>
+...
+
+## 自分
+<page url="...">Ken（自分）</page>
+```
+
+**重要:** `replace_content` 時は既存サブページを `<page url="...">名前</page>` タグで必ず含めること（含めないと削除される）。
+
+4. 各人のサブページを `notion-update-page`（`replace_content`）で更新
+   - 対応する `aspects/people/` ファイルを読んで最新の祈り内容・みことばを反映
+   - フォーマット: `## プロフィール` + `## 祈り：テーマ（開始日）` + みことば引用 + `## 記録`
 
 ### verses.md の同期
 

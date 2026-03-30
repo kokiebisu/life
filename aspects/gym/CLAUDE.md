@@ -19,6 +19,16 @@
 2. `gyms/<location>.md` → 利用可能なマシン一覧
 3. `../goal.md` → 現在の目標（重量・体組成）
 
+## 補助種目のローテーション（厳守）
+
+メニュー決定時、**直近3セッション分の Notion ジム DB を確認し**、補助種目が重複しないよう選ぶ。
+
+- **対象**: メイン種目（ダンベルプレス・フィックスドプルダウン・スクワットマシン・ウォーキング）以外の全種目
+- **ルール**: 直近3セッション以内に使った補助種目は原則使わない
+- **選択肢**: Seated Leg Curl / Prone Leg Curl / Leg Extension / Inner・Outer Thigh / Shoulder Press / Low Row / Lat Pull Down / Abdominal など、その日の部位バランスに応じて選ぶ
+
+例: 前回・前々回でアブドミナルを使っていたら → Seated Leg Curl や Shoulder Press を選ぶ
+
 ## 種目プリファレンス（厳守）
 
 - **胸**: ダンベルプレスを使う（ベンチプレスはケガリスクがあるため使わない）

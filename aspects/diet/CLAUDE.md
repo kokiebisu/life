@@ -142,6 +142,10 @@ bun run scripts/notion-add.ts --db meals --title "豚キムチ・はらちゃん
 
 **自動スキップされるパターン:** 外食、コンビニ、〇〇作、カップ、残り物、テイクアウト、出前、デリバリー
 
+**レシピ自動生成後の在庫チェック（厳守）:**
+`notion-add.ts` でレシピが自動生成されたら、生成されたレシピの材料を `fridge.md` と照合する。
+在庫にない食材（調味料除く）が含まれていたら、献立提案時のレシピと異なる可能性があるため、タイトルを変更して `notion-recipe-gen.ts --page-id <id>` を再実行する。
+
 **禁止事項:**
 - Notion MCP（`notion-create-pages`）で食事ページを直接作成すること → 必ずスクリプト経由
 - Notion MCP（`notion-update-page`）でタイトルを直接変更すること → `notion-recipe-gen.ts` がタイトル更新+レシピ再生成を一括で行う

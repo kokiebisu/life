@@ -16,43 +16,8 @@
     ]
   },
   "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo '{\"hookSpecificOutput\": {\"hookEventName\": \"SessionStart\", \"additionalContext\": \"セッション開始時の自動指示: (1) /from:notion スキルを実行してローカルと Notion を同期してください。(2) /to-notion スキルを prayer 引数で実行して prayer-requests.md を Notion に同期してください。両方を順番に実行してからユーザーへ応答すること。\"}}'",
-            "statusMessage": "Notion 同期を準備中..."
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "git -C \"$CLAUDE_PROJECT_DIR\" status --porcelain | grep -q . && echo '{\"systemMessage\": \"⚠️ 未コミットの変更があります。コミット忘れに注意してください。\"}' || true"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/sync-events-to-notion.sh",
-            "timeout": 30
-          },
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/sync-people-to-notion.sh",
-            "timeout": 10
-          }
-        ]
-      }
-    ]
+    "SessionStart": [],
+    "Stop": [],
+    "PostToolUse": []
   }
 }

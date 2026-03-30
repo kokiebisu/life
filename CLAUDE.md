@@ -9,8 +9,6 @@
 **言語:** 日本語（コード・ファイル名は英語）
 **構造:** aspects/ 配下に生活の各側面を管理
 
-> **セッション開始時（厳守）:** SessionStart フックの指示は、ユーザーの質問への回答より前に必ず実行する。`/from:notion` の実行を完了してからユーザーへ応答すること。
-
 ## Commands
 
 ```bash
@@ -70,19 +68,20 @@ memory-bank/             # セッション間の記憶（decisions.md）
 
 各 aspect は `aspects/` 配下。固有の指示は各 `CLAUDE.md` に記載。
 
-| Aspect | チーム | 概要 |
-|--------|--------|------|
-| diet | 6人チーム | ダイエット・健康管理 → Notion: 食事DB |
-| guitar | 3人チーム | ギター練習 → Notion: ギターDB |
-| investment | 11人チーム | 投資 |
-| study | 9人チーム | 学習（起業・法律・技術） |
-| job/search | 6人チーム | 就職活動 |
-| reading | 村上葉月 | 読書記録 |
-| routine | - | 習慣・ルーティン → Notion: 習慣DB |
-| sound | 3人チーム | 教会音響PA → Notion: カリキュラムDB |
-| church | - | 教会関連 |
+| Aspect     | チーム     | 概要                                  |
+| ---------- | ---------- | ------------------------------------- |
+| diet       | 6人チーム  | ダイエット・健康管理 → Notion: 食事DB |
+| guitar     | 3人チーム  | ギター練習 → Notion: ギターDB         |
+| investment | 11人チーム | 投資                                  |
+| study      | 9人チーム  | 学習（起業・法律・技術）              |
+| job/search | 6人チーム  | 就職活動                              |
+| reading    | 村上葉月   | 読書記録                              |
+| routine    | -          | 習慣・ルーティン → Notion: 習慣DB     |
+| sound      | 3人チーム  | 教会音響PA → Notion: カリキュラムDB   |
+| church     | -          | 教会関連                              |
 
 **その他:**
+
 - `aspects/tasks.md` — タスク管理（Inbox / Archive）
 - `aspects/events/` — 一回限りの予定
 - `aspects/daily/` — デイリーログ

@@ -1,5 +1,12 @@
 # Notion ワークフロー
 
+## notion-list で見つからない場合（厳守）
+
+`notion-list.ts` はスケジュール系 DB のみ対象。**ジム DB など対象外の DB は表示されない。**
+
+- `notion-list.ts` で見つからなくても「存在しない」と判断しない
+- ユーザーが「Notion にある」と言ったら、`notion-search` で再検索するか、ユーザーに URL を確認する前に `notion-search` を試みる
+
 ## タイトル正規化（厳守）
 
 `notion-add.ts` にはタイトル正規化機能が組み込まれている。**タイトルを手動で決める前に `scripts/notion-add.ts` の `TITLE_KEYWORD_LIST` を参照し、既存の canonical タイトルに合わせること。**

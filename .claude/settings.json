@@ -16,12 +16,11 @@
     "ralph-loop@claude-plugins-official": true,
     "code-simplifier@claude-plugins-official": true,
     "claude-md-management@claude-plugins-official": true,
-    "security-guidance@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": false,
     "code-review@claude-plugins-official": true,
-    "typescript-lsp@claude-plugins-official": true,
-    "serena@claude-plugins-official": true,
-    "context7@claude-plugins-official": true,
-    "superpowers@claude-plugins-official": false,
+    "typescript-lsp@claude-plugins-official": false,
+    "serena@claude-plugins-official": false,
+    "context7@claude-plugins-official": false,
     "skill-creator@claude-plugins-official": true
   }
 }

@@ -2,7 +2,7 @@
 
 ## ルール
 
-会話中にユーザーが「やるべきこと」「やりたいこと」を言ったら、**自動で `planning/tasks.md` の Inbox に追加する。**
+会話中にユーザーが「やるべきこと」「やりたいこと」を言ったら、**自動で `aspects/tasks.md` の Inbox に追加する。**
 
 ### タスクと判断する基準
 
@@ -12,12 +12,12 @@
 - 明らかにアクションが必要な発言全般
 - ただし、今この会話の中で完結する作業（「このファイル編集して」等）はタスクではない
 
-### イベント（タスクではない → `planning/events/` へ）
+### イベント（タスクではない → `aspects/events/` へ）
 
 - 飲み会・会議・予定など「日時が決まっているスケジュール」はイベント
-- `planning/events/YYYY-MM-DD.md` に追加
+- `aspects/events/YYYY-MM-DD.md` に追加
 - **Notion events DB にも必ず登録する**（`notion-add.ts --db events --start HH:MM --end HH:MM`）。説明が必要なら作成後に `notion-update-page` の `replace_content` でページ本文に書き込む
-- `planning/tasks.md` には入れない
+- `aspects/tasks.md` には入れない
 
 ### タスクと判断しないもの
 
@@ -45,7 +45,7 @@
 
 ### 動作
 
-1. タスクを検出したら `planning/tasks.md` の `## Inbox` セクション末尾に追加
+1. タスクを検出したら `aspects/tasks.md` の `## Inbox` セクション末尾に追加
 2. **Notion todo DB にも登録する**（`notion-add.ts --db todo --start HH:MM --end HH:MM`）。時間はユーザーに確認するか、文脈から適切に設定する。説明が必要なら作成後に `notion-update-page` の `replace_content` でページ本文に書く
 3. ユーザーに「タスクに追加しておいた」と軽く報告（1行で十分）
 4. 会話の流れを止めない。メインの話題を優先する

@@ -19,5 +19,8 @@
     "SessionStart": [],
     "Stop": [],
     "PostToolUse": []
+  },
+  "enabledPlugins": {
+    "ralph-loop@claude-plugins-official": false
   }
 }

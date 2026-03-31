@@ -2,6 +2,27 @@
 
 Notion カレンダーの予定を取得・追加する。
 
+## Notion DB 体制
+
+### Schedule DBs
+
+| DB       | 環境変数              | プロパティ  | ステータス | 用途                             |
+| -------- | --------------------- | ----------- | ---------- | -------------------------------- |
+| デボーション | `NOTION_DEVOTION_DB` | Name / 日付 | なし       | デボーション・日々の習慣         |
+| イベント | `NOTION_EVENTS_DB`    | 名前 / 日付 | なし       | 一回限りの予定                   |
+| カリキュラム | `NOTION_CURRICULUM_DB` | 名前 / 日付 / カリキュラム | ステータス | ギター・音響レッスン（カリキュラムで分類） |
+| 食事     | `NOTION_MEALS_DB`     | 名前 / 日付 | なし       | 食事メニュー（調理・食べるもの） |
+| 買い出し | `NOTION_GROCERIES_DB` | 件名 / 日付 | なし       | 買い出し・買い物                 |
+| その他   | `NOTION_OTHER_DB`     | 名前 / 日付 | なし       | 実績ログ・活動記録（「〜してた」）|
+| 学習     | `NOTION_STUDY_DB`     | 名前 / 日付 / カテゴリ / 本 / Chapter（**数字のみ** e.g. `5`） | なし | 学習セッション・ノート（`/study`）|
+| 仕事     | `NOTION_JOB_DB`       | 名前 / 日付 / 会社名 / 種別 | なし | 面接・業務記録（会社名は `profile/career.md` から参照）|
+
+### Other DBs
+
+- `NOTION_ARTICLES_DB` — 記事（タイトル / ソース / URL / Aspect / Status）
+- `NOTION_INVESTMENT_DB` — 投資（Investment / Buy Date / Status / Type / Notes）
+- **クイックメモ DB** — 思考キャプチャ。`/process` コマンドで処理する
+
 ## 予定の取得
 
 ```bash

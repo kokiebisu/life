@@ -230,7 +230,7 @@ Integration 環境で事前に「新しい IRSA 設定で Pod が S3・RDS・Sec
   ✓ IRSA: Pod が RDS への接続ができる
   ✓ ArgoCD が新 Application 定義で Sync できる
   ✓ Cron スケジュール変更が正しく適用される
-  ✓ Datadog にログが流れている
+  ※ Datadog は Integration 環境では利用不可のため確認対象外
 
 フェーズ 2: Staging 環境（1週間）
   確認事項:

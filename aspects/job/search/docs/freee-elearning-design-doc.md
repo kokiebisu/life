@@ -34,6 +34,30 @@
 
 ---
 
+## 可観測性設計
+
+SLO を定義するだけでなく、「どのメトリクスで計測し、どこでアラートを上げるか」まで設計した。
+
+### キーメトリクスとアラート閾値
+
+| メトリクス | 収集方法 | 警告 (warn) | 危険 (critical) | 対応する SLO |
+|-----------|---------|------------|----------------|------------|
+| OIDC コールバック成功率 | Datadog APM（HTTP ステータスコード別） | < 99.95% | < 99.9% | OIDC 認証成功率 ≥ 99.9% |
+| OEM API Rate Limit ヒット率（429 率） | Datadog カスタムメトリクス（Sidekiq ミドルウェア） | > 0.05% | > 0.1% | Rate Limit 超過エラー率 < 0.1% |
+| Sidekiq `elearning_oem_sync` キュー深度 | Sidekiq Web UI + Datadog | > 500 jobs | > 2,000 jobs | インポート完了時間 SLO の代理指標 |
+| OemSyncBatch の failure_count 率 | DB クエリ → Datadog | > 1% | > 5% | 従業員データ同期成功率 ≥ 99.5% |
+| DynamoDB ロック競合率 | CloudWatch → Datadog | > 10% | > 30% | Rate Limit SLO の構造的指標 |
+
+### Rate Limit の定量観測（リリース後の継続チューニング）
+
+300 req/sec が上限で引き上げ不可のため、「実際にどの頻度で Rate Limit に衝突するか」を定量観測してチューニングを継続する。具体的には：
+
+1. **HTTP 429 率を会社単位で記録** — `company_id` タグ付きで Datadog に送り、特定顧客の従業員数が突出して多い場合を検知する
+2. **チャンクあたりの実質所要時間** — `wait: index.minutes` の仮定が実際に成立しているかを Sidekiq の処理時間で検証する
+3. **組織同期 API コール数の計測** — 招待 1件あたり何リクエスト消費しているかを可視化し、チャンクサイズ・インターバルの最適値を探る
+
+---
+
 ## アーキテクチャ全体図
 
 ```
@@ -51,7 +75,6 @@
 │  │ モデル（Elearning 固有テーブル）:                         │  │
 │  │   Elearning::EmployeeAccount（OEM との紐付け）            │  │
 │  │   Elearning::OemSyncBatch（一括インポートの進捗）          │  │
-│  │   Elearning::OidcSession（OIDC フローのセッション管理）    │  │
 │  └────────────────────────┬────────────────────────────────┘  │
 │                           │                                   │
 │  ┌────────────────────────▼────────────────────────────────┐  │
@@ -71,10 +94,14 @@
 └───────────────────────────┼───────────────────────────────────┘
                             │ HTTP（社内 VPC 内）
                             ▼
+                  freee 認証基盤
+                  └── OIDC アプリ（OEM との OIDC 設定を管理）
+                            │
+                            ▼
                   OEM 提供元プラットフォーム
-                  ├── アカウント管理 API（Rate Limit: 100 req/分）
+                  ├── アカウント管理 API（Rate Limit: 300 req/sec）
                   ├── 受講状況取得 API
-                  └── OIDC Authorization Server
+                  └── OIDC Authorization Server（認証基盤経由で接続）
 ```
 
 ---
@@ -89,8 +116,8 @@
 
 | 案 | 概要 | メリット | デメリット | 採用 |
 |----|------|---------|-----------|------|
-| A: freee 福利厚生のサイドバーに組み込む | 福利厚生プロダクトの一機能として提供 | 福利厚生ユーザーへの導線が自然 | 人事担当者（研修管理者）は人事労務を主に使うため導線が遠い。福利厚生を契約していない顧客は使えない | 却下 |
-| B: 完全スタンドアローン（独自サブドメイン） | 独立 URL。人事労務からリダイレクト | freee 本体に影響を与えずに独立リリース・スケールが可能 | ログインが分断される。freee アカウントと別の認証が必要になり、「freee でそのまま使える」という価値が消える | 却下 |
+| A: freee 福利厚生のサイドバーに組み込む | 福利厚生プロダクトの一機能として提供 | 福利厚生ユーザーへの導線が自然 | freee Eラーニングのコアニーズは「人事担当者が従業員に研修を強制的に受けさせる」管理側の機能。福利厚生は従業員が自由に利用するプロダクトであり、ユースケースの性質が根本的に異なる。人事労務との連携（雇用管理・組織図との紐付け）が主軸であり、福利厚生に組み込む理由がない | 却下 |
+| B: 完全スタンドアローン（独自サブドメイン） | 独立 URL。人事労務からリダイレクト | freee 本体に影響を与えずに独立リリース・スケールが可能 | スタンドアローンでも freee の共通基盤（認証・セッション）を使う前提のため、基盤チームとゼロから連携を立ち上げるコストが高い。3名チームで並行して進める工数がなかった | 却下 |
 | C: 人事労務のサイドバーに周辺プロダクトとして組み込む | 人事労務の UI 内に Eラーニングタブを追加 | 人事担当者が画面を離れずに研修管理まで完結。freee の「統合体験」ミッションに合致 | 人事労務のリリースサイクルに引きずられる可能性がある | **採用** |
 
 **案 C の採用判断:**  
@@ -109,7 +136,7 @@
 
 1. **セキュリティ要件が高くない:** 扱うデータは従業員の氏名・所属程度。給与明細や銀行情報のような高感度データではないため、独立したセキュリティ境界を設ける必然性がなかった。独立マイクロサービス（案 B）のメリットである「障害隔離」は、今回のリスクプロファイルに対して過剰な対策。
 
-2. **機能要件の複雑性が低い:** OEM（LMSプロバイダー）がコア機能（コース管理・受講記録・動画配信）をすべて担い、freee 側が構築するのは管理者向けの割り当て管理機能のみ。この規模に独立マイクロサービスのインフラコスト（独立デプロイ・独立監視・サービス間通信の設計）を払うのは投資対効果が合わない。
+2. **機能要件の複雑性が低い:** OEM（LMSプロバイダー）がコア機能（コース管理・受講記録・動画配信・研修割り当て）をすべて担う。freee 側が構築するのは「どの従業員に freee Eラーニングの利用を許可するか」という管理者権限管理と、freee Eラーニングを正とした組織図の OEM への同期機能のみ。この規模に独立マイクロサービスのインフラコスト（独立デプロイ・独立監視・サービス間通信の設計）を払うのは投資対効果が合わない。
 
 **受け入れたトレードオフ:**  
 モノリスへの組み込みにより「人事労務本体の障害時に Eラーニングも影響を受ける」リスクを許容した。ただし、Eラーニング障害が人事労務本体へ波及しない方向（一方向の隔離）は Rails Engine の設計で担保した。将来的に機能が複雑化・データが高感度化した場合の切り出しを見越し、`Elearning::` 名前空間を厳守し、人事労務コアモデルへの依存を最小限に抑えた。
@@ -139,12 +166,19 @@ OEM 側の設計:
 *案 B: freee 側で事業所ごとに OEM アカウントを複数作成し、ユーザーに選ばせる*  
 → 1人のユーザーが複数の OEM アカウントを持つことになり、受講履歴が事業所ごとに分断される。HR 管理者が全従業員の受講状況を一元管理できなくなる（製品の根幹的な価値を損なう）。
 
-**採用した解決策: ログイン前の事業所選択 + OIDC state パラメータ**
+**採用した解決策: ログイン前の事業所選択 + freee 認証基盤への委譲**
+
+**freee 認証基盤との関係:**  
+OIDC の RP（Relying Party）ロジック（state/nonce 生成・CSRF 防止・Authorization Code 交換・ID Token 検証）はすべて freee 認証基盤が担う。Eラーニング側は「認証基盤が提供する OIDC URL に飛ぶ」「コールバックで認証基盤から返された userinfo を検証する」の 2点のみ実装した。
+
+**認証フローの全体像:**  
+1. Eラーニングが freee 認証基盤の OIDC URL にリダイレクト
+2. 認証基盤が OEM の OIDC Authorization Server とやり取り（state/nonce 管理含む）
+3. トークンリクエスト完了後、認証基盤が userinfo を取得して Eラーニングのコールバックに返す
+4. userinfo には `external_company_id`・`external_user_id` が含まれる（アカウント作成時に OEM のログインID フィールドに `"{employee_id}_{company_id}"` を詰めており、OEM がこれを userinfo のフィールドとして返す）
+5. Eラーニングは userinfo の値と `current_user` を照合してなりすましを検証
 
 ```ruby
-# 1. 事業所選択画面を OIDC フローの前に挟む
-# アプリ内で事業所を選択 → OIDC Authorization Request に state として埋め込む
-
 class Elearning::OidcController < ApplicationController
   def start
     # 複数事業所を持つユーザーには選択画面を表示
@@ -152,110 +186,73 @@ class Elearning::OidcController < ApplicationController
     if @companies.size == 1
       redirect_to authorize_path(company_id: @companies.first.id)
     else
-      render :select_company  # 事業所選択画面
+      render :select_company
     end
   end
 
   def authorize
     company = current_user.companies.find(params[:company_id])
-
-    # OIDC セッションを DB に保存（state と nonce を生成）
-    oidc_session = Elearning::OidcSession.create!(
-      user: current_user,
-      company: company,
-      state: SecureRandom.hex(32),    # CSRF 防止（推測不可能な乱数）
-      nonce: SecureRandom.hex(32),    # リプレイアタック防止
-      expires_at: 10.minutes.from_now # セッションの有効期限（ブラウザバックの悪用防止）
-    )
-
-    # state の JWT 署名（改ざん防止）
-    # state 文字列に company_id を含めると、コールバック時に company_id を取得できる
-    # 単なるランダム文字列では company_id の情報を引き回せない
-    signed_state = JWT.encode(
-      {
-        session_id: oidc_session.id,
-        company_id: company.id,
-        exp: 10.minutes.from_now.to_i,
-      },
-      Rails.application.credentials.secret_key_base,
-      "HS256"
-    )
-
-    authorization_url = build_oidc_authorization_url(
-      state: signed_state,
-      nonce: oidc_session.nonce,
-    )
-    redirect_to authorization_url, allow_other_host: true
+    # state・nonce・CSRF 対策はすべて freee 認証基盤が担う
+    # Eラーニング側は認証基盤が提供する URL に company_id を渡してリダイレクトするだけ
+    redirect_to freee_auth_oidc_url(company_id: company.id), allow_other_host: true
   end
 
   def callback
-    # 1. state の JWT 検証（署名・有効期限・改ざんチェック）
-    begin
-      payload = JWT.decode(
-        params[:state],
-        Rails.application.credentials.secret_key_base,
-        true,  # 署名検証を必ず実行
-        { algorithm: "HS256" }
-      ).first
-    rescue JWT::DecodeError, JWT::ExpiredSignature => e
-      return render_error(:invalid_state, e.message)
+    # 認証基盤がトークンリクエスト完了後に userinfo を返す
+    # userinfo には external_company_id・external_user_id が含まれる
+    userinfo = parse_userinfo_from_auth_platform(params)
+
+    # なりすまし防止: userinfo の値が current_user と一致するか確認
+    company  = Company.find_by(id: userinfo["external_company_id"])
+    employee = current_user.employee_for(company)
+
+    unless employee&.id == userinfo["external_user_id"].to_i
+      return render_error(:user_mismatch)
     end
 
-    # 2. DB の OidcSession と突き合わせ（セッションの存在・未使用確認）
-    oidc_session = Elearning::OidcSession.find_by(
-      id: payload["session_id"],
-      used: false  # 一度使ったセッションは再利用不可（リプレイアタック防止）
-    )
-    return render_error(:session_not_found) unless oidc_session
-
-    # 3. Authorization Code → Token 交換
-    token_response = Elearning::OemOidcClient.exchange_code(
-      code: params[:code],
-      redirect_uri: elearning_oidc_callback_url,
-    )
-
-    # 4. ID Token の検証
-    id_token_claims = Elearning::OemOidcClient.verify_id_token(
-      id_token: token_response[:id_token],
-      expected_nonce: oidc_session.nonce,  # nonce 検証でリプレイアタック防止
-    )
-
-    # 5. なりすまし防止: OEM のユーザー ID が freee の従業員と一致するか確認
-    employee_account = Elearning::EmployeeAccount.find_by(
-      company: oidc_session.company,
-      employee: current_user.employee_for(oidc_session.company),
-      oem_user_id: id_token_claims["sub"],  # OEM のユーザー ID が変更されていないか
-    )
-    return render_error(:user_mismatch) unless employee_account
-
-    # 6. セッションを使用済みにマーク（再利用防止）
-    oidc_session.update!(used: true, used_at: Time.current)
-
-    # 7. OEM プラットフォームの URL にリダイレクト
-    redirect_to token_response[:platform_url], allow_other_host: true
+    redirect_to userinfo["platform_url"], allow_other_host: true
   end
 end
 ```
 
 **PSIRT との合意事項の記録:**  
-この設計を PSIRT に提出した際、2点の懸念が出た：
+この設計を PSIRT に提出した際、以下の懸念が出た。
 
-*懸念 1: state に company_id を含めることはセキュリティ上問題ないか*  
-→ state は JWT で署名されており、改ざんは即座に検知できる。company_id は秘密情報でもないため、含めることに問題はない。PSIRT 承認。
+---
 
-*懸念 2: OEM 側の nonce 検証が実装されているか確認できるか*  
-→ OEM 側のコードレビューには参加できなかったが、OEM の OIDC 実装は国際標準（OpenID Connect Core 1.0）に準拠していることを文書で確認。nonce 検証は OIDC 標準の必須要件。PSIRT 承認。
+*懸念: freee 従業員と OEM ユーザーの突合キーをどう担保するか*
+
+**背景にある制約:**  
+OEM のユーザー作成 API には `external_user_id` / `external_company_id` の専用パラメータが存在しない（公開 API のため仕様変更不可）。一方、OEM の API には**ログインID**という任意文字列フィールドが存在し、OEM はこの値を OIDC 認証後の userinfo の `external_user_id`・`external_company_id` フィールドとして返す。
+
+**採用した解決策: ログインID フィールドへの埋め込み**  
+アカウント作成時に OEM のログインID フィールドへ `"{employee_id}_{company_id}"` を渡す。OIDC コールバック時は認証基盤経由で返された userinfo の `external_user_id`・`external_company_id` を直接読み取り、`current_user` と照合する。文字列パースは不要。
+
+**PSIRT の懸念:**  
+ログインID は任意フィールドであり後から変更できる。悪意あるユーザーが自分のログインIDを他人の値に書き換えてなりすませないか？
+
+**freee 側の回答:**  
+OEM 側でログインIDの**重複を許容しない設定**にしてもらった。既に別ユーザーが使用しているログインIDへの変更は OEM 側で拒否されるため、書き換えによるなりすましは不可能。PSIRT 承認。
+
+---
+
+*懸念: state・nonce 等の OIDC セキュリティ要件は担保されているか*  
+→ state（CSRF 防止）・nonce（リプレイアタック防止）・Authorization Code 交換・ID Token 検証はすべて freee 認証基盤が実装・管理する。freee の認証基盤は社内セキュリティ基準に準拠していることを確認済み。Eラーニング側で重複実装する必要はない。PSIRT 承認。
 
 ---
 
 ### 3. 大量データ連携の非同期ワーカー設計
 
 **なぜ Rate Limit が厳しいのか（根本的な制約の理解）:**  
-OEM がリアーキ中のため、新規 API の Rate Limit を緩和することを断られた。現行 API の「100 req/分」は変えられない前提で設計する必要があった。
+OEM の Rate Limit は「1 IP あたり」の制限。通常の OEM 契約は 1 社 = 1 IP のため、1 社分のリクエスト量であれば問題なかった。しかし freee は OEM と一括契約しており、複数の事業所（顧客企業）のリクエストをすべて freee の同一 IP から送ることになる。freee 全体の従業員数×アカウント作成が 1 IP に集中するため、通常想定の何十倍ものリクエストが発生する。
+
+OEM に Rate Limit の引き上げを交渉し、最終的に 300 req/sec まで上げてもらった。これ以上の引き上げは不可と言われたため、この制限は変えられない前提で設計する必要があった。それでも freee の全顧客規模では足りないため、非同期処理でスループットを制御する設計が必要になった。リリース後は Rate Limit に衝突する頻度を定量的に観測し、チューニングを継続予定。
+
+さらに Rate Limit の消費が多い理由がもう一つある。招待（アカウント作成）時には、従業員を正しい部門に所属させた状態で OEM に登録する必要があるため、**招待前に毎回組織の同期処理（部門ツリーの更新）を実行しなければならない**。この組織同期が大量のリクエストを消費し、1従業員あたりの実質的な API コールが「アカウント作成 1件」より大幅に多くなる。
 
 **同期実装の何が問題か:**  
 1,000名の一括インポートを同期処理すると：
-- 1,000 req ÷ 100 req/分 = 最低 10分
+- freee 全顧客の同時インポートで Rate Limit に衝突
 - Rails のリクエストタイムアウト（デフォルト 60秒）をはるかに超える
 - リクエストが途中でタイムアウトした場合、何件処理されたか不明
 
@@ -280,9 +277,9 @@ class Elearning::BulkEmployeeImportJob < ApplicationJob
 
     # 100件ずつに分割して、1分間隔でジョブを投入
     # なぜ perform_later(wait:) を使うのか:
-    #   - Rate Limit は「1分間に100リクエスト」という制約
-    #   - 100件を処理したら次の100件は1分後に開始する必要がある
-    #   - Sidekiq の scheduled jobs で実現（at オプション）
+    #   - OEM の Rate Limit は per-IP 制限。freee は多テナントで全顧客リクエストが集中する
+    #   - 300 req/sec まで引き上げてもらったが freee 全顧客規模では不足
+    #   - 100件ずつ 1分間隔でスケジューリングしてスループットを制御する
     employee_ids.each_slice(100).with_index do |chunk, index|
       Elearning::OemAccountCreateChunkJob.set(
         wait: index.minutes  # 0分後, 1分後, 2分後, ... と順番に投入
@@ -325,8 +322,11 @@ class Elearning::OemAccountCreateChunkJob < ApplicationJob
 
       begin
         oem_response = Elearning::OemApiClient.create_account(
-          external_company_id: batch.company_id.to_s,
-          external_user_id: employee_id.to_s,
+          # OEM に external_user_id/company_id の専用パラメータはない（公開 API のため追加不可）。
+          # ログインID（任意文字列フィールド）に "{employee_id}_{company_id}" を詰めることで
+          # OIDC コールバック時の突合キーとして機能させる。
+          # OEM 側でログインIDの重複を禁止する設定にしてもらったため、他人の ID に変更不可。
+          login_id: "#{employee_id}_#{batch.company_id}",
           email: employee.email,
           name: employee.full_name,
           department: employee.department&.name,
@@ -370,6 +370,25 @@ class Elearning::OemAccountCreateChunkJob < ApplicationJob
 end
 ```
 
+**Rate Limit とキューの並列数制御:**  
+`wait: index.minutes` の設計は「チャンクが 1分ごとに 1つずつ処理される」ことを前提としている。freee の ClusterOps（Kubernetes ベースのワーカー管理機能）で `elearning_oem_sync` キューのワーカー Pod を常時 1台稼働する設定（min replicas: 1）にしている。アプリケーションコード側の concurrency 設定ではなく、インフラ層での管理。
+
+**同一事業所への並行処理防止（DynamoDB 分散ロック）:**  
+複数のワーカーが同じ `company_id` のチャンクを並行処理すると、組織同期リクエストが重複してさらに Rate Limit を圧迫する。この排他制御のため **DynamoDB 分散ロック**を導入した。各チャンクジョブは処理開始時に `elearning_lock:{company_id}` をキーとして DynamoDB にロックを取得し、処理完了後に解放する。同じ事業所の別チャンクはロック待ちになり、組織同期の重複実行を防ぐ。
+
+**なぜ Redis ではなく DynamoDB か:**  
+Sidekiq はすでに Redis を使っているため「Redis 分散ロック（Redlock）」も選択肢に上がった。却下した理由は 2つ。  
+① Redlock はネットワーク分断・クロック歪み時に安全性が保証されないことが Martin Kleppmann に指摘されており、freee 社内でも採用を避ける方針があった。  
+② freee のインフラではすでに DynamoDB を他用途で運用しており、新たな依存を増やさずに済む。DynamoDB の conditional write（`attribute_not_exists`）はアトミックなロック取得を保証する。
+
+**冪等性チェックのレースコンディション:**  
+`next if Elearning::EmployeeAccount.exists?(...)` は楽観的チェックであり、2つのワーカーが同時に `exists? == false` を確認して両方が `create_account` を呼ぶ可能性がある。DynamoDB ロックはこのレースコンディションを会社単位で防ぐ（同じ `company_id` に対して 1ワーカーのみが処理する）。万が一、ネットワーク瞬断で二重実行が起きた場合は `EmployeeAccount` の `unique index [:employee_id, :company_id]` が DB レベルで重複を防ぎ、`ActiveRecord::RecordNotAlreadyExists` を rescue して `skip` する。
+
+**OEM 側でのアカウント作成成功後に `EmployeeAccount.create!` が失敗した場合（孤児レコード問題）:**  
+OEM でアカウントが作成されたが freee DB への保存前にエラーが起きると、OEM にはアカウントがあるが freee 側に紐付けレコードがない「孤児」状態になる。対策として、次回リトライ時に `EmployeeAccount.exists?` が false なので再度 `create_account` を呼ぶが、OEM 側ではすでにログインIDが使用済みのため「重複エラー」が返る。このエラーを catch して OEM のユーザー検索 API で既存アカウントの `oem_user_id` を取得し、freee DB に保存し直す reconciliation パスを実装している。
+
+また、リトライポリシーの改善も合わせて実施した（指数バックオフの調整・Dead Letter Queue の整備）。
+
 **なぜ個別の失敗をスキップして続けるのか:**  
 1,000名の一括インポートで、1名のメールアドレスが無効（OEM 側の バリデーションエラー）だったとして、それで全件を止めるのは HR 管理者にとって最悪の体験。個別の失敗はログに記録し「999名は成功、1名は手動確認が必要」という状態が最善。Rate Limit 超過だけは全チャンクに影響するため、チャンクごとリトライする。
 
@@ -378,11 +397,10 @@ end
 ```typescript
 // フロントエンドは3秒ごとにポーリングして進捗を表示
 // なぜ WebSocket ではなくポーリングか:
-// - 1,000名のインポートは最大 10分かかる。常時接続を 10分維持するより
-//   3秒ごとの短いポーリングの方が実装・インフラのシンプルさが勝る
-// - Rails の Action Cable（WebSocket）は今回のプロジェクトでは使っていない
-//   新たに導入するコストが高い
-// - 3秒の遅延は進捗表示として許容範囲
+// - 人事労務本体に WebSocket を使っているユースケースが存在しない。
+//   この進捗表示のためだけに Action Cable を導入するのはアーキテクチャ上の影響が大きく、
+//   3名チームには過剰な投資と判断した
+// - 3秒ごとのポーリングで進捗表示として十分な UX が実現できる
 
 function BulkImportProgress({ batchId }: { batchId: string }) {
   const { data: batch } = useQuery({
@@ -469,6 +487,9 @@ end
 **`after_create` ではなく `after_create_commit` を使う理由:**  
 `after_create` はデータベーストランザクションのコミット前に呼ばれる。Sidekiq ジョブが即座に起動して従業員レコードを読み込もうとすると、まだ DB にコミットされていない可能性がある（DB の read-your-writes 保証がない場合）。`after_create_commit` はトランザクションコミット後に呼ばれるため、安全。
 
+**`after_create_commit` の限界:**  
+ActiveRecord のコールバックは ActiveRecord 経由のオペレーションにしか発火しない。マイグレーションスクリプトや管理ツールによる SQL 直接 INSERT では発火しない。大量の従業員を一括で取り込む場合（初期データ投入・他システムからの移行等）は、コールバックに頼らず `BulkEmployeeImportJob` を別途手動で投入する必要がある。この前提はチーム内で共有済み。
+
 ---
 
 ## セキュリティ設計の詳細
@@ -477,41 +498,36 @@ end
 
 | 脅威 | 攻撃の具体的なシナリオ | 対策 |
 |------|---------------------|------|
-| CSRF（クロスサイトリクエストフォージェリ） | 悪意あるサイトが OEM の Authorization Endpoint への認証リクエストを偽造する | state パラメータの JWT 署名検証。state が DB の OidcSession と一致しない場合は即座に拒否 |
-| リプレイアタック | 傍受した認証レスポンス（Authorization Code）を再利用する | nonce 検証。OidcSession の `used` フラグで一度使った認証フローを再利用不可にする |
-| セッションハイジャック | OIDC Callback の state パラメータを改ざんして別のユーザー・事業所として認証する | state を JWT で署名。改ざんは JWT 検証で即座に検知 |
-| なりすまし（アカウント入れ替え） | 認証済みユーザーが OEM 側のユーザー ID を変更して別人の受講記録にアクセスする | コールバック時に `oem_user_id` と freee の従業員の紐付けを DB で確認。不一致は拒否 |
+| CSRF（クロスサイトリクエストフォージェリ） | 悪意あるサイトが OEM の Authorization Endpoint への認証リクエストを偽造する | freee 認証基盤が state パラメータ管理・CSRF 対策を担う。Eラーニング側での実装不要 |
+| リプレイアタック | 傍受した認証レスポンス（Authorization Code）を再利用する | freee 認証基盤が nonce 検証・コード再利用防止を担う。Eラーニング側での実装不要 |
+| セッションハイジャック | OIDC Callback の state パラメータを改ざんして別のユーザー・事業所として認証する | freee 認証基盤が state 検証を担う。Eラーニング側での実装不要 |
+| なりすまし（アカウント入れ替え） | OEM のログインIDを他人の `"{employee_id}_{company_id}"` に書き換えて、別人として OIDC 認証を通す | OEM 側でログインIDの重複を禁止する設定にしてもらった。他人が使用中のログインIDへの変更は OEM が拒否するため、書き換えによるなりすましは不可能。コールバック時は userinfo の `external_user_id`・`external_company_id` を `current_user` と照合する |
 | 権限昇格 | 一般従業員が HR 管理者の機能（受講状況の一括閲覧・研修割り当て）にアクセスする | freee 人事労務の既存の権限管理（ロールベースアクセス制御）を再利用 |
 
 ### セキュリティ設定の詳細
 
+**freee 認証基盤への委譲により、Eラーニング側での OIDC セッション管理は不要。**  
+state/nonce の生成・検証・有効期限管理・リプレイ防止はすべて認証基盤が担うため、`OidcSession` テーブルおよびそのクリーンアップジョブは実装不要だった。
+
+Eラーニング固有のテーブルは以下の2つのみ:
+
 ```ruby
-# OidcSession テーブル: OIDC フローの状態管理
-create_table :elearning_oidc_sessions do |t|
-  t.references :user, null: false
-  t.references :company, null: false
-  t.string     :state, null: false, index: { unique: true }  # state の重複は禁止
-  t.string     :nonce, null: false
-  t.boolean    :used, null: false, default: false
-  t.datetime   :used_at
-  t.datetime   :expires_at, null: false   # 10分で期限切れ
+# OEM との紐付けテーブル
+create_table :elearning_employee_accounts do |t|
+  t.references :employee, null: false
+  t.string     :oem_user_id, null: false
   t.timestamps
-
-  # 期限切れセッションの自動削除（PostgreSQL のパーティションまたは定期 cleanup ジョブ）
-  t.index [:expires_at], name: "index_elearning_oidc_sessions_on_expires_at"
+  t.index [:oem_user_id]  # 管理画面・受講状況取得で使用
 end
 
-# 定期クリーンアップ（期限切れセッションの削除）
-class Elearning::CleanupExpiredOidcSessionsJob < ApplicationJob
-  def perform
-    Elearning::OidcSession
-      .where("expires_at < ?", 1.hour.ago)  # 1時間余裕を持たせて削除
-      .delete_all
-  end
-end
-# Whenever gem で毎日実行
-every 1.day, at: "3:00am" do
-  runner "Elearning::CleanupExpiredOidcSessionsJob.perform_later"
+# 一括インポートの進捗テーブル
+create_table :elearning_oem_sync_batches do |t|
+  t.references :company, null: false
+  t.integer    :total_count, null: false
+  t.integer    :processed_count, null: false, default: 0
+  t.integer    :failed_count, null: false, default: 0
+  t.string     :status, null: false, default: "pending"
+  t.timestamps
 end
 ```
 
@@ -522,33 +538,24 @@ end
 **なぜテスト設計をここに書くのか:**  
 セキュリティ要件のある認証フロー、非同期ワーカー、外部 API 連携は「動いているように見えるが壊れている」バグが発生しやすい。テスト設計を事前に決めることで、カバレッジの漏れを防ぐ。
 
+**テスト境界の設計方針:**  
+OEM API は WebMock でスタブ化する（VCR は使わない。OEM の API レスポンスが変更された際にカセットが古くなることを防ぐため）。freee 認証基盤への OIDC リダイレクトはコントローラーテストでリダイレクト先 URL のみ検証し、認証基盤内部は対象外とする。DynamoDB ロックは `Elearning::DynamodbLock` をモックし、ロック取得・解放の呼び出しが正しいシーケンスで起きることを検証する。
+
 ```ruby
 # OIDC コールバックのテスト（重要な境界条件を全て網羅）
 RSpec.describe Elearning::OidcController, type: :controller do
   describe "GET #callback" do
     context "正常系" do
-      it "正しい state・nonce で認証が完了する" do ...  end
-    end
-
-    context "state の改ざん検知" do
-      it "state が DB に存在しない場合は 403 を返す" do ...  end
-      it "state の JWT 署名が不正な場合は 403 を返す" do ...  end
-      it "state の JWT が期限切れの場合は 403 を返す" do ...  end
-    end
-
-    context "リプレイアタック防止" do
-      it "同じ state を 2回使った場合は 403 を返す" do
-        session = create(:elearning_oidc_session, used: true)
-        # ... 2回目のコールバックが拒否されることを確認
-      end
+      it "userinfo の external_user_id・external_company_id が current_user と一致すれば OEM URL にリダイレクトする" do ...  end
     end
 
     context "なりすまし防止" do
-      it "OEM の user_id が freee の従業員と紐付かない場合は 403 を返す" do ...  end
+      it "userinfo の external_user_id が current_user の employee_id と一致しない場合は 403 を返す" do ...  end
+      it "userinfo の external_company_id が current_user の所属事業所に存在しない場合は 403 を返す" do ...  end
     end
 
-    context "nonce 検証" do
-      it "ID Token の nonce が一致しない場合は 403 を返す" do ...  end
+    context "認証基盤エラー" do
+      it "userinfo が取得できない場合は 500 を返す" do ...  end
     end
   end
 end
@@ -588,7 +595,8 @@ create_table :elearning_employee_accounts do |t|
 
   # compound unique index: 同じ従業員×会社の組み合わせは1レコードのみ
   t.index [:employee_id, :company_id], unique: true
-  # OEM の user_id から逆引きするためのインデックス（OIDC コールバックで使用）
+  # OEM の user_id から逆引きするためのインデックス（管理画面・受講状況取得で使用）
+  # ※ OIDC コールバックは login_id パースに変更済み。oem_user_id は他用途で保持。
   t.index [:oem_user_id, :oem_company_id], unique: true
 end
 
@@ -620,6 +628,31 @@ end
 | OIDC 認証エラー増加 | OEM の OIDC 仕様変更、または証明書期限切れ | ユーザーがログインできない | エラー率アラーム → PagerDuty | 1. OEM の変更履歴を確認 2. OIDC Metadata Endpoint（/.well-known/openid-configuration）を確認 |
 | 従業員インポートの部分失敗 | メールアドレスの重複、OEM 側のバリデーションエラー | 一部の従業員がアカウントを持てない | `failures` カラムにエラー詳細を記録 | HR 管理者が CSV ダウンロードで確認 → 手動で修正して再インポート |
 | Sidekiq Redis 停止 | Redis（Sidekiq バックエンド）の障害 | 全非同期ジョブが停止 | Sidekiq は Redis 復旧後に自動再開。在キューのジョブは失われない（Redis の RDB/AOF 永続化） | Redis の可用性は人事労務本体と共有。SRE チームが対応 |
+
+---
+
+## 技術的負債と既知の限界
+
+意図的に積んだ技術的負債を明示する。これらは「知らなかったから対処しなかった」ではなく、「V1 のスコープでは許容できると判断した」ものである。
+
+### 積んだ負債
+
+| 負債 | 影響 | 許容した理由 | 返済タイミング |
+|------|------|------------|--------------|
+| `after_create_commit` が直接 SQL では発火しない | 大量一括インポート時に手動 `BulkEmployeeImportJob` 投入が必要 | 一括インポートは管理者操作で頻度が低く、手順書で担保できる | V2 で Outbox パターン検討 |
+| Rate Limit の 300 req/sec 上限を超えた際の自動バックプレッシャー機構がない | 顧客数増加に伴い 429 率が上昇する可能性 | リリース直後の規模では許容範囲内。定量観測で検知する | 429 率が SLO 超過したら動的スロットリングを実装 |
+| OEM の受講状況がポーリング（15分ごと）でリアルタイムでない | 受講完了から管理者の画面反映まで最大 15分遅れ | V1 の MVP スコープでは許容できると顧客ヒアリングで確認済み | V2 で OEM Webhook 対応（OEM リアーキ完了後） |
+| `failures` が `jsonb` 配列でスキーマレス | 失敗の分析クエリが複雑になる | V1 の失敗件数は少なく CSV ダウンロードで十分 | 失敗が多くなったら専用テーブルに移行 |
+
+### 現設計のスケール上限
+
+現設計が破綻するポイントを把握しておく：
+
+**Rate Limit の天井:** freee 顧客の総従業員数 × 組織同期コール数が 300 req/sec を継続的に超えると、DynamoDB ロックのキュー待ちが増加し、インポート時間の SLO（≤20分）を超える。この閾値を超えたら、組織同期のキャッシュ（部門ツリーを一定時間使い回す）または OEM との専用 IP 割り当て交渉が必要になる。
+
+**Sidekiq キューの深度:** `wait: index.minutes` は 1,000名 = 10チャンク = 10分間のスケジューリングで設計されている。顧客 1社が 10,000名規模になると 100チャンク = 100分かかる計算で SLO を超える。その場合はインターバルを短縮するか、チャンクサイズを増やす必要がある。
+
+**モノリスへの組み込みの限界:** 現状は人事労務の DB を直接参照することでサービス間通信を避けているが、`Elearning::` モジュールが持つテーブルが増え、人事労務コアへの依存が増えると切り出しコストが高くなる。名前空間の厳守（`Elearning::` 外のクラスへの直接参照を最小化）が将来の切り出し可能性を維持する唯一の防衛線である。
 
 ---
 

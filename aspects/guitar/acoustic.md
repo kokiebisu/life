@@ -133,7 +133,9 @@
 
 ## Electronics
 
-- **Model:** Fishman Gold Plus Natural I
+- **Model:** Fishman Gold Plus Natural I（パッシブピックアップ、プリアンプ内蔵なし）
+- **注意:** パッシブのためアコギ用プリアンプDIが必要。会場のパッシブDI（BOSS DI-1等）に直刺しだと音が細くなる。
+- **推奨プリアンプ:** LR Baggs Venue DI または Fishman Aura Spectrum DI（Martinとの相性◎）
 
 ## Finish
 

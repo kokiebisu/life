@@ -13,7 +13,7 @@
 |------|------------|--------|---------|
 | Shinya | 休みと課題 | 2026-03-18 | [people/shinya.md](../people/shinya.md) |
 | Midori | 卒業式と新シーズン | 2026-03-18 | [people/midori.md](../people/midori.md) |
-| Jayce | 家族の健康 | 2026-03-18 | [people/jayce.md](../people/jayce.md) |
+| Jayce | 家族の健康 + Good Friday メッセージ | 2026-03-18 | [people/jayce.md](../people/church/new-hope/yokohama/jayce.md) |
 | Nathan | ミニストリーと神様との対話 | 2026-03-26 | [people/nathan.md](../people/nathan.md) |
 | Michael | 結婚相手と明確さ | 2026-03-19 | [people/michael.md](../people/michael.md) |
 | Kazuya | 多忙なシーズンの健康 | 2026-03-19 | [people/kazuya.md](../people/kazuya.md) |

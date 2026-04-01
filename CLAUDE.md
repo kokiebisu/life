@@ -18,6 +18,7 @@
 ./scripts/life-os-sync.sh status       # life-os との乖離確認
 ./scripts/life-os-sync.sh pull         # life-os/main を life に取り込む
 ./scripts/life-os-sync.sh contrib      # life-os に貢献できるコミットを確認
+./scripts/notion-cron-sync.sh          # 昨日分の Notion → md 同期（cron で毎朝 6:00 自動実行）
 ```
 
 ### Claude Code コマンド

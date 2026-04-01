@@ -620,6 +620,7 @@ async function main() {
   const { flags, opts } = parseArgs();
   const dryRun = flags.has("dry-run");
   const noEnrich = flags.has("no-enrich");
+  const allEntries = flags.has("all-entries");
   const dbFilter = opts.db as ScheduleDbName | undefined;
   const days = opts.days ? parseInt(opts.days, 10) : 1;
 
@@ -679,7 +680,7 @@ async function main() {
 
       let final = merged;
       let pastRemoved = 0;
-      if (isPast) {
+      if (isPast && !allEntries) {
         final = merged.filter(e => e.done);
         pastRemoved = merged.length - final.length;
       }

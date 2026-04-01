@@ -718,9 +718,9 @@ async function main() {
 
       const relPath = r.filePath.replace(ROOT + "/", "");
       console.log(`${relPath} [${r.db}]:`);
-      const logEntries = isPast ? r.merged : r.final;
+      const logEntries = (isPast && !allEntries) ? r.merged : r.final;
       for (const e of logEntries) {
-        const isRemoved = isPast && !e.done;
+        const isRemoved = isPast && !allEntries && !e.done;
         const tag = isRemoved ? "REMOVE"
           : e.source === "notion" ? "ADD"
           : e.source === "both" ? (e.changed ? "UPDATE" : "KEEP")

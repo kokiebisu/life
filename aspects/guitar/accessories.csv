@@ -2,7 +2,10 @@ Category,Brand,Item,Qty,Guitar,Status,Notes
 Cable,Analysis Plus,Black Oval,2,,Owned,Instrument cable
 Strap,Moody,Leather Suede Strap,1,Acoustic,Owned,
 Capo,Kyser,Quick-Change (Black),1,,Owned,
-Preamp,UAFX,Dream 65,1,,Owned,Fender '65 Deluxe Reverb モデリング
+Amp Modeler,IK Multimedia,Tonex One Double Special Edition,1,,Owned,アンプモデリング
+Amp Modeler,IK Multimedia,Tonex One,1,,Owned,アンプモデリング
+Tuner,TC Electronic,Polytune 3 Mini,1,,Owned,ペダルボード用チューナー
+Compressor,Origin Effects,Cali76 Compact Deluxe,1,,Owned,コンプレッサー
 IEM,Ultimate Ears,UE Live,1,,Owned,カスタム IEM
 Audio Interface,Universal Audio,Volt 176,1,,Owned,1-in/2-out コンプレッサー内蔵
 Humidity,Boveda,,2,Acoustic / Electric,Owned,ケース内で湿度管理

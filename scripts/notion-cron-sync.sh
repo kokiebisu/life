@@ -3,6 +3,7 @@
 # cron: 0 21 * * * /bin/bash /Users/home/life/scripts/notion-cron-sync.sh >> /Users/home/life/logs/notion-cron.log 2>&1
 
 set -e
+export PATH="$HOME/.bun/bin:$PATH"
 cd /Users/home/life
 
 # macOS の date コマンドで昨日を計算

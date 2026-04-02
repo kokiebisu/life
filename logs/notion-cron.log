@@ -1,0 +1,17 @@
+[2026-04-01 21:00:00] Starting Notion sync for 2026-03-31
+/Users/home/life/scripts/notion-cron-sync.sh: line 14: bun: command not found
+[2026-04-02 21:00:00] Starting Notion sync for 2026-04-01
+planning/events/2026-04-01.md [events]:
+  ADD: ⬜ 13:00-14:00 Meet up with Jayce
+aspects/diet/events/2026-04-01.md [meals]:
+  ADD: ⬜ 11:30-12:30 豚こまと玉ねぎの焼肉炒め + 玄米
+
+Done! Added: 2, Updated: 0, Kept: 0
+
+Syncing local events → Notion...
+  Syncing 1 event(s) from 2026-04-01 → Notion [events]...
+  
+  Done! Created: 0, Updated: 0, Skipped: 1
+  Syncing 1 event(s) from 2026-04-01 → Notion [meals]...
+  
+  Done! Created: 0, Updated: 0, Skipped: 1

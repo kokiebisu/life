@@ -84,7 +84,9 @@ bun run scripts/notion-list.ts --days 7 --db events --json
 
 ### 4a. Notion meals DB に登録
 
-全食事を `notion-add.ts` で登録する（`notion-add.ts` が内部で重複チェックとレシピ生成を自動実行するため、別途 `validate-entry.ts` や `notion-recipe-gen.ts` は手動実行しない）:
+**外食エントリは Notion に登録しない**。外食の食事枠は daily ファイルのみに記載し、`notion-add.ts` を実行しないこと。
+
+自炊食事のみを `notion-add.ts` で登録する（`notion-add.ts` が内部で重複チェックとレシピ生成を自動実行するため、別途 `validate-entry.ts` や `notion-recipe-gen.ts` は手動実行しない）:
 
 ```bash
 bun run scripts/notion-add.ts --db meals --title "メニュー名" --date YYYY-MM-DD --start HH:MM --end HH:MM

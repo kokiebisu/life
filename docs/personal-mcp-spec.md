@@ -939,7 +939,6 @@ MCP server `personal` の `profile_get` / `context_get` を使うこと。
 | `notion-add.ts` | ラップしない | PostToolUse hook との連携が複雑 |
 | `notion-list.ts` | `schedule_get` の内部で呼ぶ | 既にパース処理が完成している |
 | `notion-pull.ts` | 独立で継続 | 逆同期のトリガーは MCP の外 |
-| `notion-daily-plan.ts` | 将来的に `context_get` に統合検討 | デイリープラン生成は複雑 |
 | `notion-grocery-gen.ts` | ラップしない | 専用ワークフローが確立済み |
 
 ## Appendix B: `context_get` レスポンス例

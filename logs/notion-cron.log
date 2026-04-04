@@ -36,3 +36,4 @@ Warning: bd command not found, skipping pre-commit flush
  create mode 100644 planning/events/2026-04-01.md
 Committed.
 [2026-04-02 21:00:07] Done.
+/bin/bash: /Users/home/life/scripts/notion-cron-sync.sh: No such file or directory

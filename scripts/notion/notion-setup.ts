@@ -16,6 +16,17 @@
 import { getApiKey, notionFetch, parseArgs } from "./lib/notion";
 
 const DB_SCHEMAS: Record<string, { title: string; properties: Record<string, unknown> }> = {
+  church_messages: {
+    title: "Church Messages",
+    properties: {
+      "タイトル": { title: {} },
+      "日付": { date: {} },
+      "シリーズ": { rich_text: {} },
+      "聖書箇所": { rich_text: {} },
+      "ポイント": { rich_text: {} },
+      "メモ": { rich_text: {} },
+    },
+  },
   articles: {
     title: "Articles",
     properties: {

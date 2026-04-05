@@ -12,7 +12,8 @@
       "mcp__claude_ai_Notion__notion-update-data-source",
       "mcp__claude_ai_Notion__notion-create-database",
       "Skill(update-config)",
-      "Skill(update-config:*)"
+      "Skill(update-config:*)",
+      "mcp__claude_ai_Notion__notion-move-pages"
     ]
   },
   "hooks": {

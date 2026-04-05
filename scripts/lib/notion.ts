@@ -324,7 +324,8 @@ export async function notionFetch(apiKey: string, path: string, body?: unknown, 
   });
   if (!res.ok) {
     const err = await res.json();
-    throw new Error(`Notion API ${res.status}: ${(err as any).message}`);
+    const msg = (err as any).message ?? (err as any).error?.message ?? JSON.stringify(err);
+    throw new Error(`Notion API ${res.status}: ${msg}`);
   }
   if (res.status === 204) return {};
   return res.json();

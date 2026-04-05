@@ -5,7 +5,7 @@ relation: sharehouse
 
 ## 基本情報
 - 名前: Namikki
-- 性別: 不明
+- 性別: 女性
 - 出身: 神奈川
 - 関係: シェアハウス同居人
 

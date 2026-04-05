@@ -1,7 +1,7 @@
 # Amit
 
 relation: church
-New Hope Yokohama のメンバー（2026年春から）。Michaelの紹介で来始めた。
+New Hope Yokohama のメンバー（2026年春から）。[Michael](michael.md)の紹介で来始めた。
 
 ## プロフィール
 
@@ -18,4 +18,4 @@ New Hope Yokohama のメンバー（2026年春から）。Michaelの紹介で来
 
 ## 出来事・記録
 
-- 2026-04: Michaelの紹介でNew Hope Yokohamaに来始める
+- 2026-04: [Michael](michael.md)の紹介でNew Hope Yokohamaに来始める

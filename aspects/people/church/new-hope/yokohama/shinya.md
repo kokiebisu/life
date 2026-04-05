@@ -1,7 +1,7 @@
 # Shinya
 
 relation: church
-New Hope Yokohama のメンバー。Yuiho の夫。カナダ生まれ育ち。
+New Hope Yokohama のメンバー。[Yuiho](yuiho.md) の夫。カナダ生まれ育ち。
 
 ## プロフィール
 
@@ -11,7 +11,7 @@ New Hope Yokohama のメンバー。Yuiho の夫。カナダ生まれ育ち。
 - **信仰**: クリスチャン（教会メンバー）
 - **性格・特徴**: 不明
 - **趣味・好き**: 不明
-- **家族構成**: 妻（Yuiho）・子供を授かっている
+- **家族構成**: 妻（[Yuiho](yuiho.md)）・子供を授かっている
 - **現在のシーズン**: 休暇期間中。課題とのバランスを取っている
 - **Kenとの関係**: New Hope Yokohama で知り合い
 

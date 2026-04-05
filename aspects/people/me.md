@@ -27,7 +27,7 @@
 ### 言語
 
 - 日本語（ネイティブ）
-- 英語（業務レベル）
+- 英語（IELTS 8.0・発音ネイティブレベル）
 - 韓国語（少し）
 
 ### 居住
@@ -106,13 +106,13 @@
 
 ### 技術スキル
 
-- メイン言語: <!-- TODO -->
-- フロントエンド: <!-- TODO -->
-- バックエンド: <!-- TODO -->
-- DB: <!-- TODO -->
-- インフラ: <!-- TODO -->
-- CI/CD: <!-- TODO -->
-- 英語力: <!-- TODO -->
+- メイン言語: TypeScript, Python, Go, JavaScript, Ruby
+- フロントエンド: React, React Native, Next.js, HTML, CSS, SCSS
+- バックエンド: Node.js, GraphQL, RESTful API, Ruby on Rails
+- DB: PostgreSQL, MySQL, MongoDB, Elasticsearch, Redis
+- インフラ: AWS (ECS, Lambda, S3, RDS, SQS, EventBridge, ElastiCache, OpenSearch), Terraform, Docker, Kubernetes, Serverless Framework
+- CI/CD: GitHub Actions, AWS CodePipeline, AWS CDK, ArgoCD
+- 英語力: IELTS 8.0（ネイティブ発音）
 
 ### 現在の所属
 
@@ -308,7 +308,7 @@
 - 自炊: あり（もっと増やしたい）
 - 料理スキル: <!-- TODO -->
 - 料理スタイル: <!-- TODO -->
-- 食費予算: <!-- TODO -->
+- 食費予算: 3、4万円（目標）
 
 ---
 

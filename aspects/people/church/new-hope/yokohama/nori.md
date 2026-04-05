@@ -4,6 +4,7 @@
 
 ## 基本情報
 - 名前: nori
+- 性別: 男性
 - 関係: New Hope Yokohama メンバー
 - MBTI: ENTJ
 

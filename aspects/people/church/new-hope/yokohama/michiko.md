@@ -5,6 +5,7 @@ relation: church（New Hope Yokohama）
 ## 基本情報
 
 - **名前**: Michiko
+- 性別: 女性
 - **所属**: New Hope Yokohama
 - **Kenとの関係**: 教会で知り合い
 

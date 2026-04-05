@@ -1,8 +1,13 @@
 # Church Aspect
 
-## verses.md / prayer-requests.md 編集後（厳守）
+## verses.md / messages/ 編集後（厳守）
 
-`aspects/church/verses.md` または `aspects/church/prayer-requests.md` を編集したら、**確認不要で即座に `/to-notion` を実行する。** 「同期しますか？」と聞かない。
+`aspects/church/verses.md` または `aspects/church/messages/*.md` を編集したら、**確認不要で即座に `/to-notion` を実行する。** 「同期しますか？」と聞かない。
+
+- `verses.md` → `/to-notion verses`
+- `messages/*.md` → `/to-notion messages`
+
+**prayer-requests.md は MD のみ管理。Notion 同期不要。**
 
 ## 聖書通読ステータスの確認（厳守）
 

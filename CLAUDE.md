@@ -44,7 +44,7 @@
 ## Directory Structure
 
 ```
-profile/                 # ユーザープロフィール（basic/health/career/goals/love/personality）
+aspects/people/me.md     # ユーザープロフィール（基本情報・キャリア・価値観・健康・恋愛）
 aspects/                 # 生活の各側面（各ディレクトリに CLAUDE.md あり）
   tasks.md               # タスク管理（Inbox / Archive）
   events/                # 一回限りの予定

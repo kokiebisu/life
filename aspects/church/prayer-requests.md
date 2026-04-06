@@ -11,7 +11,7 @@
 
 | 人名 | 祈りのテーマ | 開始日 | ファイル |
 |------|------------|--------|---------|
-| Shinya | 休みと課題 | 2026-03-18 | [people/shinya.md](../people/shinya.md) |
+| Shinya | 遅れている課題の完成 | 2026-04-06 | [people/shinya.md](../people/church/new-hope/yokohama/fuse/shinya.md) |
 | Midori | 卒業式と新シーズン | 2026-03-18 | [people/midori.md](../people/midori.md) |
 | Jayce | 家族の健康 | 2026-03-18 | [people/jayce.md](../people/church/new-hope/yokohama/jayce.md) |
 | Nathan | ミニストリーと神様との対話 | 2026-03-26 | [people/nathan.md](../people/nathan.md) |
@@ -38,3 +38,4 @@
 
 | 人名 | 祈りのテーマ | 開始日 | 答えられた日 |
 |------|------------|--------|------------|
+| Shinya | 休みと課題 | 2026-03-18 | 2026-04-06 |

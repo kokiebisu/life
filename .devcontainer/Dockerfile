@@ -44,8 +44,9 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhisto
 ENV DEVCONTAINER=true
 
 # Create workspace and config directories
-RUN mkdir -p /workspace /home/node/.claude && \
-  chown -R node:node /workspace /home/node/.claude
+# Pre-create .vscode-server so named volume mounts don't create it as root
+RUN mkdir -p /workspace /home/node/.claude /home/node/.vscode-server/data/User && \
+  chown -R node:node /workspace /home/node/.claude /home/node/.vscode-server
 
 WORKDIR /workspace
 

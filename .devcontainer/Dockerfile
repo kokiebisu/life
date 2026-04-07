@@ -45,8 +45,8 @@ ENV DEVCONTAINER=true
 
 # Create workspace and config directories
 # Pre-create .vscode-server so named volume mounts don't create it as root
-RUN mkdir -p /workspace /home/node/.claude /home/node/.vscode-server/data/User && \
-  chown -R node:node /workspace /home/node/.claude /home/node/.vscode-server
+RUN mkdir -p /workspace /home/node/.claude /home/node/.codex /home/node/.vscode-server/data/User && \
+  chown -R node:node /workspace /home/node/.claude /home/node/.codex /home/node/.vscode-server
 
 WORKDIR /workspace
 

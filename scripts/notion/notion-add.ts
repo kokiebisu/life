@@ -17,6 +17,7 @@
  */
 
 import { type ScheduleDbName, getScheduleDbConfig, notionFetch, queryDbByDateCached, invalidateNotionCache, parseArgs, pickTaskIcon, pickCover, normalizeTitle, getTimeFromISO, findSimilarEntries } from "./lib/notion";
+import { callLLM } from "../lib/llm";
 
 // --- Page templates ---
 
@@ -169,13 +170,10 @@ async function aiIsDuplicate(newTitle: string, existingTitle: string): Promise<b
 
 同じ予定なら "yes"、別の予定なら "no" とだけ答えてください。`;
   try {
-    const proc = Bun.spawn(["claude", "-p", prompt, "--model", "haiku"], {
-      env: { ...process.env, CLAUDECODE: "" },
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-    const output = await new Response(proc.stdout).text();
-    await proc.exited;
+    const output = await callLLM(
+      [{ role: "user", content: prompt }],
+      { model: "claude-haiku-4-5-20251001" },
+    );
     return output.trim().toLowerCase().includes("yes");
   } catch {
     return false;

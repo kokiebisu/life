@@ -19,6 +19,7 @@
 ./scripts/life-os-sync.sh status       # life-os との乖離確認
 ./scripts/life-os-sync.sh pull         # life-os/main を life に取り込む
 ./scripts/life-os-sync.sh contrib      # life-os に貢献できるコミットを確認
+./scripts/gen-agents-md.sh             # .ai/rules/ から AGENTS.md を再生成（Codex 用）
 ```
 
 ### Claude Code コマンド
@@ -55,8 +56,8 @@ memory-bank/             # セッション間の記憶（decisions.md）
 
 ## Git & Security
 
-- コミット形式・PR ワークフロー → `.claude/rules/git-workflow.md`
-- セキュリティガイドライン → `.claude/rules/security.md`
+- コミット形式・PR ワークフロー → `.ai/rules/git-workflow.md`
+- セキュリティガイドライン → `.ai/rules/security.md`
 
 ## Fork 管理（life-os との同期）
 

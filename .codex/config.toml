@@ -1,0 +1,5 @@
+[model]
+default = "codex-mini-latest"
+
+[features]
+codex_hooks = false

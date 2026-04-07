@@ -70,6 +70,9 @@ ENV PATH=/home/node/.bun/bin:$PATH
 # Install Claude Code CLI
 RUN curl -fsSL https://claude.ai/install.sh | bash
 
+# Install Codex CLI
+RUN npm install -g @openai/codex
+
 # Install Starship prompt
 RUN curl -fsSL https://starship.rs/install.sh | sh -s -- -y --bin-dir /home/node/.local/bin
 

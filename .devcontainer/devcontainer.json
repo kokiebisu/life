@@ -12,7 +12,8 @@
         "yzhang.markdown-all-in-one",
         "bierner.markdown-mermaid",
         "ms-azuretools.vscode-containers",
-        "GitHub.vscode-pull-request-github"
+        "GitHub.vscode-pull-request-github",
+        "openai.chatgpt"
       ],
       "settings": {
         "editor.formatOnSave": true,

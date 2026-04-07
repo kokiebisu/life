@@ -20,7 +20,7 @@ import {
   parseArgs,
   pickCover,
 } from "./lib/notion";
-import { callClaude } from "./lib/claude";
+import { callLLM as callClaude } from "./lib/llm";
 
 const ROOT = join(import.meta.dir, "..");
 const DIET_DIR = join(ROOT, "aspects/diet");

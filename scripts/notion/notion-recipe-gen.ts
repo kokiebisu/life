@@ -20,7 +20,7 @@ import {
   getApiKey,
   parseArgs,
 } from "./lib/notion";
-import { callClaude } from "./lib/claude";
+import { callLLM as callClaude } from "./lib/llm";
 
 // --- Types ---
 

@@ -24,7 +24,7 @@
       }
     }
   },
-  "postCreateCommand": "git submodule update --init --recursive && git config --global worktree.guessRemote true && git update-index --assume-unchanged projects/sumitsugi",
+  "postCreateCommand": "git submodule update --init --recursive && git config --global worktree.guessRemote true && git update-index --assume-unchanged projects/sumitsugi && ./scripts/gen-agents-md.sh",
   "remoteUser": "node",
   "mounts": [
     "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/node/.ssh,type=bind,consistency=cached",
@@ -33,7 +33,8 @@
   ],
   "remoteEnv": {
     "SSH_AUTH_SOCK": "${localEnv:SSH_AUTH_SOCK}",
-    "GITHUB_PERSONAL_ACCESS_TOKEN": "${localEnv:GITHUB_PERSONAL_ACCESS_TOKEN}"
+    "GITHUB_PERSONAL_ACCESS_TOKEN": "${localEnv:GITHUB_PERSONAL_ACCESS_TOKEN}",
+    "OPENAI_API_KEY": "${localEnv:OPENAI_API_KEY}"
   },
   "containerEnv": {
     "CLAUDE_CONFIG_DIR": "/home/node/.claude",

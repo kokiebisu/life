@@ -488,3 +488,26 @@ If security issue found:
 - md を編集 → 対応する Notion ページも更新
 - Notion を編集 → 対応する md も更新
 
+---
+
+## Available Commands
+
+コマンドを呼び出すときは、対応する `.ai/commands/<name>.md` を読んでその指示に従うこと。
+
+- **`/ask:diet`** — ダイエットサポートチーム → `.ai/commands/ask:diet.md`
+- **`/ask:job:search`** — 就職活動チーム → `.ai/commands/ask:job:search.md`
+- **`/cache`** — キャッシュの管理。引数: $ARGUMENTS → `.ai/commands/cache.md`
+- **`/calendar`** — Calendar → `.ai/commands/calendar.md`
+- **`/devotion`** — Devotion - デボーション（聖書の対話型学び） → `.ai/commands/devotion.md`
+- **`/event`** — Event - イベント登録 → `.ai/commands/event.md`
+- **`/flush`** — Flush - モバイル temp を本番に昇格 → `.ai/commands/flush.md`
+- **`/fridge-sync`** — Fridge Sync - 冷蔵庫在庫を Notion に同期 → `.ai/commands/fridge-sync.md`
+- **`/from:notion`** — Sync from Notion → `.ai/commands/from:notion.md`
+- **`/fukushuu`** — 復習 - 忘却曲線ベーススペーシドリピティション → `.ai/commands/fukushuu.md`
+- **`/goal`** — 目標の壁打ち・追加 → `.ai/commands/goal.md`
+- **`/kondate`** — Kondate - 献立計画 → `.ai/commands/kondate.md`
+- **`/learn`** — Learn - ミスからの学習・再発防止 → `.ai/commands/learn.md`
+- **`/meal`** — Meal - 食事記録 → `.ai/commands/meal.md`
+- **`/pr`** — Create Pull Request → `.ai/commands/pr.md`
+- **`/tidy`** — Tidy - 指示ファイルの整理・重複削減 → `.ai/commands/tidy.md`
+

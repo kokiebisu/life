@@ -11,8 +11,7 @@
 
 | 人名 | 祈りのテーマ | 開始日 | ファイル |
 |------|------------|--------|---------|
-| Shinya | 遅れている課題の完成 | 2026-04-06 | [people/shinya.md](../people/church/new-hope/yokohama/fuse/shinya.md) |
-| Midori | 卒業式と新シーズン | 2026-03-18 | [people/midori.md](../people/midori.md) |
+| Shinya | 遅れている課題の完成・風邪の完治 | 2026-04-06 | [people/shinya.md](../people/church/new-hope/yokohama/fuse/shinya.md) |
 | Jayce | 家族の健康 | 2026-03-18 | [people/jayce.md](../people/church/new-hope/yokohama/jayce.md) |
 | Nathan | ミニストリーと神様との対話 | 2026-03-26 | [people/nathan.md](../people/nathan.md) |
 | Michael | 結婚相手と明確さ | 2026-03-19 | [people/michael.md](../people/michael.md) |
@@ -22,7 +21,7 @@
 | P | 新生活の準備と守り | 2026-03-22 | [people/p.md](../people/p.md) |
 | Emiri | 試練の中の平安と家族の和解 | 2026-03-22 | [people/emiri.md](../people/emiri.md) |
 | Yuiho | 家族の救いと関係回復 | 2026-03-22 | [people/yuiho.md](../people/yuiho.md) |
-| Taiki | 健康の回復と伝道の機会 | 2026-03-19 | [people/taiki.md](../people/taiki.md) |
+| Taiki | 健康の回復 | 2026-04-08 | [people/taiki.md](../people/taiki.md) |
 | マリヤ | これからの進路 | 2026-03-20 | [people/mariya.md](../people/mariya.md) |
 | 家族 | 家族それぞれの守り | 2026-03-20 | [people/family.md](../people/family.md) |
 | Wes | 長野への引っ越し | 2026-03-20 | [people/wes.md](../people/wes.md) |
@@ -39,3 +38,5 @@
 | 人名 | 祈りのテーマ | 開始日 | 答えられた日 |
 |------|------------|--------|------------|
 | Shinya | 休みと課題 | 2026-03-18 | 2026-04-06 |
+| Taiki | 健康の回復と伝道の機会 | 2026-03-19 | 2026-04-08 |
+| Midori | 卒業式と新シーズン | 2026-03-18 | 2026-04-08 |

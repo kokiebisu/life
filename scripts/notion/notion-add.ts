@@ -148,7 +148,7 @@ function shouldSkipRecipe(title: string): boolean {
 async function runRecipeGen(pageId: string): Promise<void> {
   console.log(`\n🍳 レシピ自動生成中...`);
   const proc = Bun.spawn(
-    ["bun", "run", "scripts/notion-recipe-gen.ts", "--page-id", pageId],
+    ["bun", "run", "notion/notion-recipe-gen.ts", "--page-id", pageId],
     {
       cwd: import.meta.dir + "/..",
       env: process.env,

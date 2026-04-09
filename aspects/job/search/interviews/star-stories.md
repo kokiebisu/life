@@ -1,6 +1,6 @@
 # 面接ストーリー（STAR形式）
 
-## Story 1: Recommendation Microservice @ Groundtruth
+## Story 1: Recommendation Microservice @ Groundtruth（FastAPI版 / 汎用）
 
 **Situation**
 ユーザーが広告キャンペーン作成時にセグメントをドロップダウンから選択する必要があったが、選択肢が肥大化し、離脱や効果的でないセグメント選択が多発していた。Google Analyticsで課題を確認済み。
@@ -26,6 +26,33 @@ Flask（WSGI）ではなくFastAPI（ASGI）を選んだ直接の理由が`async
 - **なぜマイクロサービス化したか？** → Ads Managerモノリスに追加するとML+ESを順番に呼ぶしかない。独立サービスにすることで並列化・独立スケーリング・ML障害の波及防止を実現
 - **フォールバック設計の判断は？** → ML・ES・Redis Cacheの3段階フォールバック。フォールバック率5% SLOをDatadogで監視し、AIチームのデプロイ影響を定量的に管理した
 - **リリース後に想定外のことは？** → 毎朝最初のリクエストでML latencyが跳ね上がるcold start問題が発生。フォールバック率アラートで検知し、AIチームにMLサービスのminimum task count=1設定で解消した
+
+---
+
+## Story 1: Recommendation Microservice @ Groundtruth（Go版 / Resilire特化）
+
+**Situation**
+ユーザーが広告キャンペーン作成時にセグメントをドロップダウンから選択する必要があったが、選択肢が肥大化し、離脱や効果的でないセグメント選択が多発していた。Google Analyticsで課題を確認済み。
+
+**Task**
+5人のエンジニアチームの一員として、レコメンデーションマイクロサービスのバックエンドをゼロから設計・構築。未経験ユーザーにはシンプルな選択肢を、経験者にはパーソナライズ提案を提供すること。P99 1,000ms以内という応答時間要件があった。
+
+**Action**
+Goでゼロから独立マイクロサービスを構築。2段階設計を採用：
+- **Top 5 Popular（未経験ユーザー向け）**: cronで月次集計、業種別Top5をRedisにキャッシュ（S3 read-through）
+- **Personalized Suggestions（経験ユーザー向け）**: MLエンドポイントとElasticsearchをgoroutineで並列実行（P99 1,000ms目標達成のため）
+
+ML呼び出し（最大800ms）とElasticsearch検索を直列で実行するとP99目標を超える計算だったため、goroutineで並列実行する設計にした。MLエンドポイント障害時はElasticsearchの結果のみ返し、未入力状態ならRedisキャッシュのTop 5 Popularへ自動フォールバック。フォールバック率5%をSLOとして定義し、Datadogで監視した。
+
+**Result**
+キャンペーン作成時のchurn（離脱）を**20%削減**（Google Analytics計測）。広告インプレッション**10%以上向上**。P99応答時間を1,000ms以内に抑制。
+
+**主な想定QA**
+
+- **なぜGoを選んだか？** → goroutineで並列処理を自然に表現できること。MLとESを並列で叩く構成に合っていた
+- **なぜマイクロサービス化したか？** → モノリスに追加するとML+ESを直列で呼ぶしかない。独立サービスにすることで並列化・独立スケーリング・ML障害の波及防止を実現
+- **フォールバック設計の判断は？** → ML・ES・Redis Cacheの3段階フォールバック。フォールバック率5% SLOをDatadogで監視し、AIチームのデプロイ影響を定量的に管理した
+- **リリース後に想定外のことは？** → 毎朝最初のリクエストでML latencyが跳ね上がるcold start問題が発生。フォールバック率アラートで検知し、AIチームにMLサービスのminimum instance=1設定で解消した
 
 ---
 

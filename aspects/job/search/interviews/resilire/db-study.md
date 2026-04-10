@@ -3,8 +3,23 @@
 > Resilireの記事で実際に登場したテーマに絞る
 > 自己弱点：正規化・変更コスト・将来拡張の考慮が甘い
 >
-> **進捗管理 → [resilire-tracker.md](resilire-tracker.md)**
+> **進捗管理 → [tracker.md](tracker.md)**
 > チェックを入れる基準: ノートを見ずに2分で説明できる状態
+
+---
+
+## シニアレベルで語るために
+
+| 普通の答え | シニアの答え |
+|-----------|-----------|
+| 「インデックスを貼ります」 | 「このクエリはuser_idとcreated_atの複合クエリが多いので複合インデックスを貼ります。deleted_atがNULLのものだけに絞るPartial Indexも追加し、スキャン対象を削除済みを除いた件数に限定します」 |
+| 「RLSを使います」 | 「RLSでtenant_idポリシーを設定しアプリレイヤのバグでデータ漏洩しないよう担保します。ただしバッチ処理はRLSをOFFにする必要があり、その境界設計を明確にする必要があります」 |
+| 「正規化します」 | 「3NFを基本に設計します。ただしレポート系クエリが多い場合は意図的に非正規化してJOINを減らすことも検討します。CQRSパターンで書き込みは正規化、読み取りは非正規化ViewとするとOLTPとOLAPを両立できます」 |
+
+**面接で必ず言うべきこと:**
+1. **なぜそうしたか（ADRスタイル）** — 「〇〇を選びました。理由は△△です。××も検討しましたが□□で採用しませんでした」
+2. **トレードオフ** — 「この設計は△△のメリットがありますが、□□のコストがあります」
+3. **将来の変更** — 「1年後に〇〇が必要になったとき、この設計は対応できます/追加が必要です」
 
 ---
 
@@ -283,6 +298,121 @@ WHERE status = 'active';
 > 「ORMのクエリログを見るか、DatadogやEXPLAIN ANALYZEで遅いクエリを特定します。対処はJOINかeager loadingで、クエリ数をまとめます。ただし必要以上のJOINは別の問題を生むので、必要なデータだけを取るよう設計します」
 
 ---
+
+## テーマ9：EXPLAIN ANALYZE の読み方（シニア必須）
+
+実際のクエリが遅いとき、シニアエンジニアは EXPLAIN ANALYZE でボトルネックを特定できる。
+
+```sql
+EXPLAIN ANALYZE
+SELECT * FROM suppliers
+WHERE tenant_id = 'abc' AND deleted_at IS NULL
+ORDER BY created_at DESC
+LIMIT 20;
+```
+
+```
+出力例:
+Limit (cost=0.43..12.51 rows=20) (actual time=0.123..0.456 rows=20)
+  -> Index Scan Backward using idx_suppliers_tenant on suppliers
+       (cost=0.43..150.00 rows=240) (actual time=0.120..0.400 rows=20)
+       Index Cond: (tenant_id = 'abc')
+       Filter: (deleted_at IS NULL)
+       Rows Removed by Filter: 15
+```
+
+**読み方のポイント:**
+- `Seq Scan` → フルテーブルスキャン → インデックスが効いていない
+- `Index Scan` → インデックス使用 → 良い
+- `Rows Removed by Filter` → インデックスで絞れなかった行数 → 大きければPartial Index検討
+- `actual time` >> `cost` → 統計情報が古い（ANALYZE が必要）
+- `loops=N` → 内側のノードがN回実行された（N+1の証拠になることも）
+
+**面接での語り方:**
+> 「遅いクエリはまずEXPLAIN ANALYZEで確認します。Seq Scanが出ていればインデックス不足、Rows Removed by Filterが多ければPartial Indexを検討します。コストではなく実際の実行時間（actual time）を見ます」
+
+---
+
+## テーマ10：トランザクション分離レベル
+
+シニアエンジニアは「デフォルトのRead Committedで十分か」を判断できる。
+
+```sql
+-- PostgreSQLのデフォルト: READ COMMITTED
+-- → 他のトランザクションがコミットした内容は即座に見える
+
+-- 問題が起きるケース: Phantom Read
+BEGIN;
+SELECT COUNT(*) FROM orders WHERE status = 'pending';
+-- 別トランザクションがINSERTしてCOMMITした
+SELECT COUNT(*) FROM orders WHERE status = 'pending';
+-- 件数が増えた！（Phantom Read）
+COMMIT;
+
+-- 解決: SERIALIZABLE または SELECT FOR UPDATE
+BEGIN;
+SELECT COUNT(*) FROM orders WHERE status = 'pending' FOR UPDATE;
+-- 対象行をロック → 他のトランザクションはWAITする
+COMMIT;
+```
+
+**分離レベル早見表:**
+
+| レベル | Dirty Read | Non-repeatable Read | Phantom Read | 用途 |
+|-------|-----------|--------------------|-----------|----|
+| READ UNCOMMITTED | 発生 | 発生 | 発生 | 通常使わない |
+| READ COMMITTED | なし | 発生 | 発生 | PostgreSQLデフォルト |
+| REPEATABLE READ | なし | なし | 発生 | 財務集計 |
+| SERIALIZABLE | なし | なし | なし | 在庫管理・予約 |
+
+**面接での語り方:**
+> 「在庫管理のような『同時に複数ユーザーが同じレコードを更新する』ケースにはSERIALIZABLEかSELECT FOR UPDATEが必要です。ただし分離レベルを上げるとロック競合でパフォーマンスが下がるので、必要な箇所だけ上げます。通常のCRUDはREAD COMMITTEDで十分です」
+
+---
+
+## テーマ11：CQRSとRead Model設計
+
+Resilireが「SCRM 3.0でCQRS実装」を進めていると記事で言及。
+
+```
+CQRS = Command Query Responsibility Segregation
+Write側 (Command): 正規化されたDB（整合性重視）
+Read側 (Query): 非正規化されたView/テーブル（パフォーマンス重視）
+```
+
+```sql
+-- Write側（正規化・3NF）
+suppliers, facilities, risk_assessments, changesets ...
+
+-- Read側（非正規化・JOINなしで取れる）
+CREATE MATERIALIZED VIEW supplier_summary AS
+SELECT
+    s.id,
+    s.name,
+    s.tenant_id,
+    COUNT(f.id) as facility_count,
+    MAX(ra.score) as latest_risk_score,
+    MAX(ra.assessed_at) as last_assessed_at
+FROM suppliers s
+LEFT JOIN facilities f ON f.supplier_id = s.id AND f.deleted_at IS NULL
+LEFT JOIN LATERAL (
+    SELECT score, assessed_at FROM facility_risk_assessments
+    WHERE facility_id = f.id
+    ORDER BY assessed_at DESC LIMIT 1
+) ra ON TRUE
+WHERE s.deleted_at IS NULL
+GROUP BY s.id, s.name, s.tenant_id;
+
+-- インデックス
+CREATE UNIQUE INDEX ON supplier_summary(id);
+CREATE INDEX ON supplier_summary(tenant_id);
+
+-- 更新（バックグラウンドで定期実行またはイベント駆動）
+REFRESH MATERIALIZED VIEW CONCURRENTLY supplier_summary;
+```
+
+**面接での語り方:**
+> 「サプライヤーのダッシュボード画面ではJOINが複数必要でクエリが重かったので、CQRSパターンでRead Modelを作りました。Materialized Viewにサマリデータを非正規化して保持し、更新はイベント駆動で非同期に実行。ダッシュボードのレイテンシを500ms→50msに改善しました」
 
 ---
 

@@ -35,7 +35,6 @@ interface RecipeData {
   }>;
   steps: string[];
   tips: string[];
-  skillTheme?: string;
 }
 
 // --- Claude API ---
@@ -73,8 +72,7 @@ const SYSTEM_PROMPT = `あなたはレシピフォーマットアシスタント
   "tips": [
     "むね肉は下味をつけると柔らかくなる",
     "火加減は中火でじっくり"
-  ],
-  "skillTheme": "焼く - フライパンの火加減"
+  ]
 }`;
 
 async function searchAndGenerateRecipe(
@@ -217,22 +215,6 @@ function buildNotionBlocks(data: RecipeData): any[] {
       type: "quote",
       quote: {
         rich_text: richText(data.tips.join("\n")),
-      },
-    });
-  }
-
-  // Skill theme section
-  if (data.skillTheme) {
-    blocks.push({
-      object: "block",
-      type: "callout",
-      callout: {
-        rich_text: styledText([
-          { text: "🎯 今週のスキルテーマ\n", bold: true },
-          { text: data.skillTheme },
-        ]),
-        icon: { type: "emoji", emoji: "🎯" },
-        color: "blue_background",
       },
     });
   }

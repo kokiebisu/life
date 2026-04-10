@@ -13,7 +13,8 @@
         "bierner.markdown-mermaid",
         "ms-azuretools.vscode-containers",
         "GitHub.vscode-pull-request-github",
-        "openai.chatgpt"
+        "xshrim.txt-syntax",
+        "golang.Go"
       ],
       "settings": {
         "editor.formatOnSave": true,

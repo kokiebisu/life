@@ -24,7 +24,7 @@ import {
 } from "./lib/notion";
 import { callLLM as callClaude } from "./lib/llm";
 
-const ROOT = join(import.meta.dir, "..");
+const ROOT = join(import.meta.dir, "../..");
 const DIET_DIR = join(ROOT, "aspects/diet");
 
 const WEEKDAY_NAMES = ["日", "月", "火", "水", "木", "金", "土"];

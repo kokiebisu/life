@@ -22,6 +22,7 @@
 | Emiri | 試練の中の平安と家族の和解 | 2026-03-22 | [people/emiri.md](../people/emiri.md) |
 | Yuiho | 家族の救いと関係回復 | 2026-03-22 | [people/yuiho.md](../people/yuiho.md) |
 | Taiki | 健康の回復 | 2026-04-08 | [people/taiki.md](../people/taiki.md) |
+| Midori | 神学部新シーズンの守り・アイデンティティの回復 | 2026-04-10 | [people/midori.md](../people/church/new-hope/yokohama/fuse/midori.md) |
 | マリヤ | これからの進路 | 2026-03-20 | [people/mariya.md](../people/mariya.md) |
 | 家族 | 家族それぞれの守り | 2026-03-20 | [people/family.md](../people/family.md) |
 | Wes | 長野への引っ越し | 2026-03-20 | [people/wes.md](../people/wes.md) |

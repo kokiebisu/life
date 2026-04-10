@@ -45,6 +45,11 @@ Resilireは「MyError」カスタム型を作り、`errors.As()` で型安全に
 - channel でのデータ受け渡し
 - 彼らが「スレッドセーフ問題でライブラリのdocを確認する文化」を持つ → 「ドキュメント確認の重要性」を語れる
 
+### DB / ORM
+- Resilireは **sqlc** を使用（SQLを先に書いてGoコードを自動生成）
+- 面接で「GoのDB操作は？」と聞かれたら sqlc を知っているとプラスになる
+- 「SQLを先に書くので意図しないN+1が起きにくい」という設計思想と繋げて語れる
+
 ### PostgreSQL（彼らが踏んでいる落とし穴を知っておく）
 - cursor-based pagination vs offset（PK ソートが安定する理由）
 - CSV COPY の NULL 文字列リテラル問題

@@ -68,12 +68,6 @@ $ARGUMENTS — 章番号 or 日付（省略可。省略時は自動検出）
 
 ユーザーが「閉じよう」「まとめよう」等と言ったら:
 
-まず `echo $LIFE_DESKTOP` でデスクトップ判定する。**`LIFE_DESKTOP=true` でない場合はモバイルモード**:
-- `aspects/devotions/temp/YYYY-MM-DD.md` に記録を書き込む（Notion 同期はスキップ）
-- 「temp に記録した（/flush で Notion に同期）」と1行報告して Step 4 へ進む
-
-`LIFE_DESKTOP=true` の場合は以下の通常フローを実行する:
-
 1. **対話の内容をテンプレートに沿って記録する**
    - `aspects/devotions/YYYY-MM-DD.md` を ROLE.md のフォーマットで完成させる
    - frontmatter、章の概要、Key Verses、深掘り、SOAP、実践ガイド、持ち帰り

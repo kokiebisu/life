@@ -227,21 +227,9 @@ parent: data_source_id = 326ce17f-7b98-806a-be76-000b67b58628
 bun run scripts/cache-status.ts --clear
 ```
 
-### デスクトップ判定
-
-```bash
-echo $LIFE_DESKTOP
-```
-
-**`LIFE_DESKTOP=true` でない場合はモバイルモード**（Notion 登録はスキップ）:
-1. 以下フォーマットで `aspects/gym/temp/YYYY-MM-DD.md` に保存
-2. 「temp に記録した（/flush で本番に昇格）」と1行報告して終了
-
-`LIFE_DESKTOP=true` の場合は Notion 登録（上記 `/gym log` フロー）を実行してからローカル MD を保存する。
-
 ### ローカル MD を保存
 
-`aspects/gym/logs/DATE.md` を以下のフォーマットで作成する（モバイルの場合は `aspects/gym/temp/DATE.md`）:
+`aspects/gym/logs/DATE.md` を以下のフォーマットで作成する:
 
 ```markdown
 # ジムログ YYYY-MM-DD

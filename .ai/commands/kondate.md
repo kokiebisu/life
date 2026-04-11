@@ -44,12 +44,12 @@ bun run scripts/notion-list.ts --days 7 --db events --json
    - [Nadia](https://oceans-nadia.com/) — アレンジ
    - [DELISH KITCHEN](https://delishkitchen.tv/) — 簡単メニュー
 3. **NG食材を除外** — `profile/health.md` の「食べられないもの」を参照
-4. **全材料を提示** — 調味料含め全材料を1人前換算で表示
-
-**在庫にない食材の扱い:**
-- 原則は `fridge.md` にある食材のみで組む
-- 少量の不足食材がある場合は「⚠️ 不足」として提案に含める（承認時に買い出しリストを自動更新）
-- `pantry.md` の常備調味料は在庫チェック不要（常にあるものとして扱う）
+4. **レシピ材料を fridge.md と1対1で照合する（厳守）** — レシピを取得したら、材料リストの各食材を fridge.md と突き合わせる:
+   - fridge.md に在庫あり → ✅ 在庫（**買い出しリストに入れない**）
+   - pantry.md の常備調味料 → ✅ 常備（チェック不要）
+   - どちらにもない → ⚠️ 不足（買い出しリストに追加）
+   - **照合せずに全材料を買い出しに入れることは禁止**
+5. **全材料を提示** — 調味料含め全材料を1人前換算で表示（在庫判定つき）
 
 レシピが見つからない場合は別プラットフォームで再検索。それでも見つからない場合のみオートミール等のシンプルな定番に差し替える。
 
@@ -134,10 +134,31 @@ bun run scripts/notion-add.ts --db meals --title "メニュー名" --date YYYY-M
 
 ### 4d. 不足食材がある場合: 買い出しリスト更新
 
-⚠️ 不足食材が1つ以上あった場合、`notion-grocery-gen.ts` で買い出しリストを再生成する:
+⚠️ 不足食材が1つ以上あった場合、以下の手順で買い出しリストを登録・生成する:
+
+**Step 1: 買い出し日時をユーザーに確認する（厳守）**
+
+買い出しページの日時は「買い物に行く日と時間帯」であり、献立期間とは別物。
+**承認後に自動で決めず、必ずユーザーに確認すること。**
+
+```
+買い出しはいつ行きますか？（例: 明日の午前中、4/15 10時頃）
+```
+
+**Step 2: 買い出しページを作成する**
 
 ```bash
-bun run scripts/notion-grocery-gen.ts --date YYYY-MM-DD
+bun run scripts/notion/notion-add.ts --db groceries --title "買い出し M/DD" --date YYYY-MM-DD --start HH:MM --end HH:MM
+```
+
+- 所要時間は常に1時間。開始時間だけ確認すれば終了時間は自動で +1h にする
+- **買い出しページの日付範囲を献立期間に合わせて拡張しない（厳守）**
+  - `notion-grocery-gen.ts` はページの日付範囲ではなく献立 daily ファイルを読んでリストを生成するため、ページ日付の変更は不要
+
+**Step 3: 買い出しリストを生成する**
+
+```bash
+bun run scripts/notion/notion-grocery-gen.ts --date YYYY-MM-DD
 ```
 
 手動で Notion 買い出しページを編集しない（フォーマット崩れ防止）。

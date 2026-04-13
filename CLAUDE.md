@@ -14,8 +14,6 @@
 ```bash
 ./dev                    # devcontainer を起動して Claude Code を開く
 ./scripts/notion-cron-sync.sh          # 昨日の Notion データを md に同期（cron 用）
-./scripts/sumitsugi-sync.sh            # sumitsugi ↔ LIFE タスク同期
-./scripts/sumitsugi-sync.sh --dry-run  # 同期プレビュー（変更なし）
 ./scripts/life-os-sync.sh status       # life-os との乖離確認
 ./scripts/life-os-sync.sh pull         # life-os/main を life に取り込む
 ./scripts/life-os-sync.sh contrib      # life-os に貢献できるコミットを確認
@@ -28,7 +26,6 @@
 /ask:diet                # ダイエットチームに相談
 /ask:job:search          # 就職活動チームに相談
 /from:notion             # Notion からデータ同期
-/from:sumitsugi          # sumitsugi ↔ LIFE Linear タスク同期
 /goal                    # 壁打ちして新しい目標を追加
 /pr                      # 変更をグループ化してPR作成
 /tidy                    # 指示ファイルの重複・配置を整理

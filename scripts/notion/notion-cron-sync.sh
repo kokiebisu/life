@@ -14,6 +14,9 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting Notion sync for $YESTERDAY"
 # Notion → md 同期（昨日分、全エントリ、enrich なし）
 bun run scripts/notion-pull.ts --date "$YESTERDAY" --all-entries --no-enrich
 
+# 作り置き消費トラッキング（昨日の meals DB から fridge.md を自動更新）
+bun run scripts/notion/notion-fridge-consume.ts --from "$YESTERDAY" --to "$YESTERDAY" || true
+
 # 変更があれば commit
 if git diff --quiet && git diff --cached --quiet; then
   echo "Nothing to commit."

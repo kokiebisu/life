@@ -72,6 +72,7 @@ COMPANY_DIR: aspects/job/search/interviews/resilire/
 | `問題5` `notification` `通知` | システム設計 問題5 |
 | `star` `story` `ストーリー` | STARストーリー練習 |
 | `review` `復習` | 忘却曲線ベース復習セッション（後述） |
+| `coding` `コーディングテスト` `ct` | コーディングテストセッション（後述） |
 | 引数なし | tracker.mdの日次ログから今日の予定を確認して提案する |
 
 引数なしの場合、tracker.mdの「10日スケジュール」と「日次ログ」から今日の日付を照合して「今日はDay Xです。○○をやりましょうか？」と提案し、確認を取ってから進む。
@@ -202,40 +203,171 @@ DBクイズ:
 
 ---
 
-## Step 6: コーディング（Goの日のみ / 20分）
+## Step 6: コーディングテスト（Goの日のみ / 30分）
 
 **Go Day 3以降のセッションで実施。Day 1-2は省略可。**
+**`/interview-prep coding` で単独起動も可能（後述の「コーディングテストセッション」参照）。**
 
-課題を出してコードを書いてもらう。
+### 進め方
+
+1. 今日のトピックに合った問題を1問出す（問題バンクから選ぶ）
+2. **制限時間を宣言する**（問題の難易度による: 20〜30分）
+3. コードを受け取ってレビューする
 
 ```
-では実装してみましょう。
-[課題の説明]
-
-コードが書けたら貼ってください。
+コーディングテストです。制限時間 XX分。
+---
+[問題文]
+---
+- Go Playground か手元で書いて、コードを貼ってください
+- 考え方や方針をコメントで書いてもOKです
+- 分からない部分は「ここが分からない」と言えばヒントを出します
 ```
 
-**課題例（Day 3）:**
+### 問題バンク（会社別・難易度順）
+
+#### Resilire（Go / goroutine・concurrency系）
+
+**問題 G-1（Day 3相当 / 20分）: 並列APIフェッチ**
 ```
-以下を実装してください:
-- 2つの関数 fetchA() と fetchB() をgoroutineで並列実行
-- どちらかがエラーでも、成功した方の結果は返す
-- 全体に800msのタイムアウトを設定
+サプライヤー情報を2つの外部APIから並列取得する関数を実装してください。
+
+func FetchSupplierInfo(ctx context.Context, supplierID string) (SupplierInfo, error)
+
+要件:
+- fetchProfile(ctx, supplierID) と fetchRiskScore(ctx, supplierID) を並列実行
+- 全体に1秒のタイムアウト（渡されたctxに追加）
+- どちらかが失敗した場合は即座にエラーを返す
+- goroutineリークは禁止
+
+type SupplierInfo struct {
+    Name      string
+    Country   string
+    RiskScore float64
+}
+```
+レビュー観点: goroutineリーク・contextの伝播・エラー早期リターン
+
+**問題 G-2（Day 4相当 / 25分）: カスタムエラー型**
+```
+Resilire の MyError パターンを参考に、APIエラーを構造化してください。
+
+要件:
+- ErrorCode（string）と Message（string）と HTTPStatus（int）を持つカスタムエラー型を作る
+- errors.As() で取り出せること
+- fmt.Errorf("%w") でラップできること
+- 次のケースを実装: ErrNotFound / ErrUnauthorized / ErrInternal
+- ラップされたエラーから ErrorCode を取り出す関数 GetErrorCode(err error) string を実装
+```
+レビュー観点: typed nil問題・errors.Is/As・HTTPステータスコードの選択
+
+**問題 G-3（Day 5相当 / 30分）: errgroup + タイムアウト**
+```
+複数テナントのデータをバッチで並列処理する関数を実装してください。
+
+func ProcessTenants(ctx context.Context, tenantIDs []string) error
+
+要件:
+- golang.org/x/sync/errgroup を使う
+- 最大同時実行数を3に制限（セマフォ）
+- 1テナントの処理が失敗したら全体をキャンセル
+- 各テナントの処理: processOneTenant(ctx, id string) error（実装済みとして扱う）
+- 全体タイムアウト: 5秒
+```
+レビュー観点: errgroup.WithContext・セマフォパターン（チャネルまたはsync）・キャンセル伝播
+
+**問題 G-4（Day 8相当 / 20分）: for-range落とし穴**
+```
+以下のコードにバグがあります。何が問題か説明し、修正してください。
+
+func makeHandlers(routes []Route) []http.HandlerFunc {
+    handlers := make([]http.HandlerFunc, len(routes))
+    for i, route := range routes {
+        handlers[i] = func(w http.ResponseWriter, r *http.Request) {
+            fmt.Fprintf(w, "path: %s", route.Path)
+        }
+    }
+    return handlers
+}
+
+type Route struct {
+    Path    string
+    Method  string
+}
+```
+レビュー観点: クロージャキャプチャ問題・修正方法（変数コピー or 引数渡し）・Go 1.22以降の挙動
+
+**問題 G-5（Day 9相当 / 30分）: HTTP Handler + エラーハンドリング**
+```
+サプライヤー取得APIのハンドラを実装してください。
+
+POST /api/v1/suppliers/search
+Body: { "keyword": "string", "country": "string", "limit": int }
+
+要件:
+- リクエストをバリデーション（keyword必須、limit 1〜100）
+- SearchSuppliers(ctx, params) を呼び出す（実装済みとして扱う）
+- エラーは問題G-2のカスタムエラー型で返す
+- レスポンス: { "suppliers": [...], "total": int }
+- Content-Type: application/json
+```
+レビュー観点: json decode/encode・バリデーション・エラーレスポンスの統一・HTTPステータス
+
+---
+
+#### 汎用（会社問わず出やすい問題）
+
+**問題 C-1（初級 / 20分）: LRUキャッシュ**
+```
+LRUキャッシュを実装してください。
+
+type LRUCache struct { ... }
+
+func NewLRUCache(capacity int) *LRUCache
+func (c *LRUCache) Get(key string) (string, bool)
+func (c *LRUCache) Put(key, value string)
+
+要件:
+- capacity を超えたら最も古く使われたエントリを削除
+- O(1) の Get/Put
+- goroutine-safeにすること
 ```
 
-**レビューの観点:**
-- goroutineのリーク（チャネルがブロックしないか）
-- contextの使い方
-- エラーハンドリング
-- コードの読みやすさ
-
-フィードバックは具体的に:
+**問題 C-2（中級 / 30分）: ワーカープール**
 ```
-良い点: ○○
-改善点: △△。ここは□□とするとより安全です。
+ジョブキューとワーカープールを実装してください。
+
+type Job struct { ID int; Payload string }
+type Result struct { JobID int; Output string; Err error }
+
+func RunWorkerPool(ctx context.Context, jobs []Job, workerCount int) []Result
+
+要件:
+- workerCount 個のgoroutineが並列でジョブを処理
+- ctxがキャンセルされたら即座に停止
+- 全ジョブの結果を収集して返す（順序不問）
+- goroutineリークなし
 ```
 
-コードが来なくても焦らない。「今は書かなくてOKです。概念だけ確認しましょう」でも進める。
+---
+
+### レビューフォーマット
+
+コードを受け取ったら以下の観点で評価し、フィードバックする:
+
+```
+【評価】
+✅ 正しく動く（論理的に正しいか）
+✅ Goらしい書き方（イディオム、命名）
+⚠️ 改善点（具体的なコード差分を示す）
+ℹ️ 本番では考慮すべき点（この問題では不要でも）
+
+【この会社の面接視点で】
+Resilireなら: ○○の設計はResiireのXX記事で議論された△△パターンと近いです。
+```
+
+制限時間を過ぎても怒らない。「時間内に書ける量がわかった」が目的の一つ。
+ヒントを求めたら惜しみなく出す（本番コーディングテストではない）。
 
 ---
 
@@ -398,6 +530,68 @@ review_count 5以上 → interval: 30日
 
 ---
 
+## コーディングテストセッション（`/interview-prep coding`）
+
+### 概要
+
+通常セッションのStep 6を単独で実施するモード。
+インプット・クイズなしで、いきなり問題を解く実践練習。
+
+### 手順
+
+**1. 会社・難易度を確認する**
+
+```
+コーディングテストです。どの問題にしますか？
+
+Resilire向け（Go）:
+  G-1: 並列APIフェッチ（20分）
+  G-2: カスタムエラー型（25分）
+  G-3: errgroup + タイムアウト（30分）
+  G-4: for-range落とし穴（20分）
+  G-5: HTTP Handler（30分）
+
+汎用:
+  C-1: LRUキャッシュ（20分）
+  C-2: ワーカープール（30分）
+
+番号か「おまかせ」で答えてください。
+```
+
+「おまかせ」の場合: tracker.mdの進捗から今日のトピックに合った問題を選ぶ。
+
+**2. 問題を出す**
+
+問題文を出して制限時間を宣言する（Step 6の問題バンク参照）。
+その後は**黙って待つ**。途中でヒントを求めたら出す。
+
+**3. コードをレビューする**
+
+Step 6のレビューフォーマットで評価する。
+
+**4. 模範解答を示す**
+
+```
+模範解答例:
+[コード]
+
+ポイント:
+- ○○: [説明]
+```
+
+**5. 振り返り**
+
+```
+この問題で学んだこと:
+- [3点以内]
+
+次に解くなら [問題ID] がおすすめです。
+```
+
+tracker更新は不要（コーディングテストセッションは独立実施のため）。
+
+---
+
 ## 全体を通して守ること
 
 1. **日本語で通す**。コード内のコメントも日本語でOK
@@ -405,3 +599,4 @@ review_count 5以上 → interval: 30日
 3. **責めない**。「分からない」「間違えた」を歓迎する
 4. **会社の記事・研究と繋げる**。`aspects/job/search/applications/` に会社調査ファイルがあれば参照し、「この会社のブログでこれが〇〇の文脈で出てきました」と接続する
 5. **時間の目安を伝える**。「次は模擬面接です（10分）」のように今何をやっているか示す
+6. **システム設計で設計の選択肢が出たら、必ず全選択肢とトレードオフをセットで提示する**。Kenが案を出したときも「他にはXやYという方法もあります。Kenの案Zのトレードオフは△△です」と補足してから進む。選択肢を採用して先に進むだけでは不十分。

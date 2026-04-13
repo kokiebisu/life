@@ -142,5 +142,65 @@
     "review_count": 2,
     "interval_days": 1,
     "next_review": "2026-04-11"
+  },
+  "Go: Error Handling / GoのエラーハンドリングはPythonやRubyと何が違うか？": {
+    "last_reviewed": "2026-04-13",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-14"
+  },
+  "Go: Error Handling / %w と %v の違いは？": {
+    "last_reviewed": "2026-04-13",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-14"
+  },
+  "Go: Error Handling / errors.Is と errors.As の使い分けは？": {
+    "last_reviewed": "2026-04-13",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-14"
+  },
+  "Go: Error Handling / typed nil問題とは何か？なぜ起きるか？対策は？": {
+    "last_reviewed": "2026-04-13",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-14"
+  },
+  "DB: Audit カラム設計 / created_by をIDにする理由は？": {
+    "last_reviewed": "2026-04-13",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-14"
+  },
+  "DB: Audit カラム設計 / ユーザー削除時のON DELETE選択肢とトレードオフは？": {
+    "last_reviewed": "2026-04-13",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-14"
+  },
+  "DB: Audit カラム設計 / GDPRへのsoft delete対応でユーザーの個人情報をどう消すか？": {
+    "last_reviewed": "2026-04-13",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-14"
+  },
+  "システム設計: 災害アラート / 重要な非機能要件は？": {
+    "last_reviewed": "2026-04-13",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-14"
+  },
+  "システム設計: 災害アラート / APIサーバーが直接通知を送らずキューを使う理由は？": {
+    "last_reviewed": "2026-04-13",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-14"
+  },
+  "システム設計: 災害アラート / DLQ以外の失敗メッセージ管理方法とトレードオフは？": {
+    "last_reviewed": "2026-04-13",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-14"
   }
 }

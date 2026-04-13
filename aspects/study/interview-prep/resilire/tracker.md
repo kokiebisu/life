@@ -69,9 +69,9 @@
 - [ ] **Story 1のコア（ML + ES 並列）を自分で実装して動かした**
 
 ### Day 4: error handling
-- [ ] `errors.New` / `fmt.Errorf("%w")` / `errors.Is` / `errors.As` を手で書いた
-- [ ] カスタム MyError 型を作り `errors.As` で取り出した
-- [ ] **「errors.As と Is の違いは？」を1分で説明できる**
+- [x] `errors.New` / `fmt.Errorf("%w")` / `errors.Is` / `errors.As` を手で書いた
+- [x] カスタム MyError 型を作り `errors.As` で取り出した
+- [x] **「errors.As と Is の違いは？」を1分で説明できる**
 
 ### Day 5: errgroup
 - [ ] `errgroup.WithContext` を使ったコードを書いた
@@ -107,7 +107,7 @@
 - [ ] **正規化（1NF / 2NF / 3NF）を例を使って説明できる**
 - [ ] **cursor-based pagination を offset との比較で説明できる**
 - [ ] RLS の仕組みと使い所を説明できる
-- [ ] created_by をIDにする理由（GDPR・参照整合性）を説明できる
+- [x] created_by をIDにする理由（GDPR・参照整合性）を説明できる
 - [ ] soft delete + partial index の実装を書ける
 - [ ] ENUM の同一トランザクション問題を説明できる
 - [ ] **インデックス設計（複合・partial・カーディナリティ）を説明できる**
@@ -131,7 +131,7 @@
 - [x] **数字を出せる（QPS・ストレージ見積もり・オーダー感）**
 - [x] 問題4: URLショートナー（声に出して通しで話せる）
 - [ ] 問題5: 通知システム（声に出して通しで話せる）
-- [ ] 問題1: 災害アラート（声に出して通しで話せる）
+- [x] 問題1: 災害アラート（声に出して通しで話せる）
 - [ ] 問題2: インポート/エクスポート（声に出して通しで話せる）
 - [ ] 問題3: キャッシュ戦略（声に出して通しで話せる）
 - [ ] **各問題の深掘り質問に答えられる（tracker 問題別Q&A参照）**
@@ -218,5 +218,23 @@
 - DB: RLS
 - システム設計: 問題5 通知システム
 チェックできた項目数: 5 / 35+
+
+### 2026-04-13（Day 4）
+今日やったこと:
+- Go: error handling（errors.Is / errors.As / %w / typed nil）
+- コーディング: カスタムエラー型 NotFoundError を実装・errors.As で取り出し
+- 模擬面接: Q4全問回答
+- DB: audit columns（created_by をIDにする理由・GDPR・参照整合性・soft delete・ON DELETE選択肢・NULLvs削除済み文字列のトレードオフ）
+- システム設計: 問題1 災害アラート（非機能要件・スケール・キュー設計・DLQ・リトライ可能/不可能の分類）
+詰まったところ:
+- errors.Is vs errors.As の違い（structかどうかの切り分けで理解）
+- typed nil の説明（問題・理由・対策まで言えた）
+- テナント・サプライヤー・施設の概念整理が必要だった
+- システム設計で選択肢を全て出してトレードオフも提示する習慣（次回から改善）
+明日やること（Day 5）:
+- Go: errgroup
+- DB: soft delete / ENUM / インデックス設計
+- システム設計: 問題2 インポート/エクスポート
+チェックできた項目数: 5 / 5
 
 <!-- 以下に毎晩追記 -->

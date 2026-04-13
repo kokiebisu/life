@@ -13,3 +13,4 @@ life.config.json
 
 # Aspect-local Claude instructions (fork-side customizations)
 aspects/*/CLAUDE.local.md
+logs/notion-cron.log

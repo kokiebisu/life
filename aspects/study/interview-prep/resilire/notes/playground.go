@@ -1,66 +1,32 @@
 package main
 
-type Storer interface {
-	Save(key string, value string) error
+import (
+	"errors"
+	"fmt"
+)
+
+type NotFoundError struct {
+	ID int
+	Resource string
 }
 
-type Cacher interface {
-	Get(key string) (string, bool)
-	Set(key string, value string)
+func (nfe *NotFoundError) Error() string {
+	return fmt.Sprintf("not found: %s id=%d", nfe.Resource, nfe.ID)
 }
 
-// ------
-
-type MockStorer struct {}
-
-func (m *MockStorer) Save(key string, value string) error {
+func findUser(id int) error {
+	if id == 0 {
+		return &NotFoundError{ID: id, Resource: "user"}
+	}
 	return nil
 }
 
-// ------
-type MemoryCache struct {
-	h map[string]string
-}
-
-type MockMemoryCache struct {
-	h map[string]string
-}
-
-func (mc *MemoryCache) Get(key string) (string, bool) {
-	if value, ok := mc.h[key]; ok {
-		return value, true
-	}
-	return "", false
-}
-
-func (mc *MemoryCache) Set(key string, value string) {
-	mc.h[key] = value
-}
-
-func (m *MockMemoryCache) Get(key string) (string, bool) {
-	return "", false
-}
-
-func (m *MockMemoryCache) Set(key string, value string) {
-	m.h[key] = value
-}
-
-// -------
-
-type DataService struct {
-	c Cacher
-	s Storer
-}
-
-func (ds *DataService) Store(key string, value string) error {
-	ds.c.Set(key, value)
-	return ds.s.Save(key, value)
-}
-
 func main() {
-	ms := &MockStorer{}
-	mc := &MemoryCacher{h: map[string]string{}}
-
-	ds := DataService{c: mc, s: ms}
-	ds.Store()
-}	
+	var notFoundError *NotFoundError
+	err := findUser(0)
+	if errors.As(err, &notFoundError) {
+		fmt.Println(notFoundError.ID)
+		fmt.Println(notFoundError.Resource)
+		fmt.Println(err.Error())
+	}
+}

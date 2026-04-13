@@ -14,8 +14,6 @@
 ```bash
 ./dev                    # devcontainer を起動して Claude Code を開く
 ./scripts/notion-cron-sync.sh          # 昨日の Notion データを md に同期（cron 用）
-./scripts/sumitsugi-sync.sh            # sumitsugi ↔ LIFE タスク同期
-./scripts/sumitsugi-sync.sh --dry-run  # 同期プレビュー（変更なし）
 ./scripts/life-os-sync.sh status       # life-os との乖離確認
 ./scripts/life-os-sync.sh pull         # life-os/main を life に取り込む
 ./scripts/life-os-sync.sh contrib      # life-os に貢献できるコミットを確認
@@ -28,7 +26,6 @@
 /ask:diet                # ダイエットチームに相談
 /ask:job:search          # 就職活動チームに相談
 /from:notion             # Notion からデータ同期
-/from:sumitsugi          # sumitsugi ↔ LIFE Linear タスク同期
 /goal                    # 壁打ちして新しい目標を追加
 /pr                      # 変更をグループ化してPR作成
 /tidy                    # 指示ファイルの重複・配置を整理
@@ -224,6 +221,16 @@ Types: feat, fix, refactor, docs, chore
 ## コミット後の PR 作成（厳守）
 - コミット後は自動で `/pr` を実行する（ユーザーに確認不要）
 - PR にはそのセッションで変更されたコミットのみ含める（他の未プッシュコミットは含めない）
+
+## unstaged changes がある状態での操作（厳守）
+
+`git pull` / `git checkout` がエラーになっても `git reset --hard` で解決しない。
+
+1. `git stash` で変更を退避する
+2. 操作を実行する（pull / checkout 等）
+3. `git stash pop` で変更を戻す
+
+`git reset --hard` を実行する前は必ず `git status` で unstaged changes がないことを確認すること。
 
 ## Submodule（sumitsugi）
 - `projects/sumitsugi` のサブモジュールポインタ変更は PR に含めない
@@ -507,7 +514,6 @@ If security issue found:
 - **`/calendar`** — Calendar → `.ai/commands/calendar.md`
 - **`/devotion`** — Devotion - デボーション（聖書の対話型学び） → `.ai/commands/devotion.md`
 - **`/event`** — Event - イベント登録 → `.ai/commands/event.md`
-- **`/flush`** — Flush - モバイル temp を本番に昇格 → `.ai/commands/flush.md`
 - **`/fridge-sync`** — Fridge Sync - 冷蔵庫在庫を Notion に同期 → `.ai/commands/fridge-sync.md`
 - **`/from:notion`** — Sync from Notion → `.ai/commands/from:notion.md`
 - **`/fukushuu`** — 復習 - 忘却曲線ベーススペーシドリピティション → `.ai/commands/fukushuu.md`

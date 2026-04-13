@@ -337,7 +337,6 @@ Total PRs: {N} | Merged: {X} | Failed: {Y}
 After all PRs are merged, close related tasks:
 
 ```bash
-source .env.local && bd close <id>
 ./scripts/linear-done.sh TSU-xxx
 ```
 

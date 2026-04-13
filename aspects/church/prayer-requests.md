@@ -9,25 +9,55 @@
 
 ## Active（祈り中）
 
+### Pastor / Staff
+
 | 人名 | 祈りのテーマ | 開始日 | ファイル |
 |------|------------|--------|---------|
-| Shinya | 遅れている課題の完成 | 2026-04-06 | [people/shinya.md](../people/church/new-hope/yokohama/fuse/shinya.md) |
-| Jayce | 家族の健康 | 2026-03-18 | [people/jayce.md](../people/church/new-hope/yokohama/jayce.md) |
-| Nathan | ミニストリーと神様との対話 | 2026-03-26 | [people/nathan.md](../people/nathan.md) |
-| Michael | 結婚相手と明確さ | 2026-03-19 | [people/michael.md](../people/michael.md) |
-| Kazuya | 多忙なシーズンの健康 | 2026-03-19 | [people/kazuya.md](../people/kazuya.md) |
-| Ivan | キャリアと献身の方向性 | 2026-03-19 | [people/ivan.md](../people/ivan.md) |
-| Tantan | 家族と子供たちの守り | 2026-03-22 | [people/tantan.md](../people/tantan.md) |
+| Kazuya | 多忙なシーズンの健康 | 2026-03-19 | [people/kazuya.md](../people/church/new-hope/yokohama/pastor/kazuya.md) |
+| Tantan | 家族と子供たちの守り | 2026-03-22 | [people/tantan.md](../people/church/new-hope/yokohama/pastor/tantan.md) |
+| Taichi | — | — | [people/taichi.md](../people/church/new-hope/yokohama/fuse/taichi.md) |
+
+### Fuse（Yokohama）
+
+| 人名 | 祈りのテーマ | 開始日 | ファイル |
+|------|------------|--------|---------|
+| Jayce | 家族の健康・多忙なシーズンの体力 | 2026-03-18 | [people/jayce.md](../people/church/new-hope/yokohama/fuse/jayce.md) |
 | Hinata | 新生活の準備と守り | 2026-03-22 | [people/hinata.md](../people/church/new-hope/yokohama/fuse/hinata.md) |
-| Emiri | 試練の中の平安と家族の和解 | 2026-03-22 | [people/emiri.md](../people/emiri.md) |
-| Yuiho | 家族の救いと関係回復 | 2026-03-22 | [people/yuiho.md](../people/yuiho.md) |
-| Taiki | 健康の回復 | 2026-04-08 | [people/taiki.md](../people/taiki.md) |
+| Emiri | 試練の中の平安と家族の和解 | 2026-03-22 | [people/emiri.md](../people/church/new-hope/yokohama/fuse/emiri-1.md) |
+| Yuiho | 家族の救いと関係回復 | 2026-03-22 | [people/yuiho.md](../people/church/new-hope/yokohama/fuse/yuiho.md) |
+| Shinya | 遅れている課題の完成 | 2026-04-06 | [people/shinya.md](../people/church/new-hope/yokohama/fuse/shinya.md) |
+| Taiki | 健康の回復 | 2026-04-08 | [people/taiki.md](../people/church/new-hope/yokohama/fuse/taiki.md) |
 | Midori | 神学部新シーズンの守り・アイデンティティの回復 | 2026-04-10 | [people/midori.md](../people/church/new-hope/yokohama/fuse/midori.md) |
-| マリヤ | これからの進路 | 2026-03-20 | [people/mariya.md](../people/mariya.md) |
-| 家族 | 家族それぞれの守り | 2026-03-20 | [people/family.md](../people/family.md) |
-| Wes | 長野への引っ越し | 2026-03-20 | [people/wes.md](../people/wes.md) |
-| Shiori | 長野への引っ越し | 2026-03-20 | [people/shiori.md](../people/shiori.md) |
-| かづき | 恐れの中での正しい選択 | 2026-03-24 | [people/kazuki.md](../people/kazuki.md) |
+| Wes | 長野への引っ越し | 2026-03-20 | [people/wes.md](../people/church/new-hope/yokohama/fuse/wes.md) |
+| Shiori | 長野への引っ越し | 2026-03-20 | [people/shiori.md](../people/church/new-hope/yokohama/fuse/shiori.md) |
+| かづき | 離婚成立後の新シーズンへの導き | 2026-03-24 | [people/kazuki.md](../people/church/new-hope/yokohama/fuse/kazuki.md) |
+| Shota | — | — | [people/shota.md](../people/church/new-hope/yokohama/fuse/shota.md) |
+
+### English Ministry
+
+| 人名 | 祈りのテーマ | 開始日 | ファイル |
+|------|------------|--------|---------|
+| Michael | 結婚相手と明確さ | 2026-03-19 | [people/michael.md](../people/church/new-hope/yokohama/english/men/michael.md) |
+| Clayton | — | — | [people/clayton.md](../people/church/new-hope/yokohama/english/men/clayton.md) |
+
+### Tokyo
+
+| 人名 | 祈りのテーマ | 開始日 | ファイル |
+|------|------------|--------|---------|
+| Nathan | ミニストリーと神様との対話 | 2026-03-26 | [people/nathan.md](../people/church/new-hope/tokyo/nathan.md) |
+| Ivan | キャリアと献身の方向性 | 2026-03-19 | [people/ivan.md](../people/church/new-hope/tokyo/ivan.md) |
+
+### 家族
+
+| 人名 | 祈りのテーマ | 開始日 | ファイル |
+|------|------------|--------|---------|
+| マリヤ | これからの進路 | 2026-03-20 | [people/mariya.md](../people/family/mariya.md) |
+| 家族 | 家族それぞれの守り | 2026-03-20 | — |
+
+### 自分
+
+| 人名 | 祈りのテーマ | 開始日 | ファイル |
+|------|------------|--------|---------|
 | Ken | 思慮深い妻と仕事 | 2026-03-27 | [people/me.md](../people/me.md) |
 
 ---
@@ -40,5 +70,5 @@
 |------|------------|--------|------------|
 | Shinya | 休みと課題 | 2026-03-18 | 2026-04-06 |
 | Taiki | 健康の回復と伝道の機会 | 2026-03-19 | 2026-04-08 |
-| Shinya | 風邪の完治 | 2026-04-08 | 2026-04-13 |
 | Midori | 卒業式と新シーズン | 2026-03-18 | 2026-04-08 |
+| Shinya | 風邪の完治 | 2026-04-08 | 2026-04-13 |

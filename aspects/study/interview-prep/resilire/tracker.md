@@ -74,12 +74,8 @@
 - [x] **「errors.As と Is の違いは？」を1分で説明できる**
 
 ### Day 5: errgroup
-- [ ] `errgroup.WithContext` を使ったコードを書いた
-- [ ] **「なぜ errgroup ではなく channel を使ったか」をStoryと繋げて語れる**
-
-### Day 5: errgroup
-- [ ] `errgroup.WithContext` を使ったコードを書いた
-- [ ] **「なぜ errgroup ではなく channel を使ったか」をStoryと繋げて語れる**
+- [x] `errgroup.WithContext` を使ったコードを書いた
+- [x] **「なぜ errgroup ではなく channel を使ったか」をStoryと繋げて語れる**
 - [ ] sync.Mutex / sync.RWMutex の使い所を言える
 
 ### Day 6: テスト
@@ -108,9 +104,9 @@
 - [ ] **cursor-based pagination を offset との比較で説明できる**
 - [ ] RLS の仕組みと使い所を説明できる
 - [x] created_by をIDにする理由（GDPR・参照整合性）を説明できる
-- [ ] soft delete + partial index の実装を書ける
-- [ ] ENUM の同一トランザクション問題を説明できる
-- [ ] **インデックス設計（複合・partial・カーディナリティ）を説明できる**
+- [x] soft delete + partial index の実装を書ける
+- [x] ENUM の同一トランザクション問題を説明できる
+- [x] **インデックス設計（複合・partial・カーディナリティ）を説明できる**
 - [ ] **N+1 を検出して修正する方法を説明できる**
 - [ ] **EXPLAIN ANALYZE の読み方を説明できる**
 - [ ] トランザクション分離レベル（4種類）と使い分けを言える
@@ -132,7 +128,7 @@
 - [x] 問題4: URLショートナー（声に出して通しで話せる）
 - [ ] 問題5: 通知システム（声に出して通しで話せる）
 - [x] 問題1: 災害アラート（声に出して通しで話せる）
-- [ ] 問題2: インポート/エクスポート（声に出して通しで話せる）
+- [x] 問題2: インポート/エクスポート（声に出して通しで話せる）
 - [ ] 問題3: キャッシュ戦略（声に出して通しで話せる）
 - [ ] **各問題の深掘り質問に答えられる（tracker 問題別Q&A参照）**
 - [ ] **Day 9: 未知のお題を自力で解いた**
@@ -236,5 +232,20 @@
 - DB: soft delete / ENUM / インデックス設計
 - システム設計: 問題2 インポート/エクスポート
 チェックできた項目数: 5 / 5
+
+### 2026-04-14（Day 5）
+今日やったこと:
+- Go: errgroup（WaitGroupとの違い・g.Goの仕組み・channel vs errgroupの使い分け）
+- DB: soft delete（deleted_at / deleted_by / GDPR / Partial Index）・ENUM（同一トランザクション問題）・インデックス設計（B-tree・複合インデックスの左端ルール・Partial Index）・RLS文法
+- システム設計: 問題2 大量CSVインポート（非同期アーキテクチャ・GCS・Pub/Sub ACK方式・チャンク分割・バルクINSERT・COPYコマンド）
+詰まったところ:
+- ワーカークラッシュ時の冗長性（ACK方式とDBジョブ管理の組み合わせ）
+- エラー行の返し方（CSVダウンロード方式がベター）
+- COPYコマンドの詳細
+明日やること（Day 6）:
+- Go: table-driven test / testcontainers
+- DB: N+1・EXPLAIN ANALYZE
+- システム設計: 問題3 キャッシュ戦略
+チェックできた項目数: 6
 
 <!-- 以下に毎晩追記 -->

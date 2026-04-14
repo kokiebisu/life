@@ -43,7 +43,7 @@ function dbToDir(db: ScheduleDbName): string {
     case "guitar": return "aspects/guitar/events";
     case "sound": return "aspects/sound/events";
     case "meals": return "aspects/diet/events";
-    case "groceries": return "aspects/diet/groceries";
+    case "groceries": return "aspects/shopping/groceries";
     default: throw new Error(`Unsupported DB for pull: ${db}`);
   }
 }

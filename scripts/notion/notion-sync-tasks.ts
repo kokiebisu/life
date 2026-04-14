@@ -19,7 +19,7 @@ import {
 } from "./lib/notion";
 
 const ROOT = join(import.meta.dir, "..");
-const TASKS_FILE = join(ROOT, "planning/tasks.md");
+const TASKS_FILE = join(ROOT, "aspects/tasks.md");
 
 // --- Types ---
 

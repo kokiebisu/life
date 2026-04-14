@@ -108,7 +108,7 @@ const TITLE_KEYWORD_LIST: { keywords: (string | RegExp)[]; canonical: string }[]
   { keywords: ["ジム", "筋トレ", "トレーニング", "ワークアウト"], canonical: "ジム" },
   { keywords: ["ランニング", "ジョギング", "走"], canonical: "ランニング" },
   { keywords: ["デボーション", "礼拝", "QT", "祈り"], canonical: "デボーション" },
-  { keywords: ["勉強", "学習", "study"], canonical: "勉強" },
+  { keywords: ["勉強", "学習", "study"], canonical: "勉強（読書）" },
   { keywords: ["ギター", "練習"], canonical: "ギター練習" },
   { keywords: ["買い出し", "買い物", "スーパー"], canonical: "買い出し" },
   { keywords: ["散歩", "ウォーキング"], canonical: "散歩" },

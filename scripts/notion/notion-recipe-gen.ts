@@ -12,6 +12,7 @@
  * メニュー名はページタイトルから自動取得。レシピURLも自動検索。
  */
 
+import { readFileSync } from "fs";
 import {
   type ScheduleDbName,
   getScheduleDbConfig,
@@ -119,6 +120,57 @@ async function searchAndGenerateRecipe(
   return data;
 }
 
+// --- Stock item loading ---
+
+function loadStockItems(): string[] {
+  const items: string[] = [];
+  const dietDir = `${import.meta.dir}/../../aspects/diet`;
+
+  for (const filePath of [`${dietDir}/fridge.md`, `${dietDir}/pantry.md`]) {
+    try {
+      const content = readFileSync(filePath, "utf-8");
+      for (const line of content.split("\n")) {
+        // Table rows: | 食材名 | ... |
+        const tableMatch = line.match(/^\|\s*([^|]+?)\s*\|/);
+        if (tableMatch) {
+          const cell = tableMatch[1].trim();
+          if (cell && cell !== "食材" && !cell.startsWith("-")) {
+            items.push(cell);
+          }
+        }
+        // List items: - 食材名 or - 食材名（備考）
+        const listMatch = line.match(/^-\s+([^\(（]+)/);
+        if (listMatch) {
+          const name = listMatch[1].trim();
+          if (name) items.push(name);
+        }
+      }
+    } catch {
+      // File not found or unreadable — skip silently
+    }
+  }
+
+  return [...new Set(items)];
+}
+
+// 表記ゆれ正規化（レシピ食材名とstock名の両方に適用）
+const NORMALIZE_MAP: Record<string, string> = {
+  しょうゆ: "醤油",
+  ショウユ: "醤油",
+};
+
+function normalizeIngredient(name: string): string {
+  return NORMALIZE_MAP[name] ?? name;
+}
+
+function isStockItem(ingredientName: string, stockItems: string[]): boolean {
+  const normalized = normalizeIngredient(ingredientName);
+  return stockItems.some((stock) => {
+    const normalizedStock = normalizeIngredient(stock);
+    return normalized.includes(normalizedStock) || normalizedStock.includes(normalized);
+  });
+}
+
 // --- Notion block building ---
 
 function richText(text: string): any[] {
@@ -138,7 +190,7 @@ function styledText(
   }));
 }
 
-function buildNotionBlocks(data: RecipeData): any[] {
+function buildNotionBlocks(data: RecipeData, stockItems: string[] = []): any[] {
   const blocks: any[] = [];
 
   // Header callout (green background)
@@ -159,26 +211,43 @@ function buildNotionBlocks(data: RecipeData): any[] {
   // Divider
   blocks.push({ object: "block", type: "divider", divider: {} });
 
-  // Ingredients section
-  blocks.push({
+  // Split ingredients into stock vs purchase
+  const stockIngs = data.ingredients.filter((ing) =>
+    isStockItem(ing.name, stockItems),
+  );
+  const buyIngs = data.ingredients.filter(
+    (ing) => !isStockItem(ing.name, stockItems),
+  );
+
+  const makeIngBlock = (ing: { name: string; quantity: string }) => ({
     object: "block",
-    type: "heading_3",
-    heading_3: {
-      rich_text: styledText([{ text: "🥗 材料（1人前）" }]),
+    type: "bulleted_list_item",
+    bulleted_list_item: {
+      rich_text: styledText([
+        { text: ing.name, bold: true },
+        { text: ` ${ing.quantity}` },
+      ]),
     },
   });
 
-  for (const ing of data.ingredients) {
+  // 購入品 section
+  if (buyIngs.length > 0) {
     blocks.push({
       object: "block",
-      type: "bulleted_list_item",
-      bulleted_list_item: {
-        rich_text: styledText([
-          { text: ing.name, bold: true },
-          { text: ` ${ing.quantity}` },
-        ]),
-      },
+      type: "heading_3",
+      heading_3: { rich_text: styledText([{ text: "🛒 購入品" }]) },
     });
+    for (const ing of buyIngs) blocks.push(makeIngBlock(ing));
+  }
+
+  // 常備品 section
+  if (stockIngs.length > 0) {
+    blocks.push({
+      object: "block",
+      type: "heading_3",
+      heading_3: { rich_text: styledText([{ text: "🏠 常備品" }]) },
+    });
+    for (const ing of stockIngs) blocks.push(makeIngBlock(ing));
   }
 
   // Steps section
@@ -329,7 +398,8 @@ async function main() {
   console.log(`👨‍🍳 Steps: ${recipeData.steps.length} steps`);
 
   // Build Notion blocks
-  const blocks = buildNotionBlocks(recipeData);
+  const stockItems = loadStockItems();
+  const blocks = buildNotionBlocks(recipeData, stockItems);
 
   if (dryRun) {
     console.log("\n🔍 [DRY RUN] Generated blocks:");

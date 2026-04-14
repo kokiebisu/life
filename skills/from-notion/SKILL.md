@@ -75,7 +75,7 @@ bun run scripts/notion-pull.ts --no-enrich
 | guitar    | `aspects/guitar/events/YYYY-MM-DD.md`  |
 | sound     | `aspects/sound/events/YYYY-MM-DD.md`   |
 | meals     | `aspects/diet/events/YYYY-MM-DD.md`    |
-| groceries | `aspects/diet/groceries/YYYY-MM-DD.md` |
+| groceries | `aspects/shopping/groceries/YYYY-MM-DD.md` |
 | todo      | `planning/tasks.md`（Inbox / Archive） |
 
 - 完了ステータスの判定: `"Done"` or `"完了"` → `[x]` にマーク

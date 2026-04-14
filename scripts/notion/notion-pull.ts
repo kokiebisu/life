@@ -9,7 +9,7 @@
  *   guitar  → aspects/guitar/events/YYYY-MM-DD.md
  *   sound   → aspects/sound/events/YYYY-MM-DD.md
  *   meals   → aspects/diet/events/YYYY-MM-DD.md
- *   todo    → planning/tasks.md (Inbox/Archive)
+ *   todo    → aspects/tasks.md (Inbox/Archive)
  *
  * 使い方:
  *   bun run scripts/notion-pull.ts                     # 今日
@@ -35,7 +35,7 @@ const ROOT = join(import.meta.dir, "..");
 // --- DB → file path mapping ---
 
 const EVENT_DBS: ScheduleDbName[] = ["events", "guitar", "sound", "meals", "groceries"];
-const TASKS_FILE = join(ROOT, "planning/tasks.md");
+const TASKS_FILE = join(ROOT, "aspects/tasks.md");
 
 function dbToDir(db: ScheduleDbName): string {
   switch (db) {
@@ -781,7 +781,7 @@ async function main() {
     }
   }
 
-  // --- Todo DB → planning/tasks.md ---
+  // --- Todo DB → aspects/tasks.md ---
   if (pullTodo) {
     const todoConf = getScheduleDbConfigOptional("todo");
     if (todoConf) {
@@ -809,7 +809,7 @@ async function main() {
         totalAdded += added;
         totalKept += kept;
 
-        console.log(`planning/tasks.md [todo]:`);
+        console.log(`aspects/tasks.md [todo]:`);
         for (const ne of allNotionTodos) {
           const isDone = ne.status === "Done" || ne.status === "完了";
           const matchedTask = updatedInbox.find(t => titlesMatch(ne.title, t.title));

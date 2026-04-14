@@ -76,7 +76,7 @@ bun run scripts/notion-pull.ts --no-enrich
 | sound     | `aspects/sound/events/YYYY-MM-DD.md`   |
 | meals     | `aspects/diet/events/YYYY-MM-DD.md`    |
 | groceries | `aspects/shopping/groceries/YYYY-MM-DD.md` |
-| todo      | `planning/tasks.md`（Inbox / Archive） |
+| todo      | `aspects/tasks.md`（Inbox / Archive） |
 
 - 完了ステータスの判定: `"Done"` or `"完了"` → `[x]` にマーク
 - devotion DB のステータスプロパティは `ステータス`（日本語）。`Status`（英語）ではない

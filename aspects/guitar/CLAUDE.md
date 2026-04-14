@@ -19,6 +19,15 @@
 - **学習スタイル:** コードの「なぜこの押さえ方になるか」の理解を重視。右手リズム技術より左手コード構造
 - 注意: 専門用語を避け、初出の用語は必ず日本語で補足する
 
+## ディレクトリ構成
+
+```
+aspects/guitar/
+  acoustic.md        # アコギ（Martin）のメモ・セッティング
+  electric.md        # エレキ（Fender Strat）のメモ・セッティング
+  accessories.csv    # 周辺機器一覧（Status: Owned / Wishlist）
+```
+
 ## Accessories & Wishlist
 
 周辺機器の一覧は `accessories.csv` で管理。Status 列で Owned / Wishlist を区別。

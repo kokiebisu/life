@@ -5,20 +5,18 @@ import (
 	"fmt"
 )
 
-type NotFoundError struct {
-	ID int
-	Resource string
-}
+g, ctx := errgroup.WithContext(context.Background())
 
-func (nfe *NotFoundError) Error() string {
-	return fmt.Sprintf("not found: %s id=%d", nfe.Resource, nfe.ID)
-}
+g.Go(func() error {
+	return callML(ctx)
+})
 
-func findUser(id int) error {
-	if id == 0 {
-		return &NotFoundError{ID: id, Resource: "user"}
-	}
-	return nil
+g.Go(func() error {
+	return callES(ctx)
+})
+
+if err := g.Wait(); err != nil {
+	return err
 }
 
 func main() {

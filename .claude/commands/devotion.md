@@ -1,1 +1,0 @@
-../../.ai/commands/devotion.md

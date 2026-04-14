@@ -1,0 +1,1 @@
+../../../skills/kondate/SKILL.md

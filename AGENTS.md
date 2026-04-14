@@ -17,15 +17,15 @@
 ./scripts/life-os-sync.sh status       # life-os との乖離確認
 ./scripts/life-os-sync.sh pull         # life-os/main を life に取り込む
 ./scripts/life-os-sync.sh contrib      # life-os に貢献できるコミットを確認
-./scripts/gen-agents-md.sh             # .ai/rules/ から AGENTS.md を再生成（Codex 用）
+./scripts/gen-agents-md.sh             # skills/ + .ai/rules/ から AGENTS.md を再生成（Codex 用）
 ```
 
 ### Claude Code コマンド
 
 ```bash
-/ask:diet                # ダイエットチームに相談
-/ask:job:search          # 就職活動チームに相談
-/from:notion             # Notion からデータ同期
+/ask-diet                # ダイエットチームに相談
+/ask-job-search          # 就職活動チームに相談
+/from-notion             # Notion からデータ同期
 /goal                    # 壁打ちして新しい目標を追加
 /pr                      # 変更をグループ化してPR作成
 /tidy                    # 指示ファイルの重複・配置を整理
@@ -33,7 +33,6 @@
 /event                   # イベント登録
 /cache                   # キャッシュ管理（status / clear / analyze）
 /learn                   # ミスからの学習・再発防止
-/process                 # クイックメモの言語化・配置
 /devotion                # デボーション（自動で次の章を検出）
 ```
 
@@ -506,21 +505,21 @@ If security issue found:
 
 ## Available Commands
 
-コマンドを呼び出すときは、対応する `.ai/commands/<name>.md` を読んでその指示に従うこと。
+コマンドを呼び出すときは、対応する `skills/<name>/SKILL.md` を読んでその指示に従うこと。
 
-- **`/ask:diet`** — ダイエットサポートチーム → `.ai/commands/ask:diet.md`
-- **`/ask:job:search`** — 就職活動チーム → `.ai/commands/ask:job:search.md`
-- **`/cache`** — キャッシュの管理。引数: $ARGUMENTS → `.ai/commands/cache.md`
-- **`/calendar`** — Calendar → `.ai/commands/calendar.md`
-- **`/devotion`** — Devotion - デボーション（聖書の対話型学び） → `.ai/commands/devotion.md`
-- **`/event`** — Event - イベント登録 → `.ai/commands/event.md`
-- **`/fridge-sync`** — Fridge Sync - 冷蔵庫在庫を Notion に同期 → `.ai/commands/fridge-sync.md`
-- **`/from:notion`** — Sync from Notion → `.ai/commands/from:notion.md`
-- **`/fukushuu`** — 復習 - 忘却曲線ベーススペーシドリピティション → `.ai/commands/fukushuu.md`
-- **`/goal`** — 目標の壁打ち・追加 → `.ai/commands/goal.md`
-- **`/kondate`** — Kondate - 献立計画 → `.ai/commands/kondate.md`
-- **`/learn`** — Learn - ミスからの学習・再発防止 → `.ai/commands/learn.md`
-- **`/meal`** — Meal - 食事記録 → `.ai/commands/meal.md`
-- **`/pr`** — Create Pull Request → `.ai/commands/pr.md`
-- **`/tidy`** — Tidy - 指示ファイルの整理・重複削減 → `.ai/commands/tidy.md`
+- **`/ask-diet`** — ダイエット・健康管理について相談したいとき。食事内容・カロリー・体重・栄養バランスなどの相談に使う。専門チームとして回答する。 → `skills/ask-diet/SKILL.md`
+- **`/ask-job-search`** — 就職活動について相談したいとき。履歴書・職務経歴書・面接対策・求人選び・オファー交渉などに使う。専門チームとして回答する。 → `skills/ask-job-search/SKILL.md`
+- **`/cache`** — キャッシュの確認・クリア・分析をするとき。「キャッシュ確認して」「キャッシュクリアして」「ヒット率を見たい」などに使う。 → `skills/cache/SKILL.md`
+- **`/calendar`** — Notion カレンダーの予定を確認・追加・変更するとき。デイリープラン作成・スケジュール調整・既存予定の確認などに使う。 → `skills/calendar/SKILL.md`
+- **`/devotion`** — デボーション（聖書の学び）を始めるとき。「デボーションしたい」「デボーションやろう」「聖書読もう」などに使う。章は自動検出する。 → `skills/devotion/SKILL.md`
+- **`/event`** — イベント・予定を Notion カレンダーに登録するとき。飲み会・会議・外出など日時が決まっている予定の登録に使う。移動時間・重複チェックも自動処理する。 → `skills/event/SKILL.md`
+- **`/fridge-sync`** — fridge.md（冷蔵庫在庫）を Notion の「冷蔵庫の在庫」ページに同期するとき。「冷蔵庫同期して」「fridge 更新して」に使う。 → `skills/fridge-sync/SKILL.md`
+- **`/from-notion`** — Notion の変更をリポジトリの md ファイルに逆同期するとき。Notion 上で時間変更・完了マーク・フィードバックをした後に使う。 → `skills/from-notion/SKILL.md`
+- **`/fukushuu`** — 学習ノートを復習したいとき。「復習しよう」「スペーシドリピティションやりたい」などに使う。忘却曲線に基づいて期日が来たノートをクイズ形式で復習する。 → `skills/fukushuu/SKILL.md`
+- **`/goal`** — 新しい目標を追加・整理したいとき。「目標について壁打ちしたい」「新しい目標を追加したい」などに使う。ライフコーチとして対話しながら goals.md に反映する。 → `skills/goal/SKILL.md`
+- **`/kondate`** — 献立を計画したいとき。「献立考えて」「食事プランを立てたい」「何食分か作り置き計画したい」などに使う。在庫ベースで提案し Notion meals DB と daily ファイルに一括登録する。 → `skills/kondate/SKILL.md`
+- **`/learn`** — Claude のミスを指摘して再発防止策を適用するとき。「また同じミスをした」「ルールに追加して」「再発防止して」などに使う。 → `skills/learn/SKILL.md`
+- **`/meal`** — 食事を記録するとき。「〇〇食べた」「朝食記録したい」「ご飯ログ」など食事トラッキングに使う。daily ファイル・Notion meals DB・fridge.md を一括更新する。 → `skills/meal/SKILL.md`
+- **`/pr`** — プルリクエストを作成するとき。変更をグループ化して PR を作成する。コミット後に自動で呼ばれることもある。 → `skills/pr/SKILL.md`
+- **`/tidy`** — 指示ファイル（CLAUDE.md・rules・commands・memory）の重複・配置ミスを整理するとき。「ルールが散らかってきた」「指示ファイル整理したい」などに使う。 → `skills/tidy/SKILL.md`
 

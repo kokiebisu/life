@@ -1,1 +1,0 @@
-../../.ai/commands/ask:diet.md

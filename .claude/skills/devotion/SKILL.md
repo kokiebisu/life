@@ -1,0 +1,1 @@
+../../../skills/devotion/SKILL.md

@@ -23,7 +23,6 @@ scripts/     Notion 連携スクリプト
 |-----------|------|--------|----------|
 | [ダイエット](aspects/diet/) | 減量・健康管理 | 6人 | `/ask:diet` |
 | [ギター](aspects/guitar/) | ギター練習 | 3人 | - |
-| [投資](aspects/investment/) | 投資判断 | 8人 | - |
 | [学習](aspects/study/) | 起業・法律・技術 | 9人 | - |
 | [就職活動](aspects/job/) | 就職・転職活動 | 6人 | `/ask:job:search` |
 | [福岡](aspects/fukuoka/) | 福岡移住検討 | 1人 | - |

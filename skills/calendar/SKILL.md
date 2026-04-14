@@ -25,7 +25,6 @@ Notion カレンダーの予定を取得・追加する。
 ### Other DBs
 
 - `NOTION_ARTICLES_DB` — 記事（タイトル / ソース / URL / Aspect / Status）
-- `NOTION_INVESTMENT_DB` — 投資（Investment / Buy Date / Status / Type / Notes）
 - **クイックメモ DB** — 思考キャプチャ。`/process` コマンドで処理する
 
 ## 予定の取得
@@ -92,7 +91,6 @@ bun run scripts/notion-add.ts --title "タイトル" --date YYYY-MM-DD --allday
 
 | ルーティン | 頻度 | 備考 |
 |-----------|------|------|
-| 投資リサーチ | 週1回 | 毎日入れなくてよい |
 
 ## Feedback の永続反映
 

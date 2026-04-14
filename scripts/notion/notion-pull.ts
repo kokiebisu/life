@@ -842,7 +842,7 @@ async function main() {
     }
   }
 
-  // --- Enrich future unenriched pages (icon/cover) across all DBs ---
+  // --- Enrich unenriched pages (icon/cover) across all known DBs ---
   if (!noEnrich) {
     const futureEnd = new Date(today + "T12:00:00+09:00");
     futureEnd.setDate(futureEnd.getDate() + 60);
@@ -850,61 +850,72 @@ async function main() {
     // Dates already processed above — skip them in the enrich pass
     const processedSet = new Set(dates);
 
-    for (const db of EVENT_DBS) {
-      const dbConf = getScheduleDbConfigOptional(db);
-      if (!dbConf) continue;
-      const data = await queryDbByDate(dbConf.apiKey, dbConf.dbId, dbConf.config, today, futureEndDate);
-      const pages = (data.results || []) as any[];
-      for (const page of pages) {
-        // Skip pages already enriched in the date-based pass
-        const dateStr = page.properties?.[dbConf.config.dateProp]?.date?.start?.split("T")[0] || "";
-        if (processedSet.has(dateStr)) continue;
+    // Build deduplicated map of all DBs to enrich (keyed by dbId)
+    type EnrichDbConf = { titleProp: string; label: string; dateProp?: string; defaultIcon?: string };
+    const enrichMap = new Map<string, EnrichDbConf>();
 
-        const hasIcon = !!page.icon;
-        const hasCover = !!page.cover;
-        if (hasIcon && hasCover) continue;
-
-        const titleArr = page.properties?.[dbConf.config.titleProp]?.title || [];
-        const title = titleArr.map((t: any) => t.plain_text || "").join("");
-
-        if (!dryRun) {
-          const updates: Record<string, unknown> = {};
-          if (!hasIcon) updates.icon = pickTaskIcon(title);
-          if (!hasCover) updates.cover = pickCover();
-          console.log(`  ENRICH: ${title} [${db}] — adding icon/cover`);
-          await notionFetch(getApiKey(), `/pages/${page.id}`, updates, "PATCH");
-        } else {
-          console.log(`  ENRICH: ${title} [${db}] — would add icon/cover`);
-        }
-        totalEnriched++;
-      }
+    // Schedule DBs (future date window): deduplicate by dbId so guitar+sound → curriculum without extraFilter
+    for (const [name, conf] of Object.entries(SCHEDULE_DB_CONFIGS)) {
+      const dbId = getDbIdOptional(conf.envKey);
+      if (!dbId || enrichMap.has(dbId)) continue;
+      enrichMap.set(dbId, { titleProp: conf.titleProp, label: name, dateProp: conf.dateProp });
     }
 
-    // --- Enrich job DB pages (icon/cover) ---
-    const jobDbId = getDbIdOptional("NOTION_JOB_DB");
-    if (jobDbId) {
-      const jobData = await notionFetch(getApiKey(), `/databases/${jobDbId}/query`, {
-        filter: {
-          and: [
-            { property: "日付", date: { on_or_after: today } },
-            { property: "日付", date: { on_or_before: futureEndDate } },
-          ],
-        },
-      });
-      const jobPages = (jobData.results || []) as any[];
-      for (const page of jobPages) {
+    // Extra DBs not in SCHEDULE_DB_CONFIGS
+    const extraDbs: Array<[string, EnrichDbConf]> = [
+      ["NOTION_JOB_DB",            { titleProp: "名前",        label: "job",             dateProp: "日付", defaultIcon: "💼" }],
+      ["NOTION_GYM_DB",            { titleProp: "名前",        label: "gym",             dateProp: "日付" }],
+      ["NOTION_MAJIWARI_DB",       { titleProp: "名前",        label: "majiwari",        dateProp: "日付" }],
+      ["NOTION_ARTICLES_DB",       { titleProp: "タイトル",    label: "articles" }],
+      ["NOTION_CHURCH_MESSAGES_DB",{ titleProp: "名前",        label: "church_messages" }],
+    ];
+    for (const [envKey, conf] of extraDbs) {
+      const dbId = getDbIdOptional(envKey);
+      if (!dbId || enrichMap.has(dbId)) continue;
+      enrichMap.set(dbId, conf);
+    }
+
+    for (const [dbId, conf] of enrichMap) {
+      let pages: any[];
+      if (conf.dateProp) {
+        // Schedule DBs: only future pages
+        const data = await notionFetch(getApiKey(), `/databases/${dbId}/query`, {
+          filter: {
+            and: [
+              { property: conf.dateProp, date: { on_or_after: today } },
+              { property: conf.dateProp, date: { on_or_before: futureEndDate } },
+            ],
+          },
+        });
+        pages = (data.results || []) as any[];
+      } else {
+        // Non-date DBs: all pages
+        const data = await notionFetch(getApiKey(), `/databases/${dbId}/query`, {});
+        pages = (data.results || []) as any[];
+      }
+
+      for (const page of pages) {
+        const dateStr = conf.dateProp
+          ? (page.properties?.[conf.dateProp]?.date?.start?.split("T")[0] || "")
+          : "";
+        if (dateStr && processedSet.has(dateStr)) continue;
+
         const hasIcon = !!page.icon;
         const hasCover = !!page.cover;
         if (hasIcon && hasCover) continue;
-        const title = (page.properties?.["名前"]?.title || []).map((t: any) => t.plain_text || "").join("");
+
+        const titleProp = page.properties?.[conf.titleProp];
+        const titleArr = titleProp?.title || titleProp?.rich_text || [];
+        const title = titleArr.map((t: any) => t.plain_text || "").join("") || "untitled";
+
         if (!dryRun) {
           const updates: Record<string, unknown> = {};
-          if (!hasIcon) updates.icon = pickTaskIcon(title, "💼");
+          if (!hasIcon) updates.icon = pickTaskIcon(title, conf.defaultIcon);
           if (!hasCover) updates.cover = pickCover();
-          console.log(`  ENRICH: ${title} [job] — adding icon/cover`);
+          console.log(`  ENRICH: ${title} [${conf.label}] — adding icon/cover`);
           await notionFetch(getApiKey(), `/pages/${page.id}`, updates, "PATCH");
         } else {
-          console.log(`  ENRICH: ${title} [job] — would add icon/cover`);
+          console.log(`  ENRICH: ${title} [${conf.label}] — would add icon/cover`);
         }
         totalEnriched++;
       }

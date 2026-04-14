@@ -49,7 +49,6 @@ const DB_SCHEMAS: Record<string, { title: string; properties: Record<string, unk
             { name: "sumitsugi", color: "purple" },
             { name: "diet", color: "green" },
             { name: "guitar", color: "orange" },
-            { name: "investment", color: "blue" },
             { name: "study", color: "yellow" },
             { name: "reading", color: "pink" },
             { name: "fukuoka", color: "red" },

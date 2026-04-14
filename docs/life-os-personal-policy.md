@@ -32,7 +32,6 @@
 | `aspects/sound/` | 個人的趣味 |
 | `aspects/reading/` | 個人的趣味 |
 | `aspects/job/` | 個人の就職活動 |
-| `aspects/investment/` | 個人の投資情報 |
 | `aspects/*/events/` | 個人の予定記録 |
 | `aspects/*/daily/` | 個人の日次記録 |
 | `aspects/*/logs/` | 個人のアクティビティログ |

@@ -47,8 +47,8 @@ const ALL_DB_ENV_KEYS: { envKey: string; label: string }[] = [
   { envKey: "NOTION_JOB_DB",            label: "job" },
   { envKey: "NOTION_ARTICLES_DB",       label: "articles" },
   { envKey: "NOTION_CHURCH_MESSAGES_DB",label: "church_messages" },
+  { envKey: "NOTION_MAJIWARI_DB",       label: "majiwari" },
   { envKey: "NOTION_GYM_DB",            label: "gym" },
-  { envKey: "NOTION_INVESTMENT_DB",     label: "investment" },
 ];
 import { estimateTravelTime } from "./lib/travel";
 

@@ -94,7 +94,6 @@ memory-bank/             # セッション間の記憶（decisions.md）
 | diet       | 6人チーム  | ダイエット・健康管理 → Notion: 食事DB |
 | gym        | -          | ジムセッション記録 → Notion: ジムDB   |
 | guitar     | 3人チーム  | ギター練習 → Notion: ギターDB         |
-| investment | 11人チーム | 投資                                  |
 | study      | 9人チーム  | 学習（起業・法律・技術）              |
 | job/search | 6人チーム  | 就職活動                              |
 | reading    | 村上葉月   | 読書記録                              |
@@ -203,7 +202,7 @@ events > todo > guitar = sound > routine > meals > groceries
 - 2026-02-13 最終出社。2/14以降 life OS 開発を本業として2-3ヶ月集中していたが、2026-03-17 に方針変更
 - **2026-03-17〜: life OS 開発を一旦停止。次の就職活動に集中する**
 - 横浜在住
-- 優先度: 就職活動 > 運動/減量 > ギター > 投資 > study > 読書
+- 優先度: 就職活動 > 運動/減量 > ギター > study > 読書
 - kawa（Expo アプリ）は廃止 → Notion 統合に切替済（2026-02-11）
 
 ## 次にやること

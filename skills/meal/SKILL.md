@@ -79,6 +79,9 @@ bun run scripts/notion-add.ts --db meals --title "メニュー名" --date YYYY-M
 - 0 になったら `**要補充**` に変更するか行を削除
 - 外食・コンビニの場合は fridge 更新不要
 
+**fridge.md を更新したら必ず Write ツールで保存すること。**
+PostToolUse hook が自動で Notion に同期する（手動での `/fridge-sync` 実行は不要）。
+
 ### 5d. 既存エントリの差し替え
 
 daily ファイルに同じ食事枠（朝/昼/夕）の予定メニューが既にある場合:

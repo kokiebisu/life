@@ -17,6 +17,9 @@ bun run scripts/notion-pull.ts --date "$YESTERDAY" --all-entries --no-enrich
 # 作り置き消費トラッキング（昨日の meals DB から fridge.md を自動更新）
 bun run scripts/notion/notion-fridge-consume.ts --from "$YESTERDAY" --to "$YESTERDAY" || true
 
+# fridge.md を Notion ページに同期（consume で更新された場合も含む）
+bun run scripts/notion/notion-fridge-sync.ts || true
+
 # 変更があれば commit
 if git diff --quiet && git diff --cached --quiet; then
   echo "Nothing to commit."

@@ -20,7 +20,17 @@
   "hooks": {
     "SessionStart": [],
     "Stop": [],
-    "PostToolUse": []
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /workspaces/life/.claude/hooks/fridge-sync.sh"
+          }
+        ]
+      }
+    ]
   },
   "enabledPlugins": {
     "ralph-loop@claude-plugins-official": false

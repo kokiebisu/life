@@ -555,9 +555,13 @@ If security issue found:
 
 「〇〇で〜買いたい」「〇〇の〜が欲しい」などの発言は、**`tasks.md` ではなく `aspects/shopping/stores/` で管理する。**
 
-1. Web Search で商品を調べる（価格・色展開・商品ページURL）
+1. Web Search で商品を調べる（価格・商品ページURL・画像URL）
 2. 該当店舗の `aspects/shopping/stores/店舗名.md` に追記する（ファイルがなければ新規作成）
-3. `tasks.md` には入れない
+3. Notion ショッピング DB（`51f39ff99e804451a4f17d60f6869755`）にレコードを作成する
+   - `notion-create-pages` で商品名・店舗・価格・URLをプロパティにセット
+   - カバー画像に商品画像URLをセット
+   - ページ本文にも商品画像を `![]()` で埋め込む
+4. `tasks.md` には**入れない**
 
 > 食材・食品の買い出しは `aspects/shopping/groceries/` で管理する（`/kondate` 経由）。`stores/` には入れない。
 

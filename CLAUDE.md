@@ -17,15 +17,15 @@
 ./scripts/life-os-sync.sh status       # life-os との乖離確認
 ./scripts/life-os-sync.sh pull         # life-os/main を life に取り込む
 ./scripts/life-os-sync.sh contrib      # life-os に貢献できるコミットを確認
-./scripts/gen-agents-md.sh             # .ai/rules/ から AGENTS.md を再生成（Codex 用）
+./scripts/gen-agents-md.sh             # skills/ + .ai/rules/ から AGENTS.md を再生成（Codex 用）
 ```
 
 ### Claude Code コマンド
 
 ```bash
-/ask:diet                # ダイエットチームに相談
-/ask:job:search          # 就職活動チームに相談
-/from:notion             # Notion からデータ同期
+/ask-diet                # ダイエットチームに相談
+/ask-job-search          # 就職活動チームに相談
+/from-notion             # Notion からデータ同期
 /goal                    # 壁打ちして新しい目標を追加
 /pr                      # 変更をグループ化してPR作成
 /tidy                    # 指示ファイルの重複・配置を整理
@@ -33,7 +33,6 @@
 /event                   # イベント登録
 /cache                   # キャッシュ管理（status / clear / analyze）
 /learn                   # ミスからの学習・再発防止
-/process                 # クイックメモの言語化・配置
 /devotion                # デボーション（自動で次の章を検出）
 ```
 

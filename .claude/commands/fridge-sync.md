@@ -1,1 +1,0 @@
-../../.ai/commands/fridge-sync.md

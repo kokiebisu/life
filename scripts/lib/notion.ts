@@ -136,34 +136,6 @@ export function getArticleDbConfig(name: ArticleDbName): { apiKey: string; dbId:
   return { apiKey: getApiKey(), dbId: getDbId(config.envKey), config };
 }
 
-// --- Investment DB Config ---
-
-export type InvestmentDbName = "investment";
-
-export interface InvestmentDbConfig {
-  envKey: string;
-  titleProp: string;
-  dateProp: string;
-  statusProp: string;
-  typeProp: string;
-  notesProp: string;
-}
-
-export const INVESTMENT_DB_CONFIGS: Record<InvestmentDbName, InvestmentDbConfig> = {
-  investment: {
-    envKey: "NOTION_INVESTMENT_DB",
-    titleProp: "Investment ",  // trailing space (Notion property名そのまま)
-    dateProp: "Buy Date",
-    statusProp: "Status",
-    typeProp: "Type",
-    notesProp: "Notes",
-  },
-};
-
-export function getInvestmentDbConfig(name: InvestmentDbName): { apiKey: string; dbId: string; config: InvestmentDbConfig } {
-  const config = INVESTMENT_DB_CONFIGS[name];
-  return { apiKey: getApiKey(), dbId: getDbId(config.envKey), config };
-}
 
 export function getDevotionConfig() {
   return { apiKey: getApiKey(), dbId: getDbId("NOTION_DEVOTION_DB") };
@@ -377,7 +349,6 @@ const TASK_ICON_KEYWORDS: [RegExp, string][] = [
   [/ミーティング|会議|MTG|meeting|壁打ち/i, "🤝"],
   [/医者|病院|歯医者/i, "🏥"],
   [/引越|移住|fukuoka/i, "🏠"],
-  [/投資|invest/i, "📈"],
   [/散歩|walk/i, "🚶"],
   [/昼寝|仮眠|nap/i, "😴"],
   [/開発|develop|coding|プログラ/i, "💻"],

@@ -94,7 +94,6 @@ memory-bank/             # セッション間の記憶（decisions.md）
 | diet       | 6人チーム  | ダイエット・健康管理 → Notion: 食事DB |
 | gym        | -          | ジムセッション記録 → Notion: ジムDB   |
 | guitar     | 3人チーム  | ギター練習 → Notion: ギターDB         |
-| investment | 11人チーム | 投資                                  |
 | study      | 9人チーム  | 学習（起業・法律・技術）              |
 | job/search | 6人チーム  | 就職活動                              |
 | reading    | 村上葉月   | 読書記録                              |

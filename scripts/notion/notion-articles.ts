@@ -25,7 +25,6 @@ const KNOWN_SOURCES: Record<string, string> = {
 const ASPECT_KEYWORDS: Record<string, RegExp> = {
   sumitsugi: /saas|startup|indie|solo.?dev|ship|mvp|bootstrap|claude|ai.?agent|llm|gpt|anthropic/i,
   study: /typescript|react|next\.?js|bun|hono|architecture|design.?pattern|system.?design/i,
-  investment: /invest|stock|crypto|fintech|market|portfolio|vc|funding|ipo/i,
   diet: /health|nutrition|diet|fitness|workout|exercise|wellness/i,
   guitar: /guitar|music|musician|chord|scale/i,
 };

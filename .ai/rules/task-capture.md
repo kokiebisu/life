@@ -19,9 +19,20 @@
 - **Notion events DB にも必ず登録する**（`notion-add.ts --db events --start HH:MM --end HH:MM`）。説明が必要なら作成後に `notion-update-page` の `replace_content` でページ本文に書き込む
 - `aspects/tasks.md` には入れない
 
+### 買いたいもの（タスクではない → `aspects/shopping/stores/` へ）
+
+「〇〇で〜買いたい」「〇〇の〜が欲しい」などの発言は、**`tasks.md` ではなく `aspects/shopping/stores/` で管理する。**
+
+1. Web Search で商品を調べる（価格・色展開・商品ページURL）
+2. 該当店舗の `aspects/shopping/stores/店舗名.md` に追記する（ファイルがなければ新規作成）
+3. `tasks.md` には入れない
+
+> 食材・食品の買い出しは `aspects/shopping/groceries/` で管理する（`/kondate` 経由）。`stores/` には入れない。
+
 ### タスクと判断しないもの
 
 - イベント・予定（上記参照）
+- 買いたいもの（上記参照）
 - 会話中に Claude に依頼して、その場で完了するもの
 - 単なる感想・雑談
 - 既に `tasks.md` に存在するもの（重複しない）

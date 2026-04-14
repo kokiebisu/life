@@ -16,6 +16,7 @@ When multiple independent groups exist and Agent Teams is available, spawns para
 ## Step 1: Analyze Changes
 
 1. Run `git status` to check current state
+   - **unstaged changes がある場合は `git stash` で退避してからブランチ作成し、`git stash pop` で戻す**
 2. Run `git diff --stat origin/main...HEAD` to get line counts per file
 3. Run `git diff origin/main...HEAD` to analyze actual changes
 
@@ -108,25 +109,39 @@ If Agent Teams is available but all groups have chain dependencies (each depends
 
 ---
 
-## Step 6A: Single PR Flow (Sequential)
+## Step 6A: Single PR Flow (Worktree ベース・Sequential)
 
-**IMPORTANT**: You MUST automatically create pull requests using `gh pr create`. DO NOT just push branches and expect the user to create PRs manually.
+**IMPORTANT**: 必ず worktree を作成してから作業する。main への直接コミット禁止。
 
 For each approved group (in dependency order):
 
-1. **Create branch** (if needed):
+1. **Stash unstaged changes**（あれば）:
 
    ```bash
-   git checkout -b <type>/<short-description>
+   git stash
    ```
 
-2. **Stage only group files**:
+2. **Worktree を作成**（main から feature ブランチ）:
+
+   ```bash
+   BRANCH="<type>/<short-description>"
+   git worktree add .worktrees/$BRANCH -b $BRANCH
+   ```
+
+3. **Worktree に変更を適用**:
+
+   ```bash
+   cd .worktrees/$BRANCH
+   git stash pop   # stash した場合のみ（stash は worktree 間で共有される）
+   ```
+
+4. **Stage only group files**:
 
    ```bash
    git add <file1> <file2> ...
    ```
 
-3. **Commit with conventional commit format**:
+5. **Commit with conventional commit format**:
    - `feat:` - New feature
    - `fix:` - Bug fix
    - `refactor:` - Code refactoring
@@ -136,13 +151,13 @@ For each approved group (in dependency order):
    - `perf:` - Performance
    - `ci:` - CI/CD
 
-4. **Push branch**:
+6. **Push branch**:
 
    ```bash
    git push -u origin HEAD
    ```
 
-5. **Immediately create PR** (DO NOT SKIP THIS):
+7. **Immediately create PR** (DO NOT SKIP THIS):
 
    ```bash
    gh pr create --title "<type>: <description>" --body "$(cat <<'EOF'
@@ -162,7 +177,7 @@ For each approved group (in dependency order):
    )"
    ```
 
-6. **Monitor CI and merge** (per PR):
+8. **Monitor CI and merge** (per PR):
 
    ```bash
    gh pr checks <pr-number>
@@ -170,17 +185,16 @@ For each approved group (in dependency order):
    gh pr merge <pr-number> --squash --delete-branch
    ```
 
-7. **Clean up local workspace**:
+9. **Worktree cleanup**（必ず main に戻ってから）:
 
    ```bash
-   git checkout main
+   cd /workspaces/life
+   git worktree remove .worktrees/$BRANCH --force
+   git branch -D $BRANCH 2>/dev/null || true
    git pull origin main
-   if git show-ref --verify --quiet refs/heads/<feature-branch-name>; then
-     git branch -d <feature-branch-name>
-   fi
    ```
 
-8. If more groups remain, return to substep 1 for the next group.
+10. If more groups remain, return to substep 1 for the next group.
 
 ---
 

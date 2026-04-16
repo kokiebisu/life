@@ -27,7 +27,7 @@
 | Yuiho | 家族の救いと関係回復 | 2026-03-22 | [people/yuiho.md](../people/church/new-hope/yokohama/fuse/yuiho.md) |
 | Shinya | 遅れている課題の完成 | 2026-04-06 | [people/shinya.md](../people/church/new-hope/yokohama/fuse/shinya.md) |
 | Taiki | 健康の回復 | 2026-04-08 | [people/taiki.md](../people/church/new-hope/yokohama/fuse/taiki.md) |
-| Midori | 神学部新シーズンの守り・アイデンティティの回復 | 2026-04-10 | [people/midori.md](../people/church/new-hope/yokohama/fuse/midori.md) |
+| Midori | 体調の回復（痙攣・風邪・ストレス・花粉症）・ainaの結婚式 | 2026-04-15 | [people/midori.md](../people/church/new-hope/yokohama/fuse/midori.md) |
 | Wes | 長野への引っ越し | 2026-03-20 | [people/wes.md](../people/church/new-hope/yokohama/fuse/wes.md) |
 | Shiori | 長野への引っ越し | 2026-03-20 | [people/shiori.md](../people/church/new-hope/yokohama/fuse/shiori.md) |
 | かづき | 離婚成立後の新シーズンへの導き | 2026-03-24 | [people/kazuki.md](../people/church/new-hope/yokohama/fuse/kazuki.md) |
@@ -51,7 +51,6 @@
 
 | 人名 | 祈りのテーマ | 開始日 | ファイル |
 |------|------------|--------|---------|
-| マリヤ | これからの進路 | 2026-03-20 | [people/mariya.md](../people/family/mariya.md) |
 | 家族 | 家族それぞれの守り | 2026-03-20 | — |
 
 ### 自分
@@ -72,3 +71,4 @@
 | Taiki | 健康の回復と伝道の機会 | 2026-03-19 | 2026-04-08 |
 | Midori | 卒業式と新シーズン | 2026-03-18 | 2026-04-08 |
 | Shinya | 風邪の完治 | 2026-04-08 | 2026-04-13 |
+| マリヤ | これからの進路（オーストラリアへの確信） | 2026-03-20 | 2026-04-16 |

@@ -452,7 +452,7 @@ DB系:
 
 日付は `TZ=Asia/Tokyo date +%Y-%m-%d` で確認する。
 
-### COMPANY_DIR/qa-bank.md と review-log.json を更新
+### COMPANY_DIR/qa-bank.md と review-log.json を更新（**必須・tracker更新の直後に必ず実行する。ユーザーに確認されるまで待たない**）
 
 チェックインで「ノートなしで2分話せる」と確認できた項目の問いを qa-bank.md に追記し、review-log.json に初期エントリを追加する。
 

@@ -202,5 +202,53 @@
     "review_count": 1,
     "interval_days": 1,
     "next_review": "2026-04-14"
+  },
+  "Go: table-driven test / testcontainers / table-driven testとは何か？なぜGoで好まれるか？": {
+    "last_reviewed": "2026-04-15",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-16"
+  },
+  "Go: table-driven test / testcontainers / testcontainersを使う理由は？モックとの違いは？": {
+    "last_reviewed": "2026-04-15",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-16"
+  },
+  "Go: table-driven test / testcontainers / Testing Trophyとは何か？Resilireとの関係は？": {
+    "last_reviewed": "2026-04-15",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-16"
+  },
+  "DB: N+1 / EXPLAIN ANALYZE / N+1問題とは何か？解決策は？": {
+    "last_reviewed": "2026-04-15",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-16"
+  },
+  "DB: N+1 / EXPLAIN ANALYZE / EXPLAIN ANALYZEで見るべき3点は？": {
+    "last_reviewed": "2026-04-15",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-16"
+  },
+  "システム設計: キャッシュ戦略 / キャッシュの置き場所の選択肢とトレードオフは？": {
+    "last_reviewed": "2026-04-15",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-16"
+  },
+  "システム設計: キャッシュ戦略 / Cache Invalidationの3方式とトレードオフは？": {
+    "last_reviewed": "2026-04-15",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-16"
+  },
+  "システム設計: キャッシュ戦略 / RedisがSPOFになる問題の対策は？": {
+    "last_reviewed": "2026-04-15",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-16"
   }
 }

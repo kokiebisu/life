@@ -71,19 +71,20 @@ bun run scripts/validate-entry.ts --date YYYY-MM-DD --title "ジム" --start HH:
 
 登録前に以下を実行してメニューを決める:
 
-1. **Notion ジム DB から前回セッションを取得する（厳守・ローカル MD より優先）**
-   - `notion-fetch` でジム DB（`collection://326ce17f-7b98-806a-be76-000b67b58628`）を参照し、直近2〜3セッション分のエントリを取得する
-   - 取得するプロパティ: 種目・重量・セット数・回数・日付・**フィードバック**
+1. **Notion ジム DB から前回セッションのページ本文を取得する（厳守・ローカル MD より優先）**
+   - `notion-fetch` でジム DB（`collection://326ce17f-7b98-806a-be76-000b67b58628`）を参照し、直近2〜3セッション分のページを取得する
+   - **ページ本文の筋トレ/有酸素テーブルから種目・重量・セット数・回数・FB を読み取る**
+   - `parseMenu()` でテーブルを構造化データに変換できる（Notion XML・プレーン Markdown 両対応）
    - **見つからない場合**: `notion-search` で `ジム M/D`（例: `ジム 3/20`）を検索。それでも見つからない場合はユーザーに確認する（JST/UTC ズレで引っかからないことがある）
-   - **ローカル MD にフィードバックがなくても「フィードバックなし」と勝手に結論しない。** Notion を正とする
-2. **Notion から取得したフィードバックをローカル MD に書き込む**
+   - **旧フォーマット対応**: プロパティに種目・重量がある古いエントリも読める。ページ本文が空ならプロパティから取得する
+2. **Notion から取得した FB をローカル MD に書き込む**
    - 対応するログファイル（`aspects/gym/logs/YYYY-MM-DD.md`）の末尾に `フィードバック:` セクションとして追記する
    - ローカル MD が存在しない日付（Notion にはあるがローカルにない）は、空のログファイルを作成してフィードバックだけ記録する
-3. **フィードバックを解釈してメニューに反映する（コーチ判断）**
-   - 例: 「膝が痛かった」→ スクワット重量を下げるか別種目に変更
-   - 例: 「軽すぎた」→ 重量を増やす
-   - 例: 「フォームが崩れた」→ 重量維持でフォーム優先
-   - フィードバックがない種目は前回重量を基準に通常判断する
+3. **FB を解釈してメニューに反映する（コーチ判断）**
+   - `余裕` → 次回 +5kg
+   - `まあまあ` → 現状維持
+   - `きつい` → 次回 -5kg
+   - FB が空の種目はデフォルト `余裕` 扱い（次回 +5kg）
 4. `aspects/gym/gyms/fitplace/minatomirai.md` のマシン一覧を参照
 5. 前回から2週間以上空いている場合は「軽めで再開」を推奨
 6. **連日ルール（厳守）**: 前日と同じ部位を連日やらない
@@ -95,7 +96,7 @@ bun run scripts/validate-entry.ts --date YYYY-MM-DD --title "ジム" --start HH:
 
 ### 登録
 
-**種目ごとに1エントリずつ**、開始時刻から15分刻みで Notion MCP の `notion-create-pages` でジムDB（`data_source_id: 326ce17f-7b98-806a-be76-000b67b58628`）に登録する:
+**1セッション = 1ページ**で Notion MCP の `notion-create-pages` でジムDB（`data_source_id: 326ce17f-7b98-806a-be76-000b67b58628`）に登録する:
 
 ```
 parent: data_source_id = 326ce17f-7b98-806a-be76-000b67b58628
@@ -103,20 +104,25 @@ icon: 🏋️
 cover: https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200
 properties:
   名前: ジム
-  date:日付:start: YYYY-MM-DDThh:mm:00+09:00  （JST 必須・種目ごとに15分ずらす）
-  date:日付:end:   YYYY-MM-DDThh:mm:00+09:00  （start + 15分）
+  date:日付:start: YYYY-MM-DDThh:mm:00+09:00  （JST 必須・セッション開始時刻）
+  date:日付:end:   YYYY-MM-DDThh:mm:00+09:00  （セッション終了時刻）
   date:日付:is_datetime: 1
-  種目: 種目名（select）
-  重量: 推奨重量の数値
-  セット数: セット数
-  回数: 回数
 ```
 
-例: 開始 13:00、3種目の場合
-- 種目1（ベンチプレス）: 13:00〜13:15
-- 種目2（スクワット）: 13:15〜13:30
-- 種目3（ウォーキング）: 13:30〜13:45
+ページ作成後、`notion-update-page` の `replace_content` でスタイリング済み本文を書き込む。
 
+**本文生成（厳守）:** `scripts/gym/format-menu.ts` にセッション情報 + 種目データを渡す:
+
+```bash
+echo '{"session":{"date":"4/18（金）","time":"12:30〜14:00"},"exercises":[{"type":"strength","name":"フィックスドプルダウン","weight":"65kg","sets":3,"reps":8},{"type":"cardio","name":"ウォーキング","duration":"15分"}]}' | bun run scripts/gym/format-menu.ts
+```
+
+スクリプトが自動生成するもの:
+- 📊 セッションサマリー（青 callout: 日時 + 種目数）
+- 💪 筋トレテーブル（青ヘッダー + 番号列グレー）
+- 🏃 有酸素テーブル（緑ヘッダー + 番号列グレー）
+
+※ プレーン Markdown モード（配列のみ渡す）も後方互換で使える
 ※ `notion-add.ts --db routine` は使わない。ジム予定はジムDBで管理する。
 
 ### キャッシュクリア
@@ -172,54 +178,62 @@ bun run scripts/cache-status.ts --clear
 （フォーマット例: 種目名 重量kg セット数 回数）
 ```
 
-ユーザーの入力を受け取る。体感メモも任意で確認する。
+ユーザーの入力を受け取る。
 
-### Notion DB の種目オプション確認
+### FB（フィードバック）収集
 
-`.env.local` から `NOTION_GYM_DB` を読み取る（`326ce17f-7b98-801b-b403-f9aebac84861`）。
+種目データを受け取ったら、各種目の FB を確認する:
 
-ユーザーが入力した種目名が DB のスキーマに存在しない場合は、`notion-update-data-source` で先に追加する:
 ```
-data_source_id: 326ce17f-7b98-806a-be76-000b67b58628
-statements: ALTER COLUMN "種目" SET SELECT('既存オプション...', '新種目名':gray)
+各種目の感触を教えてください:
+1: 余裕 / 2: まあまあ / 3: きつい（未入力 = 余裕扱い）
+
+- フィックスドプルダウン 65kg: ?
+- ウォーキング 15分: ?
 ```
 
-現在の種目オプション: フィックスドプルダウン, プレートロードドインクラインプレス, スクワットマシン, ベンチプレス, スクワット, デッドリフト
+入力は番号（1/2/3）でも自由テキストでも OK。`normalizeFeedback()` で正規化される。
 
 ### Notion 重複チェック
 
 Notion MCP の `notion-search` で同日のエントリを確認する:
 - 検索クエリ: `ジム M/D`（例: `ジム 3/15`）
-- 既存エントリがあればユーザーに確認してから登録する
-
-### 時間の割り当て（厳守）
-
-複数種目を登録するとき、**全種目に同じ時間を入れない。** 開始時刻から15分刻みで順列に割り当てる。
-
-例: 開始 15:00、3種目の場合
-- 種目1: 15:00〜15:15
-- 種目2: 15:15〜15:30
-- 種目3: 15:30〜15:45
+- 既存エントリがあれば:
+  - **plan で事前登録済みの場合**: そのページの本文を `notion-update-page` の `replace_content` で実績データに上書きする（新規作成しない）
+  - **それ以外**: ユーザーに確認してから登録する
 
 ### Notion ジムログDB に登録
 
-Notion MCP の `notion-create-pages` を使って各種目を1エントリずつ登録する。
+**1セッション = 1ページ**で登録する。
+
+#### plan 済みページがある場合
+
+`notion-update-page` の `replace_content` で本文を実績データに上書きする。
+
+#### 新規登録の場合
+
+Notion MCP の `notion-create-pages` でジムDB に1ページ作成する:
 
 ```
 parent: data_source_id = 326ce17f-7b98-806a-be76-000b67b58628
+icon: 🏋️
+cover: https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200
+properties:
+  名前: ジム
+  date:日付:start: YYYY-MM-DDThh:mm:00+09:00  （JST 必須・セッション開始時刻）
+  date:日付:end:   YYYY-MM-DDThh:mm:00+09:00  （セッション終了時刻）
+  date:日付:is_datetime: 1
 ```
 
-各エントリのパラメータ:
-- `icon`: `🏋️`
-- `cover`: `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200`
-- `名前`: `ジム`（日付は 日付プロパティで管理するためタイトルに含めない）
-- `date:日付:start`: `YYYY-MM-DDThh:mm:00+09:00`（JST 必須）
-- `date:日付:end`: `YYYY-MM-DDThh:mm:00+09:00`（終了時刻）
-- `date:日付:is_datetime`: `1`
-- `種目`: 種目名（select）
-- `重量`: 重量の数値（プレートロードドは追加重量を記録）
-- `セット数`: セット数
-- `回数`: 回数
+#### 本文生成（厳守）
+
+ページ作成後（または既存ページ更新時）、`scripts/gym/format-menu.ts` にセッション情報 + 種目データ（FB 付き）を渡す:
+
+```bash
+echo '{"session":{"date":"4/18（金）","time":"12:30〜14:00"},"exercises":[{"type":"strength","name":"フィックスドプルダウン","weight":"65kg","sets":3,"reps":8,"feedback":"余裕"},{"type":"cardio","name":"ウォーキング","duration":"15分","feedback":"まあまあ"}]}' | bun run scripts/gym/format-menu.ts
+```
+
+出力を `notion-update-page` の `replace_content` でページ本文に書き込む。`allow_deleting_content: true` を指定する。
 
 ### キャッシュクリア
 
@@ -236,9 +250,11 @@ bun run scripts/cache-status.ts --clear
 
 ## 種目名
 - 重量: Xkg × Y回 × Zセット
+- FB: 余裕
 
 ## 種目名
 - 重量: Xkg × Y回 × Zセット
+- FB: まあまあ
 
 メモ: （体感メモがあれば）
 ```
@@ -250,10 +266,10 @@ bun run scripts/cache-status.ts --clear
 ```
 ジムログを記録しました（YYYY-MM-DD）
 
-| 種目 | 今回 | 前回 | 差 |
-|------|------|------|-----|
-| フィックスドプルダウン | 40kg | 35kg | +5kg |
-| ... | ... | ... | ... |
+| 種目 | 今回 | 前回 | 差 | FB |
+|------|------|------|-----|-----|
+| フィックスドプルダウン | 65kg | 60kg | +5kg | 余裕 |
+| ウォーキング | 15分 | 15分 | → | まあまあ |
 
 Notion ジムログDB ✅ / ローカル MD ✅
 ```

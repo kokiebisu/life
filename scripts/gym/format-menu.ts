@@ -1,16 +1,15 @@
 #!/usr/bin/env bun
 /**
- * ジムメニューテーブル生成
+ * ジムメニュー Notion ページ本文生成
  *
- * 種目データから統一フォーマットのMarkdownテーブルを生成する。
- * 筋トレと有酸素を別テーブルに分離し、FBは固定選択肢でバリデーションする。
+ * 種目データからスタイリング済みの Notion-flavored Markdown を生成する。
+ * callout + 色付きテーブルで見やすいレイアウトにする。
  *
  * 使い方（CLIモード）:
- *   echo '[{"type":"strength","name":"フィックスドプルダウン","weight":"65kg","sets":3,"reps":8,"feedback":"余裕"}]' | bun run scripts/gym/format-menu.ts
+ *   echo '{"session":{"date":"4/18（金）","time":"12:30〜14:00"},"exercises":[...]}' | bun run scripts/gym/format-menu.ts
  *
  * 使い方（ライブラリモード）:
- *   import { formatMenu, type StrengthExercise, type CardioExercise } from "./scripts/gym/format-menu";
- *   const markdown = formatMenu(exercises);
+ *   import { formatMenu, formatNotionContent, type Exercise } from "./scripts/gym/format-menu";
  */
 
 // --- FB 選択肢 ---
@@ -25,17 +24,12 @@ export function normalizeFeedback(raw: string): Feedback {
   const s = raw.trim();
   if (!s) return "";
 
-  // 完全一致
   if (VALID_FEEDBACK.includes(s as Feedback)) return s as Feedback;
 
-  // 余裕系
   if (/余裕|楽|軽い|軽かった|簡単|イージー|easy/i.test(s)) return "余裕";
-  // きつい系
   if (/きつ|辛|つら|無理|ムリ|hard|heavy|重い|重かった|限界/i.test(s)) return "きつい";
-  // まあまあ系
   if (/まあまあ|普通|ふつう|そこそこ|ちょうど|ok|medium/i.test(s)) return "まあまあ";
 
-  // マッチしない → まあまあ（デフォルト）
   return "まあまあ";
 }
 
@@ -44,7 +38,7 @@ export function normalizeFeedback(raw: string): Feedback {
 export interface StrengthExercise {
   type: "strength";
   name: string;
-  weight: string;        // e.g. "65kg"
+  weight: string;
   sets: number;
   reps: number;
   feedback?: string;
@@ -53,122 +47,229 @@ export interface StrengthExercise {
 export interface CardioExercise {
   type: "cardio";
   name: string;
-  duration: string;      // e.g. "15分"
+  duration: string;
   feedback?: string;
 }
 
 export type Exercise = StrengthExercise | CardioExercise;
 
-// --- テーブル生成 ---
-
-function formatStrengthTable(exercises: StrengthExercise[]): string {
-  if (exercises.length === 0) return "";
-  const lines: string[] = [
-    "## 筋トレ",
-    "",
-    "| # | 種目 | 重量 | セット | 回数 | FB |",
-    "|---|------|------|--------|------|-----|",
-  ];
-  for (let i = 0; i < exercises.length; i++) {
-    const e = exercises[i];
-    const fb = e.feedback ? normalizeFeedback(e.feedback) : "";
-    lines.push(`| ${i + 1} | ${e.name} | ${e.weight} | ${e.sets} | ${e.reps} | ${fb} |`);
-  }
-  return lines.join("\n");
+export interface SessionInfo {
+  date: string;   // e.g. "4/18（金）"
+  time: string;   // e.g. "12:30〜14:00"
 }
 
-function formatCardioTable(exercises: CardioExercise[]): string {
-  if (exercises.length === 0) return "";
-  const lines: string[] = [
-    "## 有酸素",
-    "",
-    "| # | 種目 | 時間 | FB |",
-    "|---|------|------|-----|",
-  ];
-  for (let i = 0; i < exercises.length; i++) {
-    const e = exercises[i];
+// --- Notion-flavored Markdown テーブル生成 ---
+
+function strengthTableRows(exercises: StrengthExercise[]): string {
+  return exercises.map((e, i) => {
     const fb = e.feedback ? normalizeFeedback(e.feedback) : "";
-    lines.push(`| ${i + 1} | ${e.name} | ${e.duration} | ${fb} |`);
-  }
-  return lines.join("\n");
+    return `\t<tr>\n\t\t<td>${i + 1}</td>\n\t\t<td>${e.name}</td>\n\t\t<td>${e.weight}</td>\n\t\t<td>${e.sets}</td>\n\t\t<td>${e.reps}</td>\n\t\t<td>${fb}</td>\n\t</tr>`;
+  }).join("\n");
+}
+
+function cardioTableRows(exercises: CardioExercise[]): string {
+  return exercises.map((e, i) => {
+    const fb = e.feedback ? normalizeFeedback(e.feedback) : "";
+    return `\t<tr>\n\t\t<td>${i + 1}</td>\n\t\t<td>${e.name}</td>\n\t\t<td>${e.duration}</td>\n\t\t<td>${fb}</td>\n\t</tr>`;
+  }).join("\n");
 }
 
 /**
- * 種目配列から統一フォーマットのMarkdownテーブルを生成
- * 筋トレと有酸素を自動分離する
+ * Notion ページ本文用のスタイリング済み Markdown を生成
+ */
+export function formatNotionContent(session: SessionInfo, exercises: Exercise[]): string {
+  const strength = exercises.filter((e): e is StrengthExercise => e.type === "strength");
+  const cardio = exercises.filter((e): e is CardioExercise => e.type === "cardio");
+
+  const summaryParts: string[] = [];
+  if (strength.length > 0) summaryParts.push(`筋トレ ${strength.length}種目`);
+  if (cardio.length > 0) summaryParts.push(`有酸素 ${cardio.length}種目`);
+
+  const parts: string[] = [];
+
+  // Callout サマリー
+  parts.push(`<callout icon="📊" color="blue_bg">\n\t**${session.date} ${session.time}** — ${summaryParts.join(" + ")}\n</callout>`);
+  parts.push("---");
+
+  // 筋トレテーブル
+  if (strength.length > 0) {
+    parts.push(`## 💪 筋トレ {color="blue"}`);
+    parts.push(`<table fit-page-width="true" header-row="true">
+\t<colgroup>
+\t\t<col color="gray">
+\t\t<col>
+\t\t<col>
+\t\t<col>
+\t\t<col>
+\t\t<col>
+\t</colgroup>
+\t<tr color="blue_bg">
+\t\t<td>#</td>
+\t\t<td>種目</td>
+\t\t<td>重量</td>
+\t\t<td>セット</td>
+\t\t<td>回数</td>
+\t\t<td>FB</td>
+\t</tr>
+${strengthTableRows(strength)}
+</table>`);
+  }
+
+  // 有酸素テーブル
+  if (cardio.length > 0) {
+    parts.push(`## 🏃 有酸素 {color="green"}`);
+    parts.push(`<table fit-page-width="true" header-row="true">
+\t<colgroup>
+\t\t<col color="gray">
+\t\t<col>
+\t\t<col>
+\t\t<col>
+\t</colgroup>
+\t<tr color="green_bg">
+\t\t<td>#</td>
+\t\t<td>種目</td>
+\t\t<td>時間</td>
+\t\t<td>FB</td>
+\t</tr>
+${cardioTableRows(cardio)}
+</table>`);
+  }
+
+  return parts.join("\n\n");
+}
+
+/**
+ * プレーンMarkdownテーブルを生成（ローカルMD・コーチ報告用）
  */
 export function formatMenu(exercises: Exercise[]): string {
   const strength = exercises.filter((e): e is StrengthExercise => e.type === "strength");
   const cardio = exercises.filter((e): e is CardioExercise => e.type === "cardio");
 
   const parts: string[] = [];
-  if (strength.length > 0) parts.push(formatStrengthTable(strength));
-  if (cardio.length > 0) parts.push(formatCardioTable(cardio));
+
+  if (strength.length > 0) {
+    const lines = [
+      "## 筋トレ", "",
+      "| # | 種目 | 重量 | セット | 回数 | FB |",
+      "|---|------|------|--------|------|-----|",
+    ];
+    strength.forEach((e, i) => {
+      const fb = e.feedback ? normalizeFeedback(e.feedback) : "";
+      lines.push(`| ${i + 1} | ${e.name} | ${e.weight} | ${e.sets} | ${e.reps} | ${fb} |`);
+    });
+    parts.push(lines.join("\n"));
+  }
+
+  if (cardio.length > 0) {
+    const lines = [
+      "## 有酸素", "",
+      "| # | 種目 | 時間 | FB |",
+      "|---|------|------|-----|",
+    ];
+    cardio.forEach((e, i) => {
+      const fb = e.feedback ? normalizeFeedback(e.feedback) : "";
+      lines.push(`| ${i + 1} | ${e.name} | ${e.duration} | ${fb} |`);
+    });
+    parts.push(lines.join("\n"));
+  }
 
   return parts.join("\n\n");
 }
 
-// --- パース ---
+// --- パース（Notion fetch 結果から種目を抽出） ---
 
 export function parseMenu(text: string): Exercise[] {
   const exercises: Exercise[] = [];
   const lines = text.split("\n");
 
   let currentSection: "strength" | "cardio" | null = null;
-  let headerPassed = false;
+  let inTable = false;
+  let isHeaderRow = true;
+  let cellBuffer: string[] = [];
+  let inCell = false;
 
   for (const line of lines) {
     const trimmed = line.trim();
 
-    // セクション見出し検出
-    if (/##\s*筋トレ/.test(trimmed) || trimmed.includes("筋トレ")) {
+    // セクション検出（Markdown見出し or Notion XML の見出し）
+    if (/筋トレ/.test(trimmed) && !/有酸素/.test(trimmed)) {
       currentSection = "strength";
-      headerPassed = false;
+      inTable = false;
+      isHeaderRow = true;
       continue;
     }
-    if (/##\s*有酸素/.test(trimmed) || trimmed.includes("有酸素")) {
+    if (/有酸素/.test(trimmed)) {
       currentSection = "cardio";
-      headerPassed = false;
+      inTable = false;
+      isHeaderRow = true;
       continue;
     }
 
     if (!currentSection) continue;
-    if (!trimmed.startsWith("|")) continue;
 
-    // ヘッダー行（種目を含む）をスキップ
-    if (trimmed.includes("種目")) {
-      continue;
+    // Notion XML テーブル形式のパース
+    if (trimmed.startsWith("<table")) { inTable = true; continue; }
+    if (trimmed === "</table>") { inTable = false; continue; }
+
+    if (inTable) {
+      if (trimmed === "<tr>" || trimmed.startsWith("<tr ")) {
+        cellBuffer = [];
+        inCell = false;
+        continue;
+      }
+      if (trimmed === "</tr>") {
+        if (isHeaderRow) { isHeaderRow = false; continue; }
+        if (currentSection === "strength" && cellBuffer.length >= 5) {
+          exercises.push({
+            type: "strength",
+            name: cellBuffer[1],
+            weight: cellBuffer[2],
+            sets: Number(cellBuffer[3]) || 0,
+            reps: Number(cellBuffer[4]) || 0,
+            feedback: cellBuffer[5] || "",
+          });
+        } else if (currentSection === "cardio" && cellBuffer.length >= 3) {
+          exercises.push({
+            type: "cardio",
+            name: cellBuffer[1],
+            duration: cellBuffer[2],
+            feedback: cellBuffer[3] || "",
+          });
+        }
+        continue;
+      }
+      if (trimmed.startsWith("<td")) {
+        // Inline <td>content</td>
+        const match = trimmed.match(/<td[^>]*>(.*?)<\/td>/);
+        if (match) {
+          cellBuffer.push(match[1]);
+        } else {
+          inCell = true;
+        }
+        continue;
+      }
+      if (trimmed === "</td>") { inCell = false; continue; }
+      if (inCell) { cellBuffer.push(trimmed); continue; }
     }
 
-    // セパレータ行をスキップ
-    if (trimmed.match(/^\|[\s\-|]+\|$/)) {
-      headerPassed = true;
-      continue;
-    }
+    // プレーン Markdown テーブル形式のパース（フォー���バック）
+    if (trimmed.startsWith("|")) {
+      if (trimmed.includes("種目")) continue;
+      if (trimmed.match(/^\|[\s\-|]+\|$/)) continue;
 
-    if (!headerPassed) continue;
-
-    const cells = trimmed
-      .split("|")
-      .filter(c => c.trim() !== "")
-      .map(c => c.trim());
-
-    if (currentSection === "strength" && cells.length >= 5) {
-      exercises.push({
-        type: "strength",
-        name: cells[1],
-        weight: cells[2],
-        sets: Number(cells[3]) || 0,
-        reps: Number(cells[4]) || 0,
-        feedback: cells[5] || "",
-      });
-    } else if (currentSection === "cardio" && cells.length >= 3) {
-      exercises.push({
-        type: "cardio",
-        name: cells[1],
-        duration: cells[2],
-        feedback: cells[3] || "",
-      });
+      const cells = trimmed.split("|").filter(c => c.trim() !== "").map(c => c.trim());
+      if (currentSection === "strength" && cells.length >= 5) {
+        exercises.push({
+          type: "strength", name: cells[1], weight: cells[2],
+          sets: Number(cells[3]) || 0, reps: Number(cells[4]) || 0,
+          feedback: cells[5] || "",
+        });
+      } else if (currentSection === "cardio" && cells.length >= 3) {
+        exercises.push({
+          type: "cardio", name: cells[1], duration: cells[2],
+          feedback: cells[3] || "",
+        });
+      }
     }
   }
 
@@ -179,11 +280,20 @@ export function parseMenu(text: string): Exercise[] {
 if (import.meta.main) {
   const input = await Bun.stdin.text();
   try {
-    const exercises: Exercise[] = JSON.parse(input);
-    console.log(formatMenu(exercises));
+    const data = JSON.parse(input);
+    if (data.session && data.exercises) {
+      // Notion content mode
+      console.log(formatNotionContent(data.session, data.exercises));
+    } else if (Array.isArray(data)) {
+      // Plain markdown mode (backward compat)
+      console.log(formatMenu(data));
+    } else {
+      throw new Error("Invalid input");
+    }
   } catch {
-    console.error("Usage: echo '<JSON array>' | bun run scripts/gym/format-menu.ts");
-    console.error('Example: echo \'[{"type":"strength","name":"ダンベルプレス","weight":"36kg","sets":3,"reps":8}]\' | bun run scripts/gym/format-menu.ts');
+    console.error("Usage:");
+    console.error('  Notion: echo \'{"session":{"date":"4/18（金）","time":"12:30〜14:00"},"exercises":[...]}\' | bun run scripts/gym/format-menu.ts');
+    console.error('  Plain:  echo \'[{"type":"strength","name":"ダンベルプレス","weight":"36kg","sets":3,"reps":8}]\' | bun run scripts/gym/format-menu.ts');
     process.exit(1);
   }
 }

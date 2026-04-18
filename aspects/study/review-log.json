@@ -1,1 +1,27 @@
-{}
+{
+  "aspects/study/software-engineering/notes/2026-03-17-1.md": {
+    "last_reviewed": "2026-04-15",
+    "interval_days": 1,
+    "review_count": 1
+  },
+  "aspects/study/software-engineering/notes/2026-03-17-2.md": {
+    "last_reviewed": "2026-04-15",
+    "interval_days": 1,
+    "review_count": 1
+  },
+  "aspects/study/software-engineering/notes/2026-03-17-3.md": {
+    "last_reviewed": "2026-04-15",
+    "interval_days": 0,
+    "review_count": 0
+  },
+  "aspects/study/software-engineering/notes/2026-03-18-1.md": {
+    "last_reviewed": "2026-04-15",
+    "interval_days": 1,
+    "review_count": 1
+  },
+  "aspects/study/software-engineering/notes/2026-03-19-1.md": {
+    "last_reviewed": "2026-04-15",
+    "interval_days": 1,
+    "review_count": 1
+  }
+}

@@ -19,6 +19,14 @@ $ARGUMENTS — 章番号 or 日付（省略可。省略時は自動検出）
    ```
    この時刻を変数として覚えておく。後でNotionに登録するときの `--start` に使う。ユーザーには聞かない。
 
+0.5. **仮置きエントリの早期検出**
+   当日の Notion devotion DB に既存エントリがあるか確認する:
+   ```bash
+   bun run scripts/notion/notion-list.ts --date $(TZ=Asia/Tokyo date +%Y-%m-%d) --json
+   ```
+   - 「デボーション」を含むエントリが見つかった場合 → **ページ ID を記録しておく**（Step 3 で enrich に使う）。ユーザーに「既存エントリを見つけたので、完了後にそこに書き込みます」と軽く報告する
+   - 見つからなかった場合 → 通常フロー（Step 3 で新規作成）
+
 1. **前回の章を確認する**
    ```bash
    ls aspects/devotions/2*.md | sort | tail -1
@@ -87,9 +95,13 @@ $ARGUMENTS — 章番号 or 日付（省略可。省略時は自動検出）
      ```bash
      bun run scripts/notion-list.ts --date $(TZ=Asia/Tokyo date +%Y-%m-%d) --json
      ```
-   - エントリが見つかったら:
+   - エントリが見つかったら（仮置き enrich フロー）:
      - `notion-update-page` の `replace_content` でページ本文にローカル md と同じ内容を書き出す（省略・要約しない）
      - ステータスを「完了」に変更する
+     - **Book（書籍名）と Chapter（数値）を設定する**（選択肢にない書籍は `notion-update-data-source` で追加してから設定する）
+     - **icon を 🙏 に設定する**
+     - **タイトルを「デボーション」に正規化する**（仮置き時に「朝デボ」「devotion」等の表記揺れがあり得るため）
+     - **日付の start/end を実際のセッション時刻で更新する**（start: Step 1-0 で記録した時刻、end: `TZ=Asia/Tokyo date +"%H:%M"` で現在時刻を取得）。仮置き時刻はあくまで予定なので、実績で上書きする
    - エントリがなければ手動で登録する（**厳守**）:
      - **開始時刻**: Step 1-0 で記録した時刻を使う
      - **終了時刻**: `TZ=Asia/Tokyo date +"%H:%M"` で現在時刻を取得して使う

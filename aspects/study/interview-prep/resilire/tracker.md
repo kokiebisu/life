@@ -80,8 +80,8 @@
 
 ### Day 6: テスト
 - [ ] table-driven test を書いた（3ケース以上）
-- [ ] **「Testing Trophy とは何か」をResiireの文脈で説明できる**
-- [ ] testcontainers を使った統合テストの概念を語れる
+- [x] **「Testing Trophy とは何か」をResiireの文脈で説明できる**
+- [x] testcontainers を使った統合テストの概念を語れる
 
 ### Day 7: gRPC
 - [ ] .proto ファイルの役割を説明できる
@@ -247,5 +247,20 @@
 - DB: N+1・EXPLAIN ANALYZE
 - システム設計: 問題3 キャッシュ戦略
 チェックできた項目数: 6
+
+### 2026-04-15（Day 6）
+今日やったこと:
+- Go: table-driven test（構造・t.Run・名前の由来）、testcontainers（モックvsDB実立ち上げ）、Testing Trophy
+- DB: N+1（Eager Loading・IN句・JOIN）、EXPLAIN ANALYZE（Seq Scan / actual time / Rows Removed）
+- システム設計: 問題3 キャッシュ戦略（Redis・Invalidation3方式・フォールバック）
+詰まったところ:
+- t.Run の目的をすぐに言えなかった
+- Eviction Policy と Cache Invalidation を混同した
+- キャッシュ戦略は骨格は言えるが選択肢+トレードオフまで練習が必要
+明日やること（Day 7）:
+- Go: gRPC概念（.protoの役割・REST vs gRPCのADR）
+- DB: Q&A練習
+- システム設計: 全問を声に出して練習
+チェックできた項目数: 2（Testing Trophy・testcontainers）
 
 <!-- 以下に毎晩追記 -->

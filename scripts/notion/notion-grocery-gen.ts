@@ -491,6 +491,65 @@ async function generateGroceryList(
   return JSON.parse(jsonMatch[0]) as GroceryListData;
 }
 
+// --- Vegetable image search ---
+
+interface VegetableImageResult {
+  images: Array<{ name: string; url: string }>;
+}
+
+async function fetchVegetableImages(
+  vegetableNames: string[],
+): Promise<Map<string, string>> {
+  if (vegetableNames.length === 0) return new Map();
+
+  const nameList = vegetableNames.map((n, i) => `${i + 1}. ${n}`).join("\n");
+
+  const prompt = `以下の野菜・果物それぞれについて、WebSearchで参考画像を1枚ずつ見つけてください。
+スーパーで実物を見分けるための参考写真として使います。
+
+## 野菜・果物リスト
+${nameList}
+
+## ルール
+- 各アイテムについて「{名前} 野菜」「{名前} vegetable」などで画像検索
+- Wikipedia、Wikimedia Commons、農林水産省など安定したサイトの画像URLを優先
+- 画像URLは直接アクセス可能なURL（.jpg, .png, .webp で終わるもの）
+- 見つからない場合はそのアイテムをスキップ
+
+## 出力フォーマット（JSONのみ、他のテキスト不要）
+{
+  "images": [
+    { "name": "にんじん", "url": "https://..." }
+  ]
+}`;
+
+  try {
+    const response = await callClaude(
+      [{ role: "user", content: prompt }],
+      {
+        allowedTools: ["WebSearch"],
+        maxTurns: Math.min(vegetableNames.length * 2 + 3, 20),
+      },
+    );
+
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.warn("  Warning: Could not parse vegetable image results");
+      return new Map();
+    }
+
+    const data = JSON.parse(jsonMatch[0]) as VegetableImageResult;
+    const map = new Map<string, string>();
+    for (const img of data.images) {
+      map.set(img.name, img.url);
+    }
+    return map;
+  } catch (err: any) {
+    console.warn(`  Warning: Vegetable image fetch failed: ${err.message}`);
+    return new Map();
+  }
+}
+
 // --- Notion block building ---
 
 function richText(text: string): any[] {
@@ -510,14 +569,19 @@ function styledText(
   }));
 }
 
-function buildCategoryBlock(cat: string, items: GroceryItem[]): any {
+function buildCategoryBlock(
+  cat: string,
+  items: GroceryItem[],
+  imageMap?: Map<string, string>,
+): any {
   const emoji = CATEGORY_EMOJI[cat] || "📦";
   const subtotal = items.reduce((sum, i) => sum + i.estimatedPrice, 0);
 
-  const children = items.map((item) => {
+  const children: any[] = [];
+  for (const item of items) {
     const refs =
       item.mealRefs.length > 0 ? ` （${item.mealRefs.join(" / ")}）` : "";
-    return {
+    children.push({
       object: "block",
       type: "to_do",
       to_do: {
@@ -527,8 +591,20 @@ function buildCategoryBlock(cat: string, items: GroceryItem[]): any {
         ]),
         checked: false,
       },
-    };
-  });
+    });
+
+    const imageUrl = imageMap?.get(item.name);
+    if (imageUrl) {
+      children.push({
+        object: "block",
+        type: "image",
+        image: {
+          type: "external",
+          external: { url: imageUrl },
+        },
+      });
+    }
+  }
 
   return {
     object: "block",
@@ -544,7 +620,10 @@ function buildCategoryBlock(cat: string, items: GroceryItem[]): any {
   };
 }
 
-function buildNotionBlocks(data: GroceryListData): any[] {
+function buildNotionBlocks(
+  data: GroceryListData,
+  vegetableImages?: Map<string, string>,
+): any[] {
   const blocks: any[] = [];
 
   // Summary callout (green background)
@@ -581,7 +660,8 @@ function buildNotionBlocks(data: GroceryListData): any[] {
   for (const cat of CATEGORY_ORDER) {
     const items = byCategory.get(cat);
     if (!items || items.length === 0) continue;
-    blocks.push(buildCategoryBlock(cat, items));
+    const imgMap = cat === "野菜・果物" ? vegetableImages : undefined;
+    blocks.push(buildCategoryBlock(cat, items, imgMap));
   }
 
   // Any categories not in CATEGORY_ORDER
@@ -684,6 +764,11 @@ function previewBlock(block: any, indent = ""): string {
     case "bulleted_list_item":
       lines.push(`${indent}- ${text}`);
       break;
+    case "image": {
+      const url = block.image?.external?.url || "(no url)";
+      lines.push(`${indent}🖼️ ${url}`);
+      break;
+    }
     case "divider":
       lines.push(`${indent}---`);
       break;
@@ -785,8 +870,21 @@ async function main() {
     page.shoppingTimeJST,
   );
 
+  // 4b. Fetch vegetable reference images
+  const vegItems = groceryData.items
+    .filter((i) => i.category === "野菜・果物")
+    .map((i) => i.name);
+  let vegetableImages = new Map<string, string>();
+  if (vegItems.length > 0) {
+    console.log(`Fetching vegetable images (${vegItems.length} items) ...`);
+    vegetableImages = await fetchVegetableImages(vegItems);
+    console.log(
+      `  Found images for ${vegetableImages.size}/${vegItems.length} items`,
+    );
+  }
+
   // 5. Build Notion blocks
-  const blocks = buildNotionBlocks(groceryData);
+  const blocks = buildNotionBlocks(groceryData, vegetableImages);
   console.log(`  Blocks: ${blocks.length}`);
 
   // 6. Output

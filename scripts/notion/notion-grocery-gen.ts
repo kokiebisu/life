@@ -10,7 +10,7 @@
  *   bun run scripts/notion-grocery-gen.ts --date 2026-02-17 --dry-run
  */
 
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
 import {
   type ScheduleDbName,
@@ -491,18 +491,41 @@ async function generateGroceryList(
   return JSON.parse(jsonMatch[0]) as GroceryListData;
 }
 
-// --- Vegetable image search ---
+// --- Vegetable image search (with local cache) ---
+
+const VEGGIE_IMAGE_CACHE_PATH = join(ROOT, "scripts/notion/data/vegetable-images.json");
 
 interface VegetableImageResult {
   images: Array<{ name: string; url: string }>;
 }
 
-async function fetchVegetableImages(
-  vegetableNames: string[],
-): Promise<Map<string, string>> {
-  if (vegetableNames.length === 0) return new Map();
+type VegetableImageCache = Record<string, string>;
 
-  const nameList = vegetableNames.map((n, i) => `${i + 1}. ${n}`).join("\n");
+function loadImageCache(): VegetableImageCache {
+  if (!existsSync(VEGGIE_IMAGE_CACHE_PATH)) return {};
+  try {
+    return JSON.parse(readFileSync(VEGGIE_IMAGE_CACHE_PATH, "utf-8"));
+  } catch {
+    return {};
+  }
+}
+
+function saveImageCache(cache: VegetableImageCache): void {
+  const dir = join(ROOT, "scripts/notion/data");
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  writeFileSync(
+    VEGGIE_IMAGE_CACHE_PATH,
+    JSON.stringify(cache, null, 2) + "\n",
+    "utf-8",
+  );
+}
+
+async function searchVegetableImages(
+  names: string[],
+): Promise<Map<string, string>> {
+  if (names.length === 0) return new Map();
+
+  const nameList = names.map((n, i) => `${i + 1}. ${n}`).join("\n");
 
   const prompt = `以下の野菜・果物それぞれについて、WebSearchで参考画像を1枚ずつ見つけてください。
 スーパーで実物を見分けるための参考写真として使います。
@@ -523,31 +546,68 @@ ${nameList}
   ]
 }`;
 
-  try {
-    const response = await callClaude(
-      [{ role: "user", content: prompt }],
-      {
-        allowedTools: ["WebSearch"],
-        maxTurns: Math.min(vegetableNames.length * 2 + 3, 20),
-      },
-    );
+  const response = await callClaude(
+    [{ role: "user", content: prompt }],
+    {
+      allowedTools: ["WebSearch"],
+      maxTurns: Math.min(names.length * 2 + 3, 20),
+    },
+  );
 
-    const jsonMatch = response.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.warn("  Warning: Could not parse vegetable image results");
-      return new Map();
-    }
-
-    const data = JSON.parse(jsonMatch[0]) as VegetableImageResult;
-    const map = new Map<string, string>();
-    for (const img of data.images) {
-      map.set(img.name, img.url);
-    }
-    return map;
-  } catch (err: any) {
-    console.warn(`  Warning: Vegetable image fetch failed: ${err.message}`);
+  const jsonMatch = response.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    console.warn("  Warning: Could not parse vegetable image results");
     return new Map();
   }
+
+  const data = JSON.parse(jsonMatch[0]) as VegetableImageResult;
+  const map = new Map<string, string>();
+  for (const img of data.images) {
+    map.set(img.name, img.url);
+  }
+  return map;
+}
+
+async function fetchVegetableImages(
+  vegetableNames: string[],
+): Promise<Map<string, string>> {
+  if (vegetableNames.length === 0) return new Map();
+
+  // Load cache and split into cached vs uncached
+  const cache = loadImageCache();
+  const result = new Map<string, string>();
+  const uncached: string[] = [];
+
+  for (const name of vegetableNames) {
+    if (cache[name]) {
+      result.set(name, cache[name]);
+    } else {
+      uncached.push(name);
+    }
+  }
+
+  if (result.size > 0) {
+    console.log(`  Cache hit: ${result.size} items`);
+  }
+
+  // Search only for uncached items
+  if (uncached.length > 0) {
+    console.log(`  Searching: ${uncached.length} new items ...`);
+    try {
+      const newImages = await searchVegetableImages(uncached);
+      for (const [name, url] of newImages) {
+        result.set(name, url);
+        cache[name] = url;
+      }
+      // Save updated cache
+      saveImageCache(cache);
+      console.log(`  Cache updated (${Object.keys(cache).length} total entries)`);
+    } catch (err: any) {
+      console.warn(`  Warning: Vegetable image fetch failed: ${err.message}`);
+    }
+  }
+
+  return result;
 }
 
 // --- Notion block building ---

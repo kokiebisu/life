@@ -72,11 +72,9 @@ bun run scripts/validate-entry.ts --date YYYY-MM-DD --title "ジム" --start HH:
 登録前に以下を実行してメニューを決める:
 
 1. **Notion ジム DB から前回セッションを取得する（厳守・ローカル MD より優先）**
-   - `notion-search` で `ジム` を検索し、直近2〜3セッション分のページを特定する
-   - 各ページを `notion-fetch` で取得し、**ページ本文のメニューテーブル**から種目・重量・セット数・回数・フィードバックを読み取る
-   - **テーブルのパース:** ページ本文に `## メニュー` + テーブルがある。`| # | 種目 | 重量 | セット | 回数 | FB |` のフォーマットで統一されている（`scripts/gym/format-menu.ts` で生成）
+   - `notion-fetch` でジム DB（`collection://326ce17f-7b98-806a-be76-000b67b58628`）を参照し、直近2〜3セッション分のエントリを取得する
+   - 取得するプロパティ: 種目・重量・セット数・回数・日付・**フィードバック**
    - **見つからない場合**: `notion-search` で `ジム M/D`（例: `ジム 3/20`）を検索。それでも見つからない場合はユーザーに確認する（JST/UTC ズレで引っかからないことがある）
-   - **旧フォーマット対応**: 古いエントリはプロパティに種目・重量等が入っている場合がある。その場合はプロパティから読み取る（移行期の互換性）
    - **ローカル MD にフィードバックがなくても「フィードバックなし」と勝手に結論しない。** Notion を正とする
 2. **Notion から取得したフィードバックをローカル MD に書き込む**
    - 対応するログファイル（`aspects/gym/logs/YYYY-MM-DD.md`）の末尾に `フィードバック:` セクションとして追記する
@@ -97,7 +95,7 @@ bun run scripts/validate-entry.ts --date YYYY-MM-DD --title "ジム" --start HH:
 
 ### 登録
 
-**1セッション = 1ページ**で Notion MCP の `notion-create-pages` でジムDB（`data_source_id: 326ce17f-7b98-806a-be76-000b67b58628`）に登録する:
+**種目ごとに1エントリずつ**、開始時刻から15分刻みで Notion MCP の `notion-create-pages` でジムDB（`data_source_id: 326ce17f-7b98-806a-be76-000b67b58628`）に登録する:
 
 ```
 parent: data_source_id = 326ce17f-7b98-806a-be76-000b67b58628
@@ -105,41 +103,21 @@ icon: 🏋️
 cover: https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200
 properties:
   名前: ジム
-  date:日付:start: YYYY-MM-DDThh:mm:00+09:00  （JST 必須・セッション開始時刻）
-  date:日付:end:   YYYY-MM-DDThh:mm:00+09:00  （セッション終了時刻）
+  date:日付:start: YYYY-MM-DDThh:mm:00+09:00  （JST 必須・種目ごとに15分ずらす）
+  date:日付:end:   YYYY-MM-DDThh:mm:00+09:00  （start + 15分）
   date:日付:is_datetime: 1
+  種目: 種目名（select）
+  重量: 推奨重量の数値
+  セット数: セット数
+  回数: 回数
 ```
 
-ページ作成後、`notion-update-page` の `replace_content` でメニューテーブルを本文に書き込む。
-
-**メニューテーブル生成（厳守）:** `scripts/gym/format-menu.ts` を使って統一フォーマットを生成する:
-
-```bash
-echo '<JSON配列>' | bun run scripts/gym/format-menu.ts
-```
-
-JSON配列のフォーマット:
-```json
-[
-  {"name": "フィックスドプルダウン", "weight": "65kg", "sets": 3, "reps": 8},
-  {"name": "スクワットマシン", "weight": "32.5kg", "sets": 3, "reps": 8},
-  {"name": "ウォーキング", "weight": "—", "sets": "—", "reps": "15分"}
-]
-```
-
-生成されるテーブル:
-```markdown
-## メニュー
-
-| # | 種目 | 重量 | セット | 回数 | FB |
-|---|------|------|--------|------|-----|
-| 1 | フィックスドプルダウン | 65kg | 3 | 8 |  |
-| 2 | スクワットマシン | 32.5kg | 3 | 8 |  |
-| 3 | ウォーキング | — | — | 15分 |  |
-```
+例: 開始 13:00、3種目の場合
+- 種目1（ベンチプレス）: 13:00〜13:15
+- 種目2（スクワット）: 13:15〜13:30
+- 種目3（ウォーキング）: 13:30〜13:45
 
 ※ `notion-add.ts --db routine` は使わない。ジム予定はジムDBで管理する。
-※ 種目・重量・セット数・回数・フィードバックはプロパティではなくページ本文のテーブルで管理する。
 
 ### キャッシュクリア
 
@@ -196,43 +174,52 @@ bun run scripts/cache-status.ts --clear
 
 ユーザーの入力を受け取る。体感メモも任意で確認する。
 
+### Notion DB の種目オプション確認
+
+`.env.local` から `NOTION_GYM_DB` を読み取る（`326ce17f-7b98-801b-b403-f9aebac84861`）。
+
+ユーザーが入力した種目名が DB のスキーマに存在しない場合は、`notion-update-data-source` で先に追加する:
+```
+data_source_id: 326ce17f-7b98-806a-be76-000b67b58628
+statements: ALTER COLUMN "種目" SET SELECT('既存オプション...', '新種目名':gray)
+```
+
+現在の種目オプション: フィックスドプルダウン, プレートロードドインクラインプレス, スクワットマシン, ベンチプレス, スクワット, デッドリフト
+
 ### Notion 重複チェック
 
 Notion MCP の `notion-search` で同日のエントリを確認する:
 - 検索クエリ: `ジム M/D`（例: `ジム 3/15`）
 - 既存エントリがあればユーザーに確認してから登録する
 
+### 時間の割り当て（厳守）
+
+複数種目を登録するとき、**全種目に同じ時間を入れない。** 開始時刻から15分刻みで順列に割り当てる。
+
+例: 開始 15:00、3種目の場合
+- 種目1: 15:00〜15:15
+- 種目2: 15:15〜15:30
+- 種目3: 15:30〜15:45
+
 ### Notion ジムログDB に登録
 
-**1セッション = 1ページ**で Notion MCP の `notion-create-pages` でジムDB に登録する。
+Notion MCP の `notion-create-pages` を使って各種目を1エントリずつ登録する。
 
 ```
 parent: data_source_id = 326ce17f-7b98-806a-be76-000b67b58628
-icon: 🏋️
-cover: https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200
-properties:
-  名前: ジム
-  date:日付:start: YYYY-MM-DDThh:mm:00+09:00  （JST 必須・セッション開始時刻）
-  date:日付:end:   YYYY-MM-DDThh:mm:00+09:00  （セッション終了時刻）
-  date:日付:is_datetime: 1
 ```
 
-ページ作成後、`notion-update-page` の `replace_content` でメニューテーブルを本文に書き込む。
-
-**メニューテーブル生成（厳守）:** `scripts/gym/format-menu.ts` を使って統一フォーマットを生成する:
-
-```bash
-echo '<JSON配列>' | bun run scripts/gym/format-menu.ts
-```
-
-JSON配列のフォーマット（フィードバック付き）:
-```json
-[
-  {"name": "フィックスドプルダウン", "weight": "65kg", "sets": 3, "reps": 8, "feedback": "余裕！"},
-  {"name": "スクワットマシン", "weight": "32.5kg", "sets": 3, "reps": 8, "feedback": "ギリギリ"},
-  {"name": "ウォーキング", "weight": "—", "sets": "—", "reps": "15分"}
-]
-```
+各エントリのパラメータ:
+- `icon`: `🏋️`
+- `cover`: `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200`
+- `名前`: `ジム`（日付は 日付プロパティで管理するためタイトルに含めない）
+- `date:日付:start`: `YYYY-MM-DDThh:mm:00+09:00`（JST 必須）
+- `date:日付:end`: `YYYY-MM-DDThh:mm:00+09:00`（終了時刻）
+- `date:日付:is_datetime`: `1`
+- `種目`: 種目名（select）
+- `重量`: 重量の数値（プレートロードドは追加重量を記録）
+- `セット数`: セット数
+- `回数`: 回数
 
 ### キャッシュクリア
 

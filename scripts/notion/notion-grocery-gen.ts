@@ -70,12 +70,22 @@ interface FreezeMemo {
   instruction: string;
 }
 
+interface InventoryItem {
+  category: string;
+  name: string;
+  quantity: string;
+  mealRefs: string[];
+  source: "fridge" | "pantry";
+}
+
 interface GroceryListData {
   periodSummary: string;
   estimatedTotal: string;
   eatingOutNotes: string[];
   cookingNotes: string[];
   items: GroceryItem[];
+  inventoryItems: InventoryItem[];
+  pantryItems: InventoryItem[];
   freezeMemos: FreezeMemo[];
 }
 
@@ -327,7 +337,12 @@ const SYSTEM_PROMPT = `あなたは買い出しリスト生成アシスタント
 
 ## ルール
 
-1. **カテゴリ分類**（この順番で出力）:
+1. **3分類で出力**: 食材を以下の3つに分類する:
+   - **購入品 (items)**: 冷蔵庫にも常備品にもない、買う必要がある食材
+   - **在庫 (inventoryItems)**: 冷蔵庫（fridge）にあり、購入不要な食材。献立で使う分だけリストアップ
+   - **常備品 (pantryItems)**: 常備調味料（pantry）にあり、購入不要な食材。献立で使う分だけリストアップ
+
+2. **カテゴリ分類**（購入品のみ。この順番で出力）:
    - 肉・魚
    - 卵・乳製品
    - 豆腐・納豆
@@ -335,11 +350,9 @@ const SYSTEM_PROMPT = `あなたは買い出しリスト生成アシスタント
    - 主食
    - おやつ・その他
 
-2. **量の見積もり**: 1人前で適切な量を推定（例: 肉150g、野菜1/2玉など）
+3. **量の見積もり**: 1人前で適切な量を推定（例: 肉150g、野菜1/2玉など）
 
-3. **価格見積もり**: あおば食品の価格表を参考に。価格不明なら一般的なスーパーの相場で推定
-
-4. **常備調味料（pantry）は除外**: 塩、胡椒、味噌、醤油、胡麻油など常備品はリストに入れない
+4. **価格見積もり**: 購入品のみ。あおば食品の価格表を参考に。価格不明なら一般的なスーパーの相場で推定
 
 5. **外食の食事は食材不要**: 「外食」と記載された食事の食材は買わない
 
@@ -356,7 +369,7 @@ const SYSTEM_PROMPT = `あなたは買い出しリスト生成アシスタント
 
 10. **買い出し前の食事は除外**: 買い出し時刻が指定されている場合、買い出し当日でその時刻より前の食事（朝食など）の食材は買い出しリストに含めない。在庫・前回の買い出しで対応する前提
 
-11. **冷蔵庫の在庫を考慮**: 冷蔵庫の在庫情報が提供されている場合、十分な量がある食材は買い出しリストから除外する（例: 卵が8個あり必要数が4個なら購入不要）
+11. **冷蔵庫の在庫を考慮**: 冷蔵庫に十分な量がある食材は inventoryItems に分類する（購入不要）。量が足りない場合は不足分を items（購入品）に、在庫分を inventoryItems に入れる
 
 ## 出力フォーマット
 
@@ -374,6 +387,24 @@ const SYSTEM_PROMPT = `あなたは買い出しリスト生成アシスタント
       "quantity": "300g",
       "mealRefs": ["土昼 豚キムチ 150g", "火夜 重ね蒸し 150g"],
       "estimatedPrice": 500
+    }
+  ],
+  "inventoryItems": [
+    {
+      "category": "卵・乳製品",
+      "name": "卵",
+      "quantity": "4個（在庫8個から使用）",
+      "mealRefs": ["土朝 目玉焼き", "日朝 スクランブルエッグ"],
+      "source": "fridge"
+    }
+  ],
+  "pantryItems": [
+    {
+      "category": "調味料",
+      "name": "醤油",
+      "quantity": "適量",
+      "mealRefs": ["土昼 豚キムチ", "日夜 煮物"],
+      "source": "pantry"
     }
   ],
   "freezeMemos": [
@@ -544,6 +575,39 @@ function buildCategoryBlock(cat: string, items: GroceryItem[]): any {
   };
 }
 
+function buildInventoryBlock(
+  title: string,
+  emoji: string,
+  color: string,
+  items: InventoryItem[],
+): any {
+  const children = items.map((item) => {
+    const refs =
+      item.mealRefs.length > 0 ? ` （${item.mealRefs.join(" / ")}）` : "";
+    return {
+      object: "block",
+      type: "bulleted_list_item",
+      bulleted_list_item: {
+        rich_text: styledText([
+          { text: `${item.name} ${item.quantity}`, bold: true },
+          ...(refs ? [{ text: refs, color: "gray" as const }] : []),
+        ]),
+      },
+    };
+  });
+
+  return {
+    object: "block",
+    type: "callout",
+    callout: {
+      rich_text: richText(title),
+      icon: { type: "emoji", emoji },
+      color,
+      children,
+    },
+  };
+}
+
 function buildNotionBlocks(data: GroceryListData): any[] {
   const blocks: any[] = [];
 
@@ -570,6 +634,13 @@ function buildNotionBlocks(data: GroceryListData): any[] {
   // Divider
   blocks.push({ object: "block", type: "divider", divider: {} });
 
+  // --- 購入品 section ---
+  blocks.push({
+    object: "block",
+    type: "heading_2",
+    heading_2: { rich_text: richText("🛍️ 購入品") },
+  });
+
   // Group items by category
   const byCategory = new Map<string, GroceryItem[]>();
   for (const item of data.items) {
@@ -588,6 +659,44 @@ function buildNotionBlocks(data: GroceryListData): any[] {
   for (const [cat, items] of byCategory) {
     if (CATEGORY_ORDER.includes(cat)) continue;
     blocks.push(buildCategoryBlock(cat, items));
+  }
+
+  // --- 在庫 section (from fridge) ---
+  const inventoryItems = data.inventoryItems || [];
+  if (inventoryItems.length > 0) {
+    blocks.push({ object: "block", type: "divider", divider: {} });
+    blocks.push({
+      object: "block",
+      type: "heading_2",
+      heading_2: { rich_text: richText("🧊 在庫") },
+    });
+    blocks.push(
+      buildInventoryBlock(
+        "冷蔵庫から使う食材（購入不要）",
+        "🧊",
+        "blue_background",
+        inventoryItems,
+      ),
+    );
+  }
+
+  // --- 常備品 section (from pantry) ---
+  const pantryItems = data.pantryItems || [];
+  if (pantryItems.length > 0) {
+    blocks.push({ object: "block", type: "divider", divider: {} });
+    blocks.push({
+      object: "block",
+      type: "heading_2",
+      heading_2: { rich_text: richText("🏠 常備品") },
+    });
+    blocks.push(
+      buildInventoryBlock(
+        "常備調味料・食品（購入不要）",
+        "🏠",
+        "yellow_background",
+        pantryItems,
+      ),
+    );
   }
 
   // Freeze memos

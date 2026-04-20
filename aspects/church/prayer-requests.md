@@ -30,7 +30,7 @@
 | Midori | 体調の回復（痙攣・風邪・ストレス・花粉症）・ainaの結婚式 | 2026-04-15 | [people/midori.md](../people/church/new-hope/yokohama/fuse/midori.md) |
 | Wes | 長野への引っ越し | 2026-03-20 | [people/wes.md](../people/church/new-hope/yokohama/fuse/wes.md) |
 | Shiori | 長野への引っ越し | 2026-03-20 | [people/shiori.md](../people/church/new-hope/yokohama/fuse/shiori.md) |
-| かづき | 離婚成立後の新シーズンへの導き | 2026-03-24 | [people/kazuki.md](../people/church/new-hope/yokohama/fuse/kazuki.md) |
+| かづき | 次のシーズンへの導き（離婚成立後） | 2026-04-18 | [people/kazuki.md](../people/church/new-hope/yokohama/fuse/kazuki.md) |
 | Shota | — | — | [people/shota.md](../people/church/new-hope/yokohama/fuse/shota.md) |
 
 ### English Ministry
@@ -72,3 +72,4 @@
 | Midori | 卒業式と新シーズン | 2026-03-18 | 2026-04-08 |
 | Shinya | 風邪の完治 | 2026-04-08 | 2026-04-13 |
 | マリヤ | これからの進路（オーストラリアへの確信） | 2026-03-20 | 2026-04-16 |
+| かづき | 恐れの中での正しい選択 | 2026-03-24 | 2026-04-18 |

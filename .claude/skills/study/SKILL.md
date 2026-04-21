@@ -71,18 +71,27 @@ console.log(data.results[0]?.id);
 "
 ```
 
-### Step 3b: `notion-update-page` でプロパティを設定
+### Step 3b: プロパティ検証（厳守）
 
-Notion MCP の `notion-update-page` を使って以下を設定する（ページ本文は `notion-add.ts` が書き込み済み）:
+`notion-add.ts` 実行後、**必ず `notion-fetch` でページを取得し、以下のプロパティが設定されているか確認する**:
+
+- `カテゴリ` — カテゴリ名が入っているか
+- `本` — 本のタイトルが入っているか（指定時）
+- `Chapter` — Chapter 番号が入っているか（指定時）
+
+**いずれかが未設定の場合**、`notion-update-page` で補完する:
 
 ```
-select:カテゴリ: <カテゴリ名>
-select:本: <本のタイトル>  (あれば)
-rich_text:著者: <著者名>  (あれば)
-rich_text:Chapter: <数字のみ e.g. "5">  (あれば)
+カテゴリ: <カテゴリ名>
+本: <本のタイトル>
+Chapter: <数字のみ e.g. "5">
 icon: 📖
 cover: https://www.notion.so/images/page-cover/gradients_8.png
 ```
+
+**注意:** プロパティ名にプレフィックス（`select:` `rich_text:` 等）は不要。プロパティ名をそのまま使うこと。
+
+この検証ステップをスキップしない。`notion-add.ts` が自動設定するはずでも、確認なしに信用しない。
 
 ---
 

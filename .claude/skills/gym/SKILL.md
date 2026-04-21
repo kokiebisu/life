@@ -114,7 +114,7 @@ properties:
 **本文生成（厳守）:** `scripts/gym/format-menu.ts` にセッション情報 + 種目データを渡す:
 
 ```bash
-echo '{"session":{"date":"4/18（金）","time":"12:30〜14:00"},"exercises":[{"type":"strength","name":"フィックスドプルダウン","weight":"65kg","sets":3,"reps":8},{"type":"cardio","name":"ウォーキング","duration":"15分"}]}' | bun run scripts/gym/format-menu.ts
+echo '{"session":{"date":"4/18（金）","time":"12:30〜14:00"},"exercises":[{"type":"strength","name":"フィックスドプルダウン","weight":"65","sets":3,"reps":8},{"type":"cardio","name":"ウォーキング","duration":"15分"}]}' | bun run scripts/gym/format-menu.ts
 ```
 
 スクリプトが自動生成するもの:
@@ -230,7 +230,7 @@ properties:
 ページ作成後（または既存ページ更新時）、`scripts/gym/format-menu.ts` にセッション情報 + 種目データ（FB 付き）を渡す:
 
 ```bash
-echo '{"session":{"date":"4/18（金）","time":"12:30〜14:00"},"exercises":[{"type":"strength","name":"フィックスドプルダウン","weight":"65kg","sets":3,"reps":8,"feedback":"余裕"},{"type":"cardio","name":"ウォーキング","duration":"15分","feedback":"まあまあ"}]}' | bun run scripts/gym/format-menu.ts
+echo '{"session":{"date":"4/18（金）","time":"12:30〜14:00"},"exercises":[{"type":"strength","name":"フィックスドプルダウン","weight":"65","sets":3,"reps":8,"feedback":"余裕"},{"type":"cardio","name":"ウォーキング","duration":"15分","feedback":"まあまあ"}]}' | bun run scripts/gym/format-menu.ts
 ```
 
 出力を `notion-update-page` の `replace_content` でページ本文に書き込む。`allow_deleting_content: true` を指定する。

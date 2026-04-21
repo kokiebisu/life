@@ -106,7 +106,7 @@ export function formatNotionContent(session: SessionInfo, exercises: Exercise[])
 \t<tr color="blue_bg">
 \t\t<td>#</td>
 \t\t<td>種目</td>
-\t\t<td>重量</td>
+\t\t<td>重量（kg）</td>
 \t\t<td>セット</td>
 \t\t<td>回数</td>
 \t\t<td>FB</td>
@@ -150,7 +150,7 @@ export function formatMenu(exercises: Exercise[]): string {
   if (strength.length > 0) {
     const lines = [
       "## 筋トレ", "",
-      "| # | 種目 | 重量 | セット | 回数 | FB |",
+      "| # | 種目 | 重量（kg） | セット | 回数 | FB |",
       "|---|------|------|--------|------|-----|",
     ];
     strength.forEach((e, i) => {

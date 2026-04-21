@@ -844,6 +844,9 @@ async function main() {
 
   // --- Enrich unenriched pages (icon/cover) across all known DBs ---
   if (!noEnrich) {
+    const pastStart = new Date(today + "T12:00:00+09:00");
+    pastStart.setDate(pastStart.getDate() - 30);
+    const pastStartDate = pastStart.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
     const futureEnd = new Date(today + "T12:00:00+09:00");
     futureEnd.setDate(futureEnd.getDate() + 60);
     const futureEndDate = futureEnd.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
@@ -878,11 +881,11 @@ async function main() {
     for (const [dbId, conf] of enrichMap) {
       let pages: any[];
       if (conf.dateProp) {
-        // Schedule DBs: only future pages
+        // Schedule DBs: past 30 days + future 60 days
         const data = await notionFetch(getApiKey(), `/databases/${dbId}/query`, {
           filter: {
             and: [
-              { property: conf.dateProp, date: { on_or_after: today } },
+              { property: conf.dateProp, date: { on_or_after: pastStartDate } },
               { property: conf.dateProp, date: { on_or_before: futureEndDate } },
             ],
           },

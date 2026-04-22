@@ -903,11 +903,15 @@ async function main() {
   const dryRun = flags.has("dry-run");
   const pageId = opts["page-id"];
   const date = opts.date;
+  const endDateOverride = opts["end-date"];
 
   if (!pageId && !date) {
     console.error("Usage:");
     console.error("  bun run scripts/notion-grocery-gen.ts --page-id <id>");
     console.error("  bun run scripts/notion-grocery-gen.ts --date 2026-02-17");
+    console.error(
+      "  bun run scripts/notion-grocery-gen.ts --date 2026-02-17 --end-date 2026-02-19",
+    );
     console.error(
       "  bun run scripts/notion-grocery-gen.ts --date 2026-02-17 --dry-run",
     );
@@ -921,6 +925,11 @@ async function main() {
   const page = pageId
     ? await getPageDateRange(apiKey, pageId)
     : await findGroceriesPage(apiKey, date!);
+
+  // Override end date if --end-date is provided (for multi-day meal plans with single-day grocery page)
+  if (endDateOverride) {
+    page.dateEnd = endDateOverride;
+  }
 
   console.log(`  Page: ${page.title} (${page.id})`);
   console.log(`  Range: ${page.dateStart} ~ ${page.dateEnd}`);

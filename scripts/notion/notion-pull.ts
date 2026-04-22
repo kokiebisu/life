@@ -847,7 +847,12 @@ async function main() {
     const futureEnd = new Date(today + "T12:00:00+09:00");
     futureEnd.setDate(futureEnd.getDate() + 60);
     const futureEndDate = futureEnd.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
-    // Dates already processed above — skip them in the enrich pass
+    // Track which dbIds were already enriched in the event pull phase
+    const processedDbIds = new Set<string>();
+    for (const db of eventDbs) {
+      const dbConf = getScheduleDbConfigOptional(db);
+      if (dbConf) processedDbIds.add(dbConf.dbId);
+    }
     const processedSet = new Set(dates);
 
     // Build deduplicated map of all DBs to enrich (keyed by dbId)
@@ -898,7 +903,7 @@ async function main() {
         const dateStr = conf.dateProp
           ? (page.properties?.[conf.dateProp]?.date?.start?.split("T")[0] || "")
           : "";
-        if (dateStr && processedSet.has(dateStr)) continue;
+        if (dateStr && processedSet.has(dateStr) && processedDbIds.has(dbId)) continue;
 
         const hasIcon = !!page.icon;
         const hasCover = !!page.cover;

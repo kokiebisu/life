@@ -138,7 +138,7 @@ async function backfillSound(dryRun: boolean, force: boolean) {
     if (!force && page.icon && page.cover) continue;
     const title = (page.properties[dbConf.config.titleProp]?.title || [])
       .map((t: any) => t.plain_text || "").join("");
-    const icon = pickTaskIcon(title, "🎛️");
+    const icon = pickTaskIcon(title, dbConf.config.defaultIcon);
     const cover = pickCover();
 
     updated++;
@@ -163,7 +163,7 @@ async function backfillMeals(dryRun: boolean, force: boolean) {
     if (!force && page.icon && page.cover) continue;
     const title = (page.properties[dbConf.config.titleProp]?.title || [])
       .map((t: any) => t.plain_text || "").join("");
-    const icon = pickTaskIcon(title, "🍽️");
+    const icon = pickTaskIcon(title, dbConf.config.defaultIcon);
     const cover = pickCover();
 
     updated++;
@@ -239,6 +239,31 @@ async function backfillJob(dryRun: boolean, force: boolean) {
     const title = (page.properties["名前"]?.title || [])
       .map((t: any) => t.plain_text || "").join("");
     const icon = pickTaskIcon(title, "💼");
+    const cover = pickCover();
+
+    updated++;
+    if (dryRun) {
+      console.log(`  [DRY] ${icon.emoji} ${title}`);
+    } else {
+      await updatePage(page.id, icon, cover);
+      console.log(`  ${icon.emoji} ${title}`);
+    }
+  }
+  console.log(`  → ${dryRun ? "would update" : "updated"} ${updated}/${pages.length}`);
+}
+
+async function backfillOther(dryRun: boolean, force: boolean) {
+  const dbConf = getScheduleDbConfigOptional("other");
+  if (!dbConf) { console.log("\n📋 Other (その他): スキップ（DB未設定）"); return; }
+  const pages = await queryAll(dbConf.dbId);
+  console.log(`\n📋 Other (その他): ${pages.length} pages`);
+
+  let updated = 0;
+  for (const page of pages) {
+    if (!force && page.icon && page.cover) continue;
+    const title = (page.properties[dbConf.config.titleProp]?.title || [])
+      .map((t: any) => t.plain_text || "").join("");
+    const icon = pickTaskIcon(title);
     const cover = pickCover();
 
     updated++;

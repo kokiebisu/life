@@ -430,7 +430,8 @@ async function enrichEntries(entries: MergedEntry[], date: string, dryRun: boole
 
     if (!dryRun && entry.notionId) {
       const updates: Record<string, unknown> = {};
-      if (!entry.hasIcon) updates.icon = pickTaskIcon(entry.title);
+      const dbConf = entry.dbName ? SCHEDULE_DB_CONFIGS[entry.dbName] : undefined;
+      if (!entry.hasIcon) updates.icon = pickTaskIcon(entry.title, dbConf?.defaultIcon);
       if (!entry.hasCover) updates.cover = pickCover();
       if (Object.keys(updates).length > 0) {
         console.log(`  ENRICH: ${entry.title} — adding icon/cover`);
@@ -866,7 +867,7 @@ async function main() {
     for (const [name, conf] of Object.entries(SCHEDULE_DB_CONFIGS)) {
       const dbId = getDbIdOptional(conf.envKey);
       if (!dbId || enrichMap.has(dbId)) continue;
-      enrichMap.set(dbId, { titleProp: conf.titleProp, label: name, dateProp: conf.dateProp });
+      enrichMap.set(dbId, { titleProp: conf.titleProp, label: name, dateProp: conf.dateProp, defaultIcon: conf.defaultIcon });
     }
 
     // Extra DBs not in SCHEDULE_DB_CONFIGS
@@ -874,6 +875,7 @@ async function main() {
       ["NOTION_JOB_DB",            { titleProp: "名前",        label: "job",             dateProp: "日付", defaultIcon: "💼" }],
       ["NOTION_GYM_DB",            { titleProp: "名前",        label: "gym",             dateProp: "日付" }],
       ["NOTION_MAJIWARI_DB",       { titleProp: "名前",        label: "majiwari",        dateProp: "日付" }],
+      ["NOTION_OTHER_DB",          { titleProp: "名前",        label: "other",           dateProp: "日付" }],
       ["NOTION_ARTICLES_DB",       { titleProp: "タイトル",    label: "articles" }],
       ["NOTION_CHURCH_MESSAGES_DB",{ titleProp: "名前",        label: "church_messages" }],
     ];

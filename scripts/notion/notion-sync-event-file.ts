@@ -358,7 +358,7 @@ async function main() {
       } else {
         // New event — create
         const properties = buildProperties(event, date, config);
-        const icon = pickTaskIcon(event.title);
+        const icon = pickTaskIcon(event.title, config.defaultIcon);
         const cover = pickCover();
         console.log(`  CREATE: ${event.title}`);
         if (!dryRun) {

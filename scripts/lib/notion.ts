@@ -333,6 +333,16 @@ export function todayJST(): string {
   return new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
 }
 
+/**
+ * 時刻を含む ISO 文字列にタイムゾーンがなければ +09:00 (JST) を自動付与する。
+ * 日付のみ（時刻なし）の場合はそのまま返す。
+ */
+export function ensureJST(dateStr: string): string {
+  if (!dateStr.includes("T")) return dateStr; // date-only
+  if (/[+\-]\d{2}:\d{2}$/.test(dateStr) || dateStr.endsWith("Z")) return dateStr; // already has tz
+  return dateStr + "+09:00";
+}
+
 // --- Icon & Cover helpers ---
 
 const TASK_ICON_KEYWORDS: [RegExp, string][] = [

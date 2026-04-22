@@ -494,3 +494,58 @@ export async function findSimilarEntries(
 
   return results;
 }
+
+// --- DB Schema Validation ---
+
+const schemaCache = createCache("notion-schema", { defaultTtlMs: 30 * 60_000 }); // 30 min
+
+interface DbSchema {
+  properties: Record<string, { type: string; select?: { options: { name: string }[] }; status?: { options: { name: string }[] } }>;
+}
+
+async function fetchDbSchema(dbId: string): Promise<DbSchema> {
+  const cached = schemaCache.get<DbSchema>(dbId);
+  if (cached) return cached;
+
+  const apiKey = getApiKey();
+  const data = await notionFetch(apiKey, `/databases/${dbId}`, undefined, "GET");
+  const schema: DbSchema = { properties: {} };
+  for (const [name, prop] of Object.entries(data.properties ?? {})) {
+    const p = prop as any;
+    schema.properties[name] = { type: p.type };
+    if (p.type === "select" && p.select?.options) {
+      schema.properties[name].select = { options: p.select.options.map((o: any) => ({ name: o.name })) };
+    }
+    if (p.type === "status" && p.status?.options) {
+      schema.properties[name].status = { options: p.status.options.map((o: any) => ({ name: o.name })) };
+    }
+  }
+  schemaCache.set(dbId, schema);
+  return schema;
+}
+
+/**
+ * select/status プロパティの値がDBスキーマに存在するか検証する。
+ * 存在しない場合はエラーをthrow（有効な選択肢一覧を含む）。
+ */
+export async function validateSelectValue(dbId: string, propName: string, value: string): Promise<void> {
+  const schema = await fetchDbSchema(dbId);
+  const prop = schema.properties[propName];
+  if (!prop) {
+    const available = Object.keys(schema.properties).join(", ");
+    throw new Error(`Property "${propName}" not found in DB. Available: ${available}`);
+  }
+  if (prop.type === "select") {
+    const options = prop.select?.options?.map(o => o.name) ?? [];
+    if (!options.includes(value)) {
+      throw new Error(`Invalid select value "${value}" for "${propName}". Valid options: ${options.join(", ")}`);
+    }
+  } else if (prop.type === "status") {
+    const options = prop.status?.options?.map(o => o.name) ?? [];
+    if (!options.includes(value)) {
+      throw new Error(`Invalid status value "${value}" for "${propName}". Valid options: ${options.join(", ")}`);
+    }
+  } else {
+    throw new Error(`Property "${propName}" is type "${prop.type}", not select/status`);
+  }
+}

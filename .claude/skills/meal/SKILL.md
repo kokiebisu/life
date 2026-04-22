@@ -1,1 +1,0 @@
-../../../skills/meal/SKILL.md

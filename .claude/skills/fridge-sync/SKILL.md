@@ -1,1 +1,0 @@
-../../../skills/fridge-sync/SKILL.md

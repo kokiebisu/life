@@ -1,1 +1,0 @@
-../../../skills/fukushuu/SKILL.md

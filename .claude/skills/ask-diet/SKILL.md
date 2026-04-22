@@ -1,1 +1,0 @@
-../../../skills/ask-diet/SKILL.md

@@ -1,1 +1,0 @@
-../../../skills/from-notion/SKILL.md

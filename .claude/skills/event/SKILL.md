@@ -1,1 +1,0 @@
-../../../skills/event/SKILL.md

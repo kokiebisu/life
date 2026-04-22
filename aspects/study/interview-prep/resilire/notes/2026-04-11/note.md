@@ -93,3 +93,9 @@ go func() {
 - OSスレッドとプロセスの区別 → プロセスはメモリ独立、スレッドはメモリ共有
 - `defer cancel()` は `go func` のgoroutineではなく、呼び出し元の関数が return するときに呼ばれる
 - `ctx.Done()` は信号を受け取るだけ。`return` を書かないと goroutine はリークする
+
+## ❓ 自分への質問（コーネル式キュー）
+
+1. goroutineとOSスレッドの違いは？M:Nモデルとは？
+2. unbuffered channelとbuffered channelの違い。closeの責任が送信側にある理由は？
+3. context.WithTimeoutとcontext.WithCancelの使い分けは？`defer cancel()` を書く理由は？

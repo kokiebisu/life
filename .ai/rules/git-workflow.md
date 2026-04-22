@@ -70,7 +70,7 @@ git pull origin main
 - 1コミットポイント = 1PR（変更をまとめすぎない）
 - PR タイトル・本文は `/pr` スキルに従う
 
-## `gh pr create` 失敗時のフォールバック（厳守）
+## `gh pr create` 失敗時のフォールバック（厳守）<!-- コード化済み: scripts/create-pr.ts -->
 
 `gh pr create` が "No commits between main and ..." エラーで失敗した場合、**即座に `gh api` で直接 PR を作成する。** リトライしない。
 

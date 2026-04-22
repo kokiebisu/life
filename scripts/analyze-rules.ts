@@ -22,7 +22,7 @@ async function collectFiles(): Promise<string[]> {
   const files: string[] = [];
   for (const pattern of TARGET_PATTERNS) {
     const glob = new Glob(pattern);
-    for await (const file of glob.scan({ cwd: process.cwd() })) {
+    for await (const file of glob.scan({ cwd: process.cwd(), dot: true })) {
       files.push(file);
     }
   }

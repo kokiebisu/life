@@ -615,6 +615,38 @@ function renderTasksFile(header: string, inbox: TaskEntry[], footer: string, new
   return lines.join("\n");
 }
 
+// --- Dry-run anomaly validation ---
+
+interface DryRunAnomaly {
+  entry: string;
+  reason: string;
+}
+
+function validateDryRunEntries(entries: MergedEntry[]): DryRunAnomaly[] {
+  const anomalies: DryRunAnomaly[] = [];
+  for (const e of entries) {
+    if (e.allDay || !e.startTime) continue;
+    const label = `${e.startTime}-${e.endTime} ${e.title}`;
+
+    // Check for time >= 24:00
+    const startHour = parseInt(e.startTime.split(":")[0], 10);
+    const endHour = parseInt(e.endTime.split(":")[0], 10);
+    if (startHour >= 24 || endHour >= 24) {
+      anomalies.push({ entry: label, reason: `時刻が24:00以降 (${startHour >= 24 ? e.startTime : e.endTime})` });
+    }
+
+    // Check for start time shifted 2+ hours earlier than original
+    if (e.source === "both" && e.oldStartTime && e.startTime) {
+      const oldMin = timeToMinutes(e.oldStartTime);
+      const newMin = timeToMinutes(e.startTime);
+      if (oldMin - newMin >= 120) {
+        anomalies.push({ entry: label, reason: `開始時刻が ${e.oldStartTime} → ${e.startTime} (${oldMin - newMin}分前倒し)` });
+      }
+    }
+  }
+  return anomalies;
+}
+
 // --- Main ---
 
 async function main() {
@@ -645,6 +677,7 @@ async function main() {
   let totalAdded = 0, totalUpdated = 0, totalKept = 0, totalRemoved = 0, totalEnriched = 0;
 
   const today = todayJST();
+  const allDryRunEntries: MergedEntry[] = [];
 
   // --- Event DBs → event files ---
   for (const date of dates) {
@@ -757,7 +790,9 @@ async function main() {
         console.log(`  DROP: ${d} (not in Notion)`);
       }
 
-      if (!dryRun) {
+      if (dryRun) {
+        allDryRunEntries.push(...r.final);
+      } else {
         const content = renderFile(date, r.final);
         const dir = dirname(r.filePath);
         if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
@@ -929,6 +964,18 @@ async function main() {
         }
         totalEnriched++;
       }
+    }
+  }
+
+  if (dryRun && allDryRunEntries.length > 0) {
+    const anomalies = validateDryRunEntries(allDryRunEntries);
+    if (anomalies.length > 0) {
+      console.error("\n⚠️  異常値検出（自動チェック）:");
+      for (const a of anomalies) {
+        console.error(`  [${a.reason}] ${a.entry}`);
+      }
+      console.error("\n実行前にユーザーに確認してください。");
+      process.exit(1);
     }
   }
 

@@ -256,8 +256,7 @@ async function main() {
     process.exit(0);
   }
 
-  const defaultEmoji = dbName === "meals" ? "🍽️" : "📌";
-  const icon = pickTaskIcon(opts.title, defaultEmoji);
+  const icon = pickTaskIcon(opts.title, config.defaultIcon || "📌");
   const cover = pickCover();
 
   const data: any = await notionFetch(apiKey, "/pages", { parent: { database_id: dbId }, properties, icon, cover });

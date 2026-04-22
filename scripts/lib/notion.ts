@@ -80,15 +80,16 @@ export interface ScheduleDbConfig {
   statusProp?: string;
   statusDone?: string;
   extraFilter?: Record<string, unknown>;
+  defaultIcon?: string;
 }
 
 export const SCHEDULE_DB_CONFIGS: Record<ScheduleDbName, ScheduleDbConfig> = {
   devotion: { envKey: "NOTION_DEVOTION_DB", titleProp: "Name", dateProp: "日付", descProp: "" },
   events:  { envKey: "NOTION_EVENTS_DB", titleProp: "名前", dateProp: "日付", descProp: "" },
   guitar:  { envKey: "NOTION_CURRICULUM_DB", titleProp: "名前", dateProp: "日付", descProp: "", extraFilter: { property: "カリキュラム", select: { equals: "ギター" } } },
-  sound:   { envKey: "NOTION_CURRICULUM_DB", titleProp: "名前", dateProp: "日付", descProp: "", extraFilter: { property: "カリキュラム", select: { equals: "音響" } } },
-  meals:      { envKey: "NOTION_MEALS_DB", titleProp: "名前", dateProp: "日付", descProp: "" },
-  groceries:  { envKey: "NOTION_GROCERIES_DB", titleProp: "件名", dateProp: "日付", descProp: "" },
+  sound:   { envKey: "NOTION_CURRICULUM_DB", titleProp: "名前", dateProp: "日付", descProp: "", extraFilter: { property: "カリキュラム", select: { equals: "音響" } }, defaultIcon: "🎛️" },
+  meals:      { envKey: "NOTION_MEALS_DB", titleProp: "名前", dateProp: "日付", descProp: "", defaultIcon: "🍽️" },
+  groceries:  { envKey: "NOTION_GROCERIES_DB", titleProp: "件名", dateProp: "日付", descProp: "", defaultIcon: "🛒" },
   todo:    { envKey: "NOTION_TODO_DB", titleProp: "タスク名", dateProp: "日付", descProp: "" },
   other:   { envKey: "NOTION_OTHER_DB", titleProp: "名前", dateProp: "日付", descProp: "" },
   study:     { envKey: "NOTION_STUDY_DB", titleProp: "名前", dateProp: "日付", descProp: "" },

@@ -145,11 +145,13 @@ function shouldSkipRecipe(title: string): boolean {
   return SKIP_RECIPE_PATTERNS.some((p) => p.test(title));
 }
 
-async function runRecipeGen(pageId: string): Promise<void> {
+async function runRecipeGen(pageId: string, servings?: number): Promise<void> {
   console.log(`\n🍳 レシピ自動生成中...`);
-  const proc = Bun.spawn(
-    ["bun", "run", "notion/notion-recipe-gen.ts", "--page-id", pageId],
-    {
+  const cmd = ["bun", "run", "notion/notion-recipe-gen.ts", "--page-id", pageId];
+  if (servings && servings >= 2) {
+    cmd.push("--servings", String(servings));
+  }
+  const proc = Bun.spawn(cmd, {
       cwd: import.meta.dir + "/..",
       env: process.env,
       stdout: "inherit",
@@ -275,7 +277,8 @@ async function main() {
     if (shouldSkipRecipe(opts.title)) {
       console.log(`📝 レシピ不要（${opts.title}）— スキップ`);
     } else {
-      await runRecipeGen(data.id);
+      const servings = opts.servings ? parseInt(opts.servings, 10) : undefined;
+      await runRecipeGen(data.id, servings);
     }
   }
 

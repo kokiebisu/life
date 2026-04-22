@@ -8,8 +8,10 @@
  *   bun run scripts/notion-recipe-gen.ts --page-id <id>
  *   bun run scripts/notion-recipe-gen.ts --date 2026-02-17 --meal 昼
  *   bun run scripts/notion-recipe-gen.ts --page-id <id> --dry-run
+ *   bun run scripts/notion-recipe-gen.ts --page-id <id> --servings 3
  *
  * メニュー名はページタイトルから自動取得。レシピURLも自動検索。
+ * --servings N: N食分の材料・手順で生成（作り置き用。デフォルト: 1）
  */
 
 import { readFileSync } from "fs";
@@ -30,6 +32,7 @@ interface RecipeData {
   sourceUrl: string;
   sourceSite: string;
   cookingTime: string;
+  servings: number;
   ingredients: Array<{
     name: string;
     quantity: string;
@@ -40,12 +43,19 @@ interface RecipeData {
 
 // --- Claude API ---
 
-const SYSTEM_PROMPT = `あなたはレシピフォーマットアシスタントです。
+function buildSystemPrompt(servings: number): string {
+  const servingsLabel = servings >= 2 ? `${servings}食分` : "1人前";
+  const ingredientRule =
+    servings >= 2
+      ? `**材料は${servings}食分で記載**: 元レシピが2人前なら${servings / 2}倍に換算。手順内の分量も${servings}食分に合わせる`
+      : "**材料は1人前に換算**: 元レシピが2人前なら半分に、4人前なら1/4に";
+
+  return `あなたはレシピフォーマットアシスタントです。
 レシピサイトの内容から、構造化JSONを生成します。
 
 ## ルール
 
-1. **材料は1人前に換算**: 元レシピが2人前なら半分に、4人前なら1/4に
+1. ${ingredientRule}
 2. **手順は簡潔に**: 各ステップを1文で
 3. **コツは重要なものだけ**: 失敗しやすいポイント、美味しくなるコツ
 4. **調理時間**: 下準備+調理の合計時間
@@ -60,13 +70,14 @@ const SYSTEM_PROMPT = `あなたはレシピフォーマットアシスタント
   "sourceUrl": "https://...",
   "sourceSite": "クラシル",
   "cookingTime": "20分",
+  "servings": ${servings},
   "ingredients": [
-    { "name": "鶏むね肉", "quantity": "150g" },
-    { "name": "ブロッコリー", "quantity": "1/2株" },
+    { "name": "鶏むね肉", "quantity": "${servings >= 2 ? `${150 * servings}g` : "150g"}" },
+    { "name": "ブロッコリー", "quantity": "${servings >= 2 ? `${servings / 2}株` : "1/2株"}" },
     { "name": "塩", "quantity": "少々" }
   ],
   "steps": [
-    "鶏むね肉を一口大に切る",
+    "鶏むね肉を一口大に切る（${servingsLabel}分）",
     "ブロッコリーを小房に分ける",
     "フライパンで炒める"
   ],
@@ -75,11 +86,13 @@ const SYSTEM_PROMPT = `あなたはレシピフォーマットアシスタント
     "火加減は中火でじっくり"
   ]
 }`;
+}
 
 async function searchAndGenerateRecipe(
   menuName: string,
+  servings: number = 1,
 ): Promise<RecipeData> {
-  console.log(`🔍 Searching and generating recipe for: ${menuName}`);
+  console.log(`🔍 Searching and generating recipe for: ${menuName} (${servings}食分)`);
 
   const userPrompt = `「${menuName}」のレシピを探して、構造化JSONを生成してください。
 
@@ -96,7 +109,7 @@ async function searchAndGenerateRecipe(
   const response = await callClaude(
     [{ role: "user", content: userPrompt }],
     {
-      system: SYSTEM_PROMPT,
+      system: buildSystemPrompt(servings),
       model: "claude-sonnet-4-5-20250929",
       allowedTools: ["WebSearch", "WebFetch"],
       maxTurns: 10,
@@ -194,15 +207,25 @@ function buildNotionBlocks(data: RecipeData, stockItems: string[] = []): any[] {
   const blocks: any[] = [];
 
   // Header callout (green background)
+  const servingsCount = data.servings || 1;
+  const calloutSegments: Array<{ text: string; bold?: boolean; color?: string; url?: string }> = [
+    { text: data.sourceSite, bold: true, url: data.sourceUrl },
+  ];
+  if (servingsCount >= 2) {
+    calloutSegments.push(
+      { text: " | " },
+      { text: `🍽️ ${servingsCount}食分`, bold: true, color: "blue" },
+    );
+  }
+  calloutSegments.push(
+    { text: " | 調理時間 " },
+    { text: data.cookingTime, bold: true, color: "orange" },
+  );
   blocks.push({
     object: "block",
     type: "callout",
     callout: {
-      rich_text: styledText([
-        { text: data.sourceSite, bold: true, url: data.sourceUrl },
-        { text: " | 調理時間 " },
-        { text: data.cookingTime, bold: true, color: "orange" },
-      ]),
+      rich_text: styledText(calloutSegments),
       icon: { type: "emoji", emoji: "📋" },
       color: "green_background",
     },
@@ -364,9 +387,20 @@ async function main() {
   const meal = args.opts["meal"];
   const dryRun = args.flags.has("dry-run");
 
+  const servingsRaw = args.opts["servings"];
+  const servings = servingsRaw !== undefined ? parseInt(servingsRaw, 10) : 1;
+  if (!Number.isInteger(servings) || servings < 1) {
+    console.error("Error: --servings must be a positive integer");
+    process.exit(1);
+  }
+
   if (!pageId && (!date || !meal)) {
     console.error("Error: --page-id OR (--date AND --meal) is required");
     process.exit(1);
+  }
+
+  if (servings >= 2) {
+    console.log(`🍽️  Servings: ${servings}食分`)
   }
 
   const apiKey = getApiKey();
@@ -390,7 +424,7 @@ async function main() {
   const menuName = pageTitle.replace(/^(朝|昼|間食|夜)\s*/, "");
 
   // Search + fetch + generate in one Claude call
-  const recipeData = await searchAndGenerateRecipe(menuName);
+  const recipeData = await searchAndGenerateRecipe(menuName, servings);
 
   console.log(`\n📋 Recipe: ${recipeData.title}`);
   console.log(`⏱️  Cooking time: ${recipeData.cookingTime}`);

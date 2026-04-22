@@ -654,6 +654,7 @@ If security issue found:
 
 コマンドを呼び出すときは、対応する `skills/<name>/SKILL.md` を読んでその指示に従うこと。
 
+- **`/analyze`** — ルールファイル（.ai/rules/・CLAUDE.md・skills/）を分析し、コードに置き換えた方が一貫性のある箇所を検出・レポート・実装する。「分析して」「リファクタして」に使う。 → `skills/analyze/SKILL.md`
 - **`/ask-diet`** — ダイエット・健康管理について相談したいとき。食事内容・カロリー・体重・栄養バランスなどの相談に使う。専門チームとして回答する。 → `skills/ask-diet/SKILL.md`
 - **`/backfill-cues`** — 既存の学習ノートにコーネル式キュー（自分への質問）を一括追加する。「キュー追加」「バックフィル」などに使う。 → `skills/backfill-cues/SKILL.md`
 - **`/cache`** — キャッシュの確認・クリア・分析をするとき。「キャッシュ確認して」「キャッシュクリアして」「ヒット率を見たい」などに使う。 → `skills/cache/SKILL.md`

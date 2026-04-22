@@ -186,3 +186,10 @@ Client → API Server → [Redis チェック] → ヒット: 即返す
   単体テスト (適量)
 静的解析 (全て)
 ```
+
+## ❓ 自分への質問（コーネル式キュー）
+
+1. table-driven testのメリットとt.Runを使う理由は？
+2. testcontainersを使う理由は？モックDBとのトレードオフは？
+3. Cache Invalidationの3つの方法（TTL待ち・イベント駆動・Write-through）の使い分けは？
+4. EXPLAIN ANALYZEで見るべき3点は？

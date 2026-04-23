@@ -15,13 +15,15 @@
 |------|------------|--------|---------|
 | Kazuya | 多忙なシーズンの健康 | 2026-03-19 | [people/kazuya.md](../people/church/new-hope/yokohama/pastor/kazuya.md) |
 | Tantan | 家族と子供たちの守り | 2026-03-22 | [people/tantan.md](../people/church/new-hope/yokohama/pastor/tantan.md) |
+| Jayce | 家族の健康・多忙なシーズンの体力 | 2026-03-18 | [people/jayce.md](../people/church/new-hope/yokohama/pastor/jayce.md) |
+| Tidi | — | — | [people/tidi.md](../people/church/new-hope/yokohama/pastor/tidi.md) |
+| Fumie | — | — | [people/fumie.md](../people/church/new-hope/yokohama/pastor/fumie.md) |
 | Taichi | — | — | [people/taichi.md](../people/church/new-hope/yokohama/fuse/taichi.md) |
 
 ### Fuse（Yokohama）
 
 | 人名 | 祈りのテーマ | 開始日 | ファイル |
 |------|------------|--------|---------|
-| Jayce | 家族の健康・多忙なシーズンの体力 | 2026-03-18 | [people/jayce.md](../people/church/new-hope/yokohama/fuse/jayce.md) |
 | Hinata | 新生活の準備と守り | 2026-03-22 | [people/hinata.md](../people/church/new-hope/yokohama/fuse/hinata.md) |
 | Emiri | 試練の中の平安と家族の和解 | 2026-03-22 | [people/emiri.md](../people/church/new-hope/yokohama/fuse/emiri-1.md) |
 | Yuiho | 家族の救いと関係回復 | 2026-03-22 | [people/yuiho.md](../people/church/new-hope/yokohama/fuse/yuiho.md) |

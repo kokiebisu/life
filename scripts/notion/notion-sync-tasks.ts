@@ -18,7 +18,7 @@ import {
   getScheduleDbConfig, notionFetch, parseArgs, todayJST, pickTaskIcon, pickCover, clearNotionCache,
 } from "./lib/notion";
 
-const ROOT = join(import.meta.dir, "..");
+const ROOT = join(import.meta.dir, "..", "..");
 const TASKS_FILE = join(ROOT, "aspects/tasks.md");
 
 // --- Types ---

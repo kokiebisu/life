@@ -81,6 +81,15 @@ bun run scripts/notion-pull.ts --no-enrich
 - 完了ステータスの判定: `"Done"` or `"完了"` → `[x]` にマーク
 - devotion DB のステータスプロパティは `ステータス`（日本語）。`Status`（英語）ではない
 
+## todo DB の Inbox 同期には `notion-sync-tasks.ts` を使う（厳守）
+
+`notion-pull.ts` は**日付範囲フィルタ付き**のため、過去日に完了マークされた Inbox の古いタスクは拾えない。`aspects/tasks.md` の Inbox と Notion todo DB を完全同期したい場合は、全件取得する `notion-sync-tasks.ts` を使う。
+
+```bash
+bun run scripts/notion/notion-sync-tasks.ts --dry-run
+bun run scripts/notion/notion-sync-tasks.ts
+```
+
 ## 一括削除直後に `notion-pull.ts` を実行しない（厳守）
 
 `notion-pull.ts` はローカルの既存データからエントリを再作成する。一括削除直後に pull すると削除済みエントリが復活する。

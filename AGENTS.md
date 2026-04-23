@@ -649,6 +649,18 @@ If security issue found:
 - md を編集 → 対応する Notion ページも更新
 - Notion を編集 → 対応する md も更新
 
+### Notion 側で完了済みタスクの同期（厳守）
+
+ユーザーが「Notion で完了した」「もう終わった」「全部 DONE」など**既存タスクの完了を言及した**ら、即座に `notion-sync-tasks.ts` で全件同期する。
+
+```bash
+bun run scripts/notion/notion-sync-tasks.ts --dry-run   # プレビュー
+bun run scripts/notion/notion-sync-tasks.ts             # 実行
+```
+
+- `/from-notion`（`notion-pull.ts`）は**日付範囲フィルタ付き**のため、過去日に完了した Inbox の古いタスクは拾えない。必ず `notion-sync-tasks.ts` を使う
+- 手で tasks.md の `[ ]` を `[x]` に書き換えるのは禁止。Notion が source of truth なのでスクリプト経由で同期する
+
 ---
 
 ## Available Commands

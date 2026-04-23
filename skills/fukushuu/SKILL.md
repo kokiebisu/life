@@ -43,6 +43,10 @@ Glob で `aspects/study/**/*.md` を取得し、以下を**除外**する:
 - `**/CLAUDE.md`
 - `**/README.md`
 - `**/roadmap.md`
+- `**/tracker.md`（進捗管理・10日スケジュール等のメタ文書）
+- `**/qa-bank.md`（独自Q&Aバンクは別機構で運用）
+- `**/system-design-chapters.md`（Chapter優先度マップ・メタ参照）
+- `**/weakness.md`（復習で言えなかったこと記録・note.md 本体に統合されるべき補助ノート）
 - `aspects/study/team/**`
 
 残ったノートを以下の2カテゴリに分類する:

@@ -226,18 +226,18 @@ bun run scripts/notion-add.ts --db meals --title "メニュー名" --date YYYY-M
 bun run scripts/notion/notion-add.ts --db groceries --title "買い出し M/DD" --date YYYY-MM-DD --start HH:MM --end HH:MM
 ```
 
-- 所要時間は常に1時間。開始時間だけ確認すれば終了時間は自動で +1h にする
-- **献立が複数日にまたがる場合は `--end-date` を指定する（厳守）**
-  - `notion-grocery-gen.ts` はページの日付範囲を基準に対象 daily ファイルを決定する
-  - 買い出しページ自体は1時間のエントリでよい（カレンダー上で複数日に跨がない）
-  - 献立最終日を `--end-date` で渡すことで、全日分の食材をカバーする
-  - 例: `bun run scripts/notion/notion-grocery-gen.ts --date 2026-04-22 --end-date 2026-04-24`
+- **買い出しページは必ず1時間エントリ（厳守）。** 所要時間は常に1時間。開始時間だけ確認すれば終了時間は自動で +1h にする
+- **`notion-add.ts` には `--end-date` を渡さない（厳守）。** 渡すとページの date 終了日が拡張され、カレンダー上で複数日に跨ってしまう
 
 **Step 3: 買い出しリストを生成する**
 
 ```bash
 bun run scripts/notion/notion-grocery-gen.ts --date YYYY-MM-DD
 ```
+
+- **献立が複数日にまたがる場合は `--end-date` を `notion-grocery-gen.ts` に渡す（厳守）**
+  - 買い出しページの date は1時間のまま、grocery-gen 側に範囲を伝える
+  - 例: `bun run scripts/notion/notion-grocery-gen.ts --date 2026-04-23 --end-date 2026-04-26`
 
 手動で Notion 買い出しページを編集しない（フォーマット崩れ防止）。
 

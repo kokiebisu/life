@@ -1,13 +1,15 @@
 {
   "aspects/study/software-engineering/notes/2026-03-17-1.md": {
-    "last_reviewed": "2026-04-15",
+    "last_reviewed": "2026-04-23",
     "interval_days": 0,
-    "review_count": 0
+    "review_count": 0,
+    "confidence": "fuzzy"
   },
   "aspects/study/software-engineering/notes/2026-03-17-2.md": {
-    "last_reviewed": "2026-04-15",
+    "last_reviewed": "2026-04-23",
     "interval_days": 0,
-    "review_count": 0
+    "review_count": 0,
+    "confidence": "fuzzy"
   },
   "aspects/study/software-engineering/notes/2026-03-17-3.md": {
     "last_reviewed": "2026-04-15",
@@ -23,5 +25,23 @@
     "last_reviewed": "2026-04-15",
     "interval_days": 0,
     "review_count": 0
+  },
+  "aspects/study/interview-prep/resilire/notes/2026-04-09/note.md": {
+    "last_reviewed": "2026-04-23",
+    "interval_days": 1,
+    "review_count": 1,
+    "confidence": "perfect"
+  },
+  "aspects/study/interview-prep/resilire/notes/2026-04-09/weakness.md": {
+    "last_reviewed": "2026-04-23",
+    "interval_days": 0,
+    "review_count": 0,
+    "confidence": "fuzzy"
+  },
+  "aspects/study/interview-prep/resilire/notes/2026-04-10/note.md": {
+    "last_reviewed": "2026-04-23",
+    "interval_days": 0,
+    "review_count": 0,
+    "confidence": "fuzzy"
   }
 }

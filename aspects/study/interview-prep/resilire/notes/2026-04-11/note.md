@@ -1,3 +1,9 @@
+---
+notion_id: 34cce17f-7b98-81b8-bae0-f278a089a8fe
+date: 2026-04-11
+category: interview-prep
+---
+
 # Day 3: goroutine・channel・context
 
 ## goroutine
@@ -99,3 +105,16 @@ go func() {
 1. goroutineとOSスレッドの違いは？M:Nモデルとは？
 2. unbuffered channelとbuffered channelの違い。closeの責任が送信側にある理由は？
 3. context.WithTimeoutとcontext.WithCancelの使い分けは？`defer cancel()` を書く理由は？
+
+## 🔁 復習で詰まったところ
+
+### 2026-04-11
+- **Q: select の使い方は？複数チャネルを同時に待つときどう書く？**
+  - 詰まった内容: select の意味を理解できていなかった（`callML(ctx)` と `ctx.Done()` を別物として扱えていなかった）
+  - 正解ポイント: select は複数チャネルを**同時に**待つ構文。`callML(ctx)` と `ctx.Done()` は別々の独立したチャネルで、どちらか先に来た方の case が実行される
+- **Q: `defer cancel()` と `case <-ctx.Done(): return` の違いと、なぜ両方必要か？**
+  - 詰まった内容: 両者の役割を区別できなかった
+  - 正解ポイント: `defer cancel()` は context のリソース（タイマー等）を解放してメモリリークを防ぐ。`case <-ctx.Done(): return` は goroutine 自身が「止まれ」を受け取って終了する。両方セットで正しい。片方だけでは不完全
+- **Q: `ctx.Done()` で `return` を書き忘れるとどうなる？**
+  - 詰まった内容: goroutine リークが発生することを意識できていなかった
+  - 正解ポイント: 止まれ信号を受け取っても `return` がないと goroutine が終わらず、リークする

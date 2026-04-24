@@ -9,6 +9,8 @@
  */
 
 import type { MealVisionResult } from "../lib/vision.ts";
+import { analyzeMealImages } from "../lib/vision.ts";
+import { notionFetch, getMealsConfig, queryDbByDate } from "../lib/notion.ts";
 
 export const ANALYSIS_MARKER = "推定（画像分析）";
 
@@ -119,4 +121,92 @@ export function buildAnalysisBlocks(result: MealVisionResult): NotionBlock[] {
   });
 
   return blocks;
+}
+
+async function fetchPageChildren(apiKey: string, pageId: string): Promise<NotionBlock[]> {
+  const res = await notionFetch(apiKey, `/blocks/${pageId}/children?page_size=100`);
+  return res.results ?? [];
+}
+
+async function appendBlocks(apiKey: string, pageId: string, blocks: NotionBlock[]): Promise<void> {
+  await notionFetch(apiKey, `/blocks/${pageId}/children`, { children: blocks }, "PATCH");
+}
+
+async function fetchPage(apiKey: string, pageId: string): Promise<any> {
+  return notionFetch(apiKey, `/pages/${pageId}`);
+}
+
+async function updatePageTitle(
+  apiKey: string,
+  pageId: string,
+  titleProp: string,
+  newTitle: string,
+): Promise<void> {
+  await notionFetch(
+    apiKey,
+    `/pages/${pageId}`,
+    {
+      properties: {
+        [titleProp]: { title: [{ text: { content: newTitle } }] },
+      },
+    },
+    "PATCH",
+  );
+}
+
+function getPageTitle(page: any, titleProp: string): string {
+  const prop = page.properties?.[titleProp];
+  const rich = prop?.title;
+  if (!Array.isArray(rich)) return "";
+  return rich.map((r: any) => r.plain_text ?? "").join("");
+}
+
+export interface AnalyzeOutcome {
+  pageId: string;
+  status: "analyzed" | "skipped" | "failed";
+  reason?: string;
+  dishName?: string;
+}
+
+export async function analyzePage(
+  apiKey: string,
+  pageId: string,
+  titleProp: string,
+  options: { dryRun: boolean },
+): Promise<AnalyzeOutcome> {
+  const [page, blocks] = await Promise.all([
+    fetchPage(apiKey, pageId),
+    fetchPageChildren(apiKey, pageId),
+  ]);
+
+  if (!shouldAnalyze(blocks)) {
+    return { pageId, status: "skipped", reason: "対象外（マーカー or 材料リスト or kcal あり、または画像なし）" };
+  }
+
+  const imageUrls = extractImageUrls(blocks);
+  if (options.dryRun) {
+    return {
+      pageId,
+      status: "skipped",
+      reason: `dry-run: ${imageUrls.length}枚の画像を分析予定`,
+    };
+  }
+
+  let result;
+  try {
+    result = await analyzeMealImages(imageUrls, { pageId });
+  } catch (e) {
+    return { pageId, status: "failed", reason: `vision 失敗: ${(e as Error).message}` };
+  }
+
+  const analysisBlocks = buildAnalysisBlocks(result);
+  await appendBlocks(apiKey, pageId, analysisBlocks);
+
+  const currentTitle = getPageTitle(page, titleProp);
+  const newTitle = computeEnhancedTitle(currentTitle, result.dishName);
+  if (newTitle !== currentTitle) {
+    await updatePageTitle(apiKey, pageId, titleProp, newTitle);
+  }
+
+  return { pageId, status: "analyzed", dishName: result.dishName };
 }

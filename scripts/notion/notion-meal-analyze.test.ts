@@ -178,7 +178,7 @@ describe("buildAnalysisBlocks", () => {
 
   test("heading contains analysis marker", () => {
     const blocks = buildAnalysisBlocks(result);
-    const h = blocks[0];
+    const h = blocks[0]!;
     const text = h.heading_2.rich_text[0].text.content;
     expect(text).toBe("推定（画像分析）");
   });
@@ -197,14 +197,14 @@ describe("buildAnalysisBlocks", () => {
 
   test("confidence high → 高", () => {
     const blocks = buildAnalysisBlocks(result);
-    const quote = blocks[blocks.length - 1];
+    const quote = blocks[blocks.length - 1]!;
     const text = quote.quote.rich_text[0].text.content;
     expect(text).toContain("高");
   });
 
   test("confidence low with reason → 低 + reason", () => {
     const blocks = buildAnalysisBlocks({ ...result, confidence: "low", confidenceReason: "暗くて判別困難" });
-    const quote = blocks[blocks.length - 1];
+    const quote = blocks[blocks.length - 1]!;
     const text = quote.quote.rich_text[0].text.content;
     expect(text).toContain("低");
     expect(text).toContain("暗くて判別困難");

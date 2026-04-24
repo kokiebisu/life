@@ -54,10 +54,12 @@ describe("downloadImage", () => {
       status: 200,
       headers: { get: (k: string) => (k.toLowerCase() === "content-type" ? "image/jpeg" : null) },
       arrayBuffer: async () => fakeBody.buffer,
-    })) as typeof fetch;
+    })) as unknown as typeof fetch;
 
     try {
       const result = await downloadImage("https://fake/img.jpg", { pageId: "abc123", index: 0 });
+      expect(result).not.toBeNull();
+      if (!result) throw new Error("result is null");
       expect(result.path.startsWith("/tmp/meal-abc123-")).toBe(true);
       expect(result.path.endsWith("-0.jpg")).toBe(true);
       expect(existsSync(result.path)).toBe(true);
@@ -76,7 +78,7 @@ describe("downloadImage", () => {
       status: 200,
       headers: { get: () => "image/gif" },
       arrayBuffer: async () => new ArrayBuffer(4),
-    })) as typeof fetch;
+    })) as unknown as typeof fetch;
 
     try {
       const result = await downloadImage("https://fake/img.gif", { pageId: "abc", index: 0 });
@@ -93,7 +95,7 @@ describe("downloadImage", () => {
       status: 404,
       headers: { get: () => "image/jpeg" },
       arrayBuffer: async () => new ArrayBuffer(0),
-    })) as typeof fetch;
+    })) as unknown as typeof fetch;
 
     try {
       const result = await downloadImage("https://fake/404.jpg", { pageId: "abc", index: 0 });

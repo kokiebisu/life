@@ -11,8 +11,9 @@
  */
 
 import { existsSync, readFileSync } from "fs";
-import { join } from "path";
+import { join, resolve } from "path";
 import { spawnSync } from "child_process";
+import { fileURLToPath } from "url";
 
 import {
   getScheduleDbConfig,
@@ -26,11 +27,12 @@ import { readHistory, appendHistoryEntry } from "./lib/menu-history";
 import { generateMenu, type MenuContext, type MenuResult, type PastMeal } from "./lib/generate-menu";
 import { appendDailyMealEntry } from "./lib/daily-writer";
 
-const REPO_ROOT = "/workspaces/life";
+const REPO_ROOT = resolve(fileURLToPath(import.meta.url), "../../../..");
 const DISABLE_FLAG = join(REPO_ROOT, ".kondate-auto.disabled");
 const HISTORY_PATH = join(REPO_ROOT, "aspects/diet/kondate-history.md");
 const FRIDGE_PATH = join(REPO_ROOT, "aspects/diet/fridge.md");
 const NUTRITION_PATH = join(REPO_ROOT, "aspects/diet/nutrition-targets.md");
+const DAILY_DIR = join(REPO_ROOT, "aspects/diet/daily");
 
 const NG_INGREDIENTS = ["トマト", "マヨネーズ", "ケチャップ", "マスタード"];
 const WINDOW_DAYS = 3;
@@ -190,6 +192,7 @@ async function main() {
       start: slot.start,
       end: slot.end,
       menu,
+      baseDir: DAILY_DIR,
     });
   }
 

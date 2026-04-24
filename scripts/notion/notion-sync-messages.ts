@@ -195,24 +195,55 @@ function rt(str: string, max = 2000): string {
   return s.slice(0, max);
 }
 
+/**
+ * Parse inline markdown (currently **bold**) into Notion rich_text segments.
+ * Drops lone surrogates and truncates total length to Notion's 2000-char limit per segment.
+ */
+function parseInlineRichText(text: string): any[] {
+  const segments: any[] = [];
+  const re = /\*\*([^*]+)\*\*/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) {
+      segments.push({
+        type: "text",
+        text: { content: rt(text.slice(last, m.index)) },
+      });
+    }
+    segments.push({
+      type: "text",
+      text: { content: rt(m[1]) },
+      annotations: { bold: true },
+    });
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) {
+    segments.push({
+      type: "text",
+      text: { content: rt(text.slice(last)) },
+    });
+  }
+  return segments.length > 0 ? segments : [{ type: "text", text: { content: rt(text) } }];
+}
+
 function buildBlocks(content: string): any[] {
   const blocks: any[] = [];
   const lines = content.split("\n");
   let i = 0;
 
+  // Skip frontmatter: everything up to and including the first `---` divider
+  // (H1 title, **シリーズ:**, **タイトル:**, **場所:** etc. are already captured as DB properties)
+  const firstDivider = lines.findIndex((l) => l.startsWith("---"));
+  if (firstDivider >= 0) i = firstDivider + 1;
+
   while (i < lines.length) {
     const line = lines[i];
-
-    if (line.startsWith("# ")) {
-      // Skip H1 (already the page title area)
-      i++;
-      continue;
-    }
 
     if (line.startsWith("## ")) {
       blocks.push({
         type: "heading_2",
-        heading_2: { rich_text: [{ type: "text", text: { content: rt(line.slice(3).trim()) } }] },
+        heading_2: { rich_text: parseInlineRichText(line.slice(3).trim()) },
       });
       i++;
       continue;
@@ -221,7 +252,7 @@ function buildBlocks(content: string): any[] {
     if (line.startsWith("### ")) {
       blocks.push({
         type: "heading_3",
-        heading_3: { rich_text: [{ type: "text", text: { content: rt(line.slice(4).trim()) } }] },
+        heading_3: { rich_text: parseInlineRichText(line.slice(4).trim()) },
       });
       i++;
       continue;
@@ -242,9 +273,7 @@ function buildBlocks(content: string): any[] {
       }
       blocks.push({
         type: "quote",
-        quote: {
-          rich_text: [{ type: "text", text: { content: rt(quoteLines.join("\n")) } }],
-        },
+        quote: { rich_text: parseInlineRichText(quoteLines.join("\n")) },
       });
       continue;
     }
@@ -252,9 +281,7 @@ function buildBlocks(content: string): any[] {
     if (line.startsWith("- ")) {
       blocks.push({
         type: "bulleted_list_item",
-        bulleted_list_item: {
-          rich_text: [{ type: "text", text: { content: rt(line.slice(2).trim()) } }],
-        },
+        bulleted_list_item: { rich_text: parseInlineRichText(line.slice(2).trim()) },
       });
       i++;
       continue;
@@ -263,9 +290,7 @@ function buildBlocks(content: string): any[] {
     if (line.match(/^\d+\. /)) {
       blocks.push({
         type: "numbered_list_item",
-        numbered_list_item: {
-          rich_text: [{ type: "text", text: { content: rt(line.replace(/^\d+\. /, "").trim()) } }],
-        },
+        numbered_list_item: { rich_text: parseInlineRichText(line.replace(/^\d+\. /, "").trim()) },
       });
       i++;
       continue;
@@ -279,9 +304,7 @@ function buildBlocks(content: string): any[] {
     // Paragraph
     blocks.push({
       type: "paragraph",
-      paragraph: {
-        rich_text: [{ type: "text", text: { content: rt(line.trim()) } }],
-      },
+      paragraph: { rich_text: parseInlineRichText(line.trim()) },
     });
     i++;
   }

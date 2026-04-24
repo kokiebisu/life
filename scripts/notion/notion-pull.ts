@@ -29,6 +29,7 @@ import {
   parseArgs, todayJST, loadEnv,
   pickTaskIcon, pickCover,
 } from "./lib/notion";
+import { analyzeRange } from "./notion-meal-analyze";
 
 const ROOT = join(import.meta.dir, "..");
 
@@ -415,6 +416,24 @@ function renderFile(date: string, entries: MergedEntry[]): string {
   }
   lines.push("");
   return lines.join("\n");
+}
+
+// --- Meal image enrichment ---
+
+async function enrichMealImages(dates: string[], dryRun: boolean): Promise<void> {
+  if (dates.length === 0) return;
+  const sorted = [...dates].sort();
+  const from = sorted[0]!;
+  const to = sorted[sorted.length - 1]!;
+  const result = await analyzeRange({ from, to, dryRun });
+  if (result.total === 0) return;
+  console.log(
+    `  meal-images: ${result.analyzed}件分析 / ${result.skipped}件スキップ / ${result.failed}件失敗`,
+  );
+  for (const o of result.outcomes) {
+    if (o.status === "analyzed") console.log(`    ✅ ${o.pageId} → ${o.dishName}`);
+    else if (o.status === "failed") console.log(`    ❌ ${o.pageId} (${o.reason})`);
+  }
 }
 
 // --- Icon/cover enrichment ---
@@ -965,6 +984,9 @@ async function main() {
         totalEnriched++;
       }
     }
+
+    // Meal image analysis: scan meals DB for image-only entries and run vision
+    await enrichMealImages(dates, dryRun);
   }
 
   if (dryRun && allDryRunEntries.length > 0) {

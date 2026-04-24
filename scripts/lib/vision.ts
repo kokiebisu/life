@@ -125,6 +125,38 @@ export function parseVisionJson(raw: string, imageCount: number): MealVisionResu
   };
 }
 
+export function buildVisionPrompt(imagePaths: string[]): string {
+  const pathList = imagePaths.map((p) => `- ${p}`).join("\n");
+  return `あなたは栄養士アシスタントです。指定された画像群は同一の食事を複数の角度・タイミングで撮影したものです。全画像を参考に、1 食分として合算の栄養情報を推定してください。
+
+画像:
+${pathList}
+
+複数画像の扱い:
+- 同じ料理が別角度で写っている場合は二重計上しない（1 品として扱う）
+- 別の料理（例: 丼 + サイドサラダ）が写っている場合は両方を合算する
+- 食卓全景 + 個別アップの組み合わせなら、全景で品数を確認し個別アップで材料を特定する
+
+以下の JSON だけを返してください。説明文や Markdown コードブロックは不要です。
+
+{
+  "dishName": "料理名（日本語、複数料理なら「メイン + サイド」のように連結）",
+  "items": ["主な食材 推定量", ...],
+  "kcal": 合計値,
+  "protein": 合計値,
+  "fat": 合計値,
+  "carbs": 合計値,
+  "confidence": "high" | "medium" | "low",
+  "confidenceReason": "低い場合の理由（オプション）"
+}
+
+推定の目安:
+- 一般的な定食・丼・麺類など典型的な料理は high
+- 具材が見えにくい / 複数皿が重なっている → medium
+- 暗い / ピントが合っていない / 部分的に見切れている → low
+- 同一料理か別料理かの判別が難しい → medium 以下`;
+}
+
 /**
  * 画像 URL のリストから 1 食分の栄養情報を推定する。
  * 最大 MAX_IMAGES 枚まで。超過分は無視（ログに警告）。

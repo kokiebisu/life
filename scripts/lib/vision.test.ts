@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import { extensionFromContentType, MAX_IMAGES, downloadImage, parseVisionJson } from "./vision.ts";
+import { extensionFromContentType, MAX_IMAGES, downloadImage, parseVisionJson, buildVisionPrompt } from "./vision.ts";
 import { existsSync, readFileSync } from "fs";
 
 describe("extensionFromContentType", () => {
@@ -149,5 +149,23 @@ describe("parseVisionJson", () => {
 
   test("non-JSON input throws", () => {
     expect(() => parseVisionJson("not json", 1)).toThrow();
+  });
+});
+
+describe("buildVisionPrompt", () => {
+  test("single image prompt contains the path and JSON schema", () => {
+    const prompt = buildVisionPrompt(["/tmp/a.jpg"]);
+    expect(prompt).toContain("/tmp/a.jpg");
+    expect(prompt).toContain("dishName");
+    expect(prompt).toContain("kcal");
+    expect(prompt).toContain("confidence");
+  });
+
+  test("multi-image prompt lists all paths and explains merging", () => {
+    const prompt = buildVisionPrompt(["/tmp/a.jpg", "/tmp/b.png"]);
+    expect(prompt).toContain("/tmp/a.jpg");
+    expect(prompt).toContain("/tmp/b.png");
+    expect(prompt).toContain("同一の食事");
+    expect(prompt).toContain("二重計上しない");
   });
 });

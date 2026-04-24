@@ -14,3 +14,7 @@ life.config.json
 # Aspect-local Claude instructions (fork-side customizations)
 aspects/*/CLAUDE.local.md
 logs/notion-cron.log
+
+# Interview prep scratch
+aspects/study/interview-prep/resilire/notes/playground.go
+

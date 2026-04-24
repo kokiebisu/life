@@ -50,3 +50,20 @@ export function shouldAnalyze(blocks: NotionBlock[]): boolean {
   if (KCAL_PATTERN.test(text)) return false;
   return true;
 }
+
+const GENERIC_TITLES = new Set(["外食", "朝食", "昼食", "夕食"]);
+
+/**
+ * 既存タイトルと推定料理名から、新しいタイトルを返す。
+ * 変更不要なら既存タイトルをそのまま返す。
+ */
+export function computeEnhancedTitle(currentTitle: string, dishName: string): string {
+  const trimmed = currentTitle.trim();
+
+  if (trimmed === "") return `外食（${dishName}）`;
+  if (GENERIC_TITLES.has(trimmed)) return `外食（${dishName}）`;
+
+  if (trimmed.startsWith("外食") && trimmed.includes("（")) return currentTitle;
+
+  return currentTitle;
+}

@@ -3,6 +3,7 @@ import {
   extractImageUrls,
   blocksToPlainText,
   shouldAnalyze,
+  computeEnhancedTitle,
   ANALYSIS_MARKER,
 } from "./notion-meal-analyze.ts";
 
@@ -111,5 +112,43 @@ describe("shouldAnalyze", () => {
       { type: "bulleted_list_item", bulleted_list_item: { rich_text: [{ plain_text: "長ねぎ 1本" }] } },
     ];
     expect(shouldAnalyze(blocks)).toBe(false);
+  });
+});
+
+describe("computeEnhancedTitle", () => {
+  test("empty title → 外食（dishName）", () => {
+    expect(computeEnhancedTitle("", "ラーメン")).toBe("外食（ラーメン）");
+  });
+
+  test("whitespace title → 外食（dishName）", () => {
+    expect(computeEnhancedTitle("   ", "ラーメン")).toBe("外食（ラーメン）");
+  });
+
+  test("外食 alone → 外食（dishName）", () => {
+    expect(computeEnhancedTitle("外食", "ラーメン")).toBe("外食（ラーメン）");
+  });
+
+  test("朝食 alone → 外食（dishName）", () => {
+    expect(computeEnhancedTitle("朝食", "サンドイッチ")).toBe("外食（サンドイッチ）");
+  });
+
+  test("昼食 alone → 外食（dishName）", () => {
+    expect(computeEnhancedTitle("昼食", "定食")).toBe("外食（定食）");
+  });
+
+  test("夕食 alone → 外食（dishName）", () => {
+    expect(computeEnhancedTitle("夕食", "寿司")).toBe("外食（寿司）");
+  });
+
+  test("外食（既存内容） → unchanged", () => {
+    expect(computeEnhancedTitle("外食（YUTAさん）", "ラーメン")).toBe("外食（YUTAさん）");
+  });
+
+  test("店名 → unchanged", () => {
+    expect(computeEnhancedTitle("すすきや", "定食")).toBe("すすきや");
+  });
+
+  test("具体的な料理名 → unchanged", () => {
+    expect(computeEnhancedTitle("担々麺", "担々麺")).toBe("担々麺");
   });
 });

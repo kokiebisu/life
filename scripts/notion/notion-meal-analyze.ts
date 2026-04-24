@@ -10,7 +10,7 @@
 
 import type { MealVisionResult } from "../lib/vision.ts";
 import { analyzeMealImages } from "../lib/vision.ts";
-import { notionFetch, getMealsConfig, queryDbByDate } from "../lib/notion.ts";
+import { notionFetch, getMealsConfig, queryDbByDate, getApiKey, parseArgs } from "../lib/notion.ts";
 
 export const ANALYSIS_MARKER = "推定（画像分析）";
 
@@ -209,4 +209,85 @@ export async function analyzePage(
   }
 
   return { pageId, status: "analyzed", dishName: result.dishName };
+}
+
+export interface AnalyzeRunResult {
+  total: number;
+  analyzed: number;
+  skipped: number;
+  failed: number;
+  outcomes: AnalyzeOutcome[];
+}
+
+export async function analyzeRange(options: {
+  from?: string;
+  to?: string;
+  date?: string;
+  pageId?: string;
+  dryRun: boolean;
+}): Promise<AnalyzeRunResult> {
+  const apiKey = getApiKey();
+  const { dbId, config } = getMealsConfig();
+
+  let pageIds: string[];
+  if (options.pageId) {
+    pageIds = [options.pageId];
+  } else {
+    const from = options.date ?? options.from;
+    const to = options.date ?? options.to;
+    if (!from || !to) {
+      throw new Error("--date または --from/--to が必要です");
+    }
+    const queryResult = await queryDbByDate(apiKey, dbId, config, from, to);
+    pageIds = (queryResult.results ?? []).map((p: any) => p.id);
+  }
+
+  const outcomes: AnalyzeOutcome[] = [];
+  for (const pageId of pageIds) {
+    const outcome = await analyzePage(apiKey, pageId, config.titleProp, {
+      dryRun: options.dryRun,
+    });
+    outcomes.push(outcome);
+  }
+
+  return {
+    total: outcomes.length,
+    analyzed: outcomes.filter((o) => o.status === "analyzed").length,
+    skipped: outcomes.filter((o) => o.status === "skipped").length,
+    failed: outcomes.filter((o) => o.status === "failed").length,
+    outcomes,
+  };
+}
+
+async function main() {
+  const { flags, opts } = parseArgs();
+  const dryRun = flags.has("dry-run");
+
+  try {
+    const result = await analyzeRange({
+      from: opts["from"],
+      to: opts["to"],
+      date: opts["date"],
+      pageId: opts["page-id"],
+      dryRun,
+    });
+
+    console.log(`対象: ${result.total}件`);
+    for (const o of result.outcomes) {
+      const label = o.status === "analyzed" ? "✅" : o.status === "skipped" ? "➖" : "❌";
+      const detail = o.dishName ? ` → ${o.dishName}` : o.reason ? ` (${o.reason})` : "";
+      console.log(`${label} ${o.pageId}${detail}`);
+    }
+    console.log(
+      `\n成功: ${result.analyzed}件 / スキップ: ${result.skipped}件 / 失敗: ${result.failed}件`,
+    );
+    if (result.failed > 0) process.exit(1);
+  } catch (e) {
+    console.error(`Error: ${(e as Error).message}`);
+    process.exit(1);
+  }
+}
+
+if (import.meta.main) {
+  await main();
 }

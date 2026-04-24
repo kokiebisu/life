@@ -130,6 +130,56 @@ type Recommender struct {
 // Handler層がRepository interfaceを定義 → DB実装はそれを満たす
 ```
 
+### interface 埋め込み vs struct 埋め込み（mock パターン）
+
+**使い分け:** mock を書くなら interface 埋め込み、継承・再利用なら struct 埋め込み。
+
+```go
+// ① interface 埋め込み: nil → 呼んだら panic
+type Animal interface {
+    Breath()
+    Shout()
+    Eat()
+}
+
+type Mock struct {
+    Animal  // nil の interface 値
+}
+
+// 使うメソッドだけ override すれば OK
+func (m *Mock) Breath() { fmt.Println("mocked") }
+
+m := &Mock{}
+m.Breath()   // ✅ "mocked"
+m.Shout()    // 💥 panic: nil pointer dereference（呼ばれなければ問題ない）
+```
+
+```go
+// ② struct 埋め込み: 具体的な実装が継承される
+type Animal struct{}
+func (a *Animal) Breath() { fmt.Println("real breath") }
+func (a *Animal) Shout()  { fmt.Println("real shout") }
+
+type Mock struct {
+    Animal  // 具体的な struct
+}
+
+m := &Mock{}
+m.Breath()  // ✅ "real breath"（Animal の実装がそのまま動く）
+// 振る舞いを変えたいときだけ override する
+```
+
+| | interface 埋め込み | struct 埋め込み |
+|---|---|---|
+| デフォルト動作 | nil → panic | 埋め込んだ struct の実装が動く |
+| override の必要性 | 呼ぶメソッドは必須 | 振る舞いを変えたいときだけ |
+| 主な用途 | mock（テスト） | 継承・合成（プロダクション） |
+
+**面接での語り方:**
+> 「mock はあえて interface 埋め込みを使います。使うメソッドだけ override すれば済むし、想定外のメソッド呼び出しは panic で検知できるので、テストが silently pass するリスクを避けられます」
+
+**落とし穴:** interface と struct を両方埋め込むとメソッドが ambiguous selector エラーになる。mock 目的なら struct は外す。
+
 ---
 
 ## Day 3：goroutine + channel + context

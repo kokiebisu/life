@@ -5,6 +5,8 @@
  * マルチモーダル機能で 1 食分の栄養情報を推定する。
  */
 
+import { writeFileSync, unlinkSync, existsSync } from "fs";
+
 export interface MealVisionResult {
   dishName: string;
   items: string[];
@@ -34,6 +36,39 @@ export function extensionFromContentType(contentType: string | null): string | n
   if (!contentType) return null;
   const type = contentType.split(";")[0].trim().toLowerCase();
   return SUPPORTED_CONTENT_TYPES[type] ?? null;
+}
+
+export interface DownloadedImage {
+  path: string;
+  cleanup: () => void;
+}
+
+export async function downloadImage(
+  url: string,
+  opts: { pageId: string; index: number },
+): Promise<DownloadedImage | null> {
+  let res: Response;
+  try {
+    res = await fetch(url);
+  } catch {
+    return null;
+  }
+  if (!res.ok) return null;
+
+  const ext = extensionFromContentType(res.headers.get("content-type"));
+  if (!ext) return null;
+
+  const buf = new Uint8Array(await res.arrayBuffer());
+  const pageIdNoDash = opts.pageId.replace(/-/g, "");
+  const ts = Date.now();
+  const path = `/tmp/meal-${pageIdNoDash}-${ts}-${opts.index}.${ext}`;
+  writeFileSync(path, buf);
+  return {
+    path,
+    cleanup: () => {
+      if (existsSync(path)) unlinkSync(path);
+    },
+  };
 }
 
 /**

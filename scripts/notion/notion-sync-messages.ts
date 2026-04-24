@@ -28,8 +28,30 @@ interface ParsedMessage {
 
 interface NotionMessage {
   id: string;
-  date: string | null;
+  date: string | null;    // Normalized to YYYY-MM-DD
+  dateRaw: string | null; // Original start value (may include time)
   title: string;
+  seriesName: string | null;
+}
+
+// Canonical series select option names in Notion メッセージDB
+const SERIES_SELECT_OPTIONS = [
+  "Stay Tuned!",
+  "Good Friday 礼拝",
+  "イースター礼拝",
+  "Growth",
+  "Series Break",
+];
+
+function normalizeSeries(raw: string): string | null {
+  if (!raw) return null;
+  const exact = SERIES_SELECT_OPTIONS.find((opt) => opt === raw);
+  if (exact) return exact;
+  if (/stay\s*tuned/i.test(raw)) return "Stay Tuned!";
+  for (const opt of SERIES_SELECT_OPTIONS) {
+    if (raw.includes(opt) || opt.includes(raw)) return opt;
+  }
+  return null;
 }
 
 // --- Parse message MD file ---
@@ -62,11 +84,32 @@ async function listNotionMessages(apiKey: string, dbId: string): Promise<NotionM
     page_size: 100,
   });
 
-  return data.results.map((page: any) => ({
-    id: page.id,
-    date: page.properties["日付"]?.date?.start ?? null,
-    title: page.properties["タイトル"]?.title?.[0]?.plain_text ?? "",
-  }));
+  return data.results.map((page: any) => {
+    const rawStart = page.properties["日付"]?.date?.start ?? null;
+    return {
+      id: page.id,
+      date: rawStart ? rawStart.slice(0, 10) : null,
+      dateRaw: rawStart,
+      title: page.properties["タイトル"]?.title?.[0]?.plain_text ?? "",
+      seriesName: page.properties["シリーズ"]?.select?.name ?? null,
+    };
+  });
+}
+
+// Pick the right entry when multiple Notion entries share a date.
+// Preference: same series > earliest time of day > any.
+function pickBestMatch(candidates: NotionMessage[], targetSeries: string | null): NotionMessage | null {
+  if (candidates.length === 0) return null;
+  if (candidates.length === 1) return candidates[0];
+
+  if (targetSeries) {
+    const seriesMatch = candidates.filter((c) => c.seriesName === targetSeries);
+    if (seriesMatch.length === 1) return seriesMatch[0];
+    if (seriesMatch.length > 1) candidates = seriesMatch;
+  }
+
+  // Earliest time of day (Sunday morning service typically earliest)
+  return [...candidates].sort((a, b) => (a.dateRaw ?? "").localeCompare(b.dateRaw ?? ""))[0];
 }
 
 // --- Create or update page ---
@@ -86,16 +129,20 @@ async function upsertMessage(
     "タイトル": {
       title: [{ type: "text", text: { content: msg.title } }],
     },
-    "日付": {
-      date: msg.date ? { start: msg.date } : null,
-    },
-    "シリーズ": {
-      rich_text: [{ type: "text", text: { content: msg.series } }],
-    },
     "テーマ": {
       rich_text: [{ type: "text", text: { content: msg.points.slice(0, 2000) } }],
     },
   };
+
+  const seriesName = normalizeSeries(msg.series);
+  if (seriesName) {
+    properties["シリーズ"] = { select: { name: seriesName } };
+  }
+
+  // On create, set date from MD filename. On update, preserve existing time component.
+  if (!existingId && msg.date) {
+    properties["日付"] = { date: { start: msg.date } };
+  }
 
   let pageId: string;
 
@@ -123,7 +170,7 @@ async function upsertMessage(
     }
     await notionFetch(apiKey, `/blocks/${pageId}/children`, {
       children: bodyBlocks,
-    });
+    }, "PATCH");
   }
 }
 
@@ -273,7 +320,8 @@ async function main() {
   const existing = await listNotionMessages(apiKey, dbId);
 
   for (const msg of messages) {
-    const found = existing.find((e) => e.date === msg.date);
+    const sameDate = existing.filter((e) => e.date === msg.date);
+    const found = pickBestMatch(sameDate, normalizeSeries(msg.series));
     await upsertMessage(apiKey, dbId, msg, found?.id ?? null, dryRun);
   }
 

@@ -48,6 +48,8 @@ export interface CardioExercise {
   type: "cardio";
   name: string;
   duration: string;
+  incline?: string;
+  speed?: string;
   feedback?: string;
 }
 
@@ -61,16 +63,16 @@ export interface SessionInfo {
 // --- Notion-flavored Markdown テーブル生成 ---
 
 function strengthTableRows(exercises: StrengthExercise[]): string {
-  return exercises.map((e, i) => {
+  return exercises.map((e) => {
     const fb = e.feedback ? normalizeFeedback(e.feedback) : "";
-    return `\t<tr>\n\t\t<td>${i + 1}</td>\n\t\t<td>${e.name}</td>\n\t\t<td>${e.weight}</td>\n\t\t<td>${e.sets}</td>\n\t\t<td>${e.reps}</td>\n\t\t<td>${fb}</td>\n\t</tr>`;
+    return `\t<tr>\n\t\t<td>${fb}</td>\n\t\t<td>${e.name}</td>\n\t\t<td>${e.weight}</td>\n\t\t<td>${e.sets}</td>\n\t\t<td>${e.reps}</td>\n\t</tr>`;
   }).join("\n");
 }
 
 function cardioTableRows(exercises: CardioExercise[]): string {
-  return exercises.map((e, i) => {
+  return exercises.map((e) => {
     const fb = e.feedback ? normalizeFeedback(e.feedback) : "";
-    return `\t<tr>\n\t\t<td>${i + 1}</td>\n\t\t<td>${e.name}</td>\n\t\t<td>${e.duration}</td>\n\t\t<td>${fb}</td>\n\t</tr>`;
+    return `\t<tr>\n\t\t<td>${fb}</td>\n\t\t<td>${e.name}</td>\n\t\t<td>${e.duration}</td>\n\t\t<td>${e.incline ?? ""}</td>\n\t\t<td>${e.speed ?? ""}</td>\n\t</tr>`;
   }).join("\n");
 }
 
@@ -96,7 +98,6 @@ export function formatNotionContent(session: SessionInfo, exercises: Exercise[])
     parts.push(`## 💪 筋トレ {color="blue"}`);
     parts.push(`<table fit-page-width="true" header-row="true">
 \t<colgroup>
-\t\t<col color="gray">
 \t\t<col>
 \t\t<col>
 \t\t<col>
@@ -104,12 +105,11 @@ export function formatNotionContent(session: SessionInfo, exercises: Exercise[])
 \t\t<col>
 \t</colgroup>
 \t<tr color="blue_bg">
-\t\t<td>#</td>
+\t\t<td>FB</td>
 \t\t<td>種目</td>
 \t\t<td>重量（kg）</td>
 \t\t<td>セット</td>
 \t\t<td>回数</td>
-\t\t<td>FB</td>
 \t</tr>
 ${strengthTableRows(strength)}
 </table>`);
@@ -120,16 +120,18 @@ ${strengthTableRows(strength)}
     parts.push(`## 🏃 有酸素 {color="green"}`);
     parts.push(`<table fit-page-width="true" header-row="true">
 \t<colgroup>
-\t\t<col color="gray">
+\t\t<col>
+\t\t<col>
 \t\t<col>
 \t\t<col>
 \t\t<col>
 \t</colgroup>
 \t<tr color="green_bg">
-\t\t<td>#</td>
+\t\t<td>FB</td>
 \t\t<td>種目</td>
 \t\t<td>時間</td>
-\t\t<td>FB</td>
+\t\t<td>傾斜</td>
+\t\t<td>スピード</td>
 \t</tr>
 ${cardioTableRows(cardio)}
 </table>`);
@@ -150,12 +152,12 @@ export function formatMenu(exercises: Exercise[]): string {
   if (strength.length > 0) {
     const lines = [
       "## 筋トレ", "",
-      "| # | 種目 | 重量（kg） | セット | 回数 | FB |",
-      "|---|------|------|--------|------|-----|",
+      "| FB | 種目 | 重量（kg） | セット | 回数 |",
+      "|-----|------|------|--------|------|",
     ];
-    strength.forEach((e, i) => {
+    strength.forEach((e) => {
       const fb = e.feedback ? normalizeFeedback(e.feedback) : "";
-      lines.push(`| ${i + 1} | ${e.name} | ${e.weight} | ${e.sets} | ${e.reps} | ${fb} |`);
+      lines.push(`| ${fb} | ${e.name} | ${e.weight} | ${e.sets} | ${e.reps} |`);
     });
     parts.push(lines.join("\n"));
   }
@@ -163,12 +165,12 @@ export function formatMenu(exercises: Exercise[]): string {
   if (cardio.length > 0) {
     const lines = [
       "## 有酸素", "",
-      "| # | 種目 | 時間 | FB |",
-      "|---|------|------|-----|",
+      "| FB | 種目 | 時間 | 傾斜 | スピード |",
+      "|-----|------|------|------|----------|",
     ];
-    cardio.forEach((e, i) => {
+    cardio.forEach((e) => {
       const fb = e.feedback ? normalizeFeedback(e.feedback) : "";
-      lines.push(`| ${i + 1} | ${e.name} | ${e.duration} | ${fb} |`);
+      lines.push(`| ${fb} | ${e.name} | ${e.duration} | ${e.incline ?? ""} | ${e.speed ?? ""} |`);
     });
     parts.push(lines.join("\n"));
   }
@@ -178,6 +180,43 @@ export function formatMenu(exercises: Exercise[]): string {
 
 // --- パース（Notion fetch 結果から種目を抽出） ---
 
+type ColIndex = {
+  fb: number;
+  name: number;
+  weight?: number;
+  sets?: number;
+  reps?: number;
+  duration?: number;
+  incline?: number;
+  speed?: number;
+};
+
+function buildColIndex(headerCells: string[], section: "strength" | "cardio"): ColIndex {
+  const idx: ColIndex = { fb: -1, name: -1 };
+  headerCells.forEach((h, i) => {
+    const c = h.trim();
+    if (c === "FB" || /フィードバック/.test(c)) idx.fb = i;
+    else if (c === "種目") idx.name = i;
+    else if (/重量/.test(c)) idx.weight = i;
+    else if (c === "セット") idx.sets = i;
+    else if (c === "回数") idx.reps = i;
+    else if (c === "時間") idx.duration = i;
+    else if (/傾斜|incline/i.test(c)) idx.incline = i;
+    else if (/スピード|速度|speed/i.test(c)) idx.speed = i;
+  });
+  // 欠損時のフォールバック（旧フォーマット: # 列あり or FB 末尾）
+  if (idx.fb < 0) idx.fb = section === "strength" ? 5 : 3;
+  if (idx.name < 0) idx.name = 1;
+  if (section === "strength") {
+    if (idx.weight == null) idx.weight = 2;
+    if (idx.sets == null) idx.sets = 3;
+    if (idx.reps == null) idx.reps = 4;
+  } else {
+    if (idx.duration == null) idx.duration = 2;
+  }
+  return idx;
+}
+
 export function parseMenu(text: string): Exercise[] {
   const exercises: Exercise[] = [];
   const lines = text.split("\n");
@@ -185,6 +224,8 @@ export function parseMenu(text: string): Exercise[] {
   let currentSection: "strength" | "cardio" | null = null;
   let inTable = false;
   let isHeaderRow = true;
+  let headerCells: string[] = [];
+  let colIdx: ColIndex | null = null;
   let cellBuffer: string[] = [];
   let inCell = false;
 
@@ -196,12 +237,14 @@ export function parseMenu(text: string): Exercise[] {
       currentSection = "strength";
       inTable = false;
       isHeaderRow = true;
+      colIdx = null;
       continue;
     }
     if (/有酸素/.test(trimmed)) {
       currentSection = "cardio";
       inTable = false;
       isHeaderRow = true;
+      colIdx = null;
       continue;
     }
 
@@ -218,22 +261,29 @@ export function parseMenu(text: string): Exercise[] {
         continue;
       }
       if (trimmed === "</tr>") {
-        if (isHeaderRow) { isHeaderRow = false; continue; }
-        if (currentSection === "strength" && cellBuffer.length >= 5) {
+        if (isHeaderRow) {
+          headerCells = cellBuffer.slice();
+          colIdx = buildColIndex(headerCells, currentSection);
+          isHeaderRow = false;
+          continue;
+        }
+        if (currentSection === "strength" && colIdx && cellBuffer.length >= 5) {
           exercises.push({
             type: "strength",
-            name: cellBuffer[1],
-            weight: cellBuffer[2],
-            sets: Number(cellBuffer[3]) || 0,
-            reps: Number(cellBuffer[4]) || 0,
-            feedback: cellBuffer[5] || "",
+            name: cellBuffer[colIdx.name] ?? "",
+            weight: cellBuffer[colIdx.weight!] ?? "",
+            sets: Number(cellBuffer[colIdx.sets!]) || 0,
+            reps: Number(cellBuffer[colIdx.reps!]) || 0,
+            feedback: cellBuffer[colIdx.fb] ?? "",
           });
-        } else if (currentSection === "cardio" && cellBuffer.length >= 3) {
+        } else if (currentSection === "cardio" && colIdx && cellBuffer.length >= 3) {
           exercises.push({
             type: "cardio",
-            name: cellBuffer[1],
-            duration: cellBuffer[2],
-            feedback: cellBuffer[3] || "",
+            name: cellBuffer[colIdx.name] ?? "",
+            duration: cellBuffer[colIdx.duration!] ?? "",
+            incline: colIdx.incline != null ? (cellBuffer[colIdx.incline] ?? "") : "",
+            speed: colIdx.speed != null ? (cellBuffer[colIdx.speed] ?? "") : "",
+            feedback: cellBuffer[colIdx.fb] ?? "",
           });
         }
         continue;
@@ -252,22 +302,34 @@ export function parseMenu(text: string): Exercise[] {
       if (inCell) { cellBuffer.push(trimmed); continue; }
     }
 
-    // プレーン Markdown テーブル形式のパース（フォー���バック）
+    // プレーン Markdown テーブル形式のパース（フォールバック）
     if (trimmed.startsWith("|")) {
-      if (trimmed.includes("種目")) continue;
       if (trimmed.match(/^\|[\s\-|]+\|$/)) continue;
-
       const cells = trimmed.split("|").filter(c => c.trim() !== "").map(c => c.trim());
-      if (currentSection === "strength" && cells.length >= 5) {
+
+      if (trimmed.includes("種目")) {
+        headerCells = cells;
+        colIdx = buildColIndex(headerCells, currentSection);
+        continue;
+      }
+
+      if (currentSection === "strength" && colIdx && cells.length >= 5) {
         exercises.push({
-          type: "strength", name: cells[1], weight: cells[2],
-          sets: Number(cells[3]) || 0, reps: Number(cells[4]) || 0,
-          feedback: cells[5] || "",
+          type: "strength",
+          name: cells[colIdx.name] ?? "",
+          weight: cells[colIdx.weight!] ?? "",
+          sets: Number(cells[colIdx.sets!]) || 0,
+          reps: Number(cells[colIdx.reps!]) || 0,
+          feedback: cells[colIdx.fb] ?? "",
         });
-      } else if (currentSection === "cardio" && cells.length >= 3) {
+      } else if (currentSection === "cardio" && colIdx && cells.length >= 3) {
         exercises.push({
-          type: "cardio", name: cells[1], duration: cells[2],
-          feedback: cells[3] || "",
+          type: "cardio",
+          name: cells[colIdx.name] ?? "",
+          duration: cells[colIdx.duration!] ?? "",
+          incline: colIdx.incline != null ? (cells[colIdx.incline] ?? "") : "",
+          speed: colIdx.speed != null ? (cells[colIdx.speed] ?? "") : "",
+          feedback: cells[colIdx.fb] ?? "",
         });
       }
     }

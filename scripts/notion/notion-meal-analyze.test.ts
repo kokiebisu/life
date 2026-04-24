@@ -4,8 +4,10 @@ import {
   blocksToPlainText,
   shouldAnalyze,
   computeEnhancedTitle,
+  buildAnalysisBlocks,
   ANALYSIS_MARKER,
 } from "./notion-meal-analyze.ts";
+import type { MealVisionResult } from "../lib/vision.ts";
 
 describe("extractImageUrls", () => {
   test("extracts file-hosted image URL", () => {
@@ -150,5 +152,61 @@ describe("computeEnhancedTitle", () => {
 
   test("具体的な料理名 → unchanged", () => {
     expect(computeEnhancedTitle("担々麺", "担々麺")).toBe("担々麺");
+  });
+});
+
+describe("buildAnalysisBlocks", () => {
+  const result: MealVisionResult = {
+    dishName: "豚しょうが焼き定食",
+    items: ["豚ロース 150g", "玉ねぎ 80g", "白米 200g"],
+    kcal: 780,
+    protein: 32,
+    fat: 28,
+    carbs: 95,
+    confidence: "high",
+    imageCount: 1,
+  };
+
+  test("produces heading, dish paragraph, ingredient bullets, summary, confidence quote", () => {
+    const blocks = buildAnalysisBlocks(result);
+    const types = blocks.map((b) => b.type);
+    expect(types[0]).toBe("heading_2");
+    expect(types).toContain("bulleted_list_item");
+    expect(types).toContain("paragraph");
+    expect(types[types.length - 1]).toBe("quote");
+  });
+
+  test("heading contains analysis marker", () => {
+    const blocks = buildAnalysisBlocks(result);
+    const h = blocks[0];
+    const text = h.heading_2.rich_text[0].text.content;
+    expect(text).toBe("推定（画像分析）");
+  });
+
+  test("summary paragraph contains kcal and PFC", () => {
+    const blocks = buildAnalysisBlocks(result);
+    const texts = blocks.flatMap((b) =>
+      b[b.type]?.rich_text?.map((r: any) => r.text?.content) ?? [],
+    );
+    const joined = texts.join(" ");
+    expect(joined).toContain("780");
+    expect(joined).toContain("P: 32");
+    expect(joined).toContain("F: 28");
+    expect(joined).toContain("C: 95");
+  });
+
+  test("confidence high → 高", () => {
+    const blocks = buildAnalysisBlocks(result);
+    const quote = blocks[blocks.length - 1];
+    const text = quote.quote.rich_text[0].text.content;
+    expect(text).toContain("高");
+  });
+
+  test("confidence low with reason → 低 + reason", () => {
+    const blocks = buildAnalysisBlocks({ ...result, confidence: "low", confidenceReason: "暗くて判別困難" });
+    const quote = blocks[blocks.length - 1];
+    const text = quote.quote.rich_text[0].text.content;
+    expect(text).toContain("低");
+    expect(text).toContain("暗くて判別困難");
   });
 });

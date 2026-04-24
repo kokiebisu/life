@@ -8,6 +8,8 @@
  *   - 数値 kcal（"\d+\s*kcal"）が未記入
  */
 
+import type { MealVisionResult } from "../lib/vision.ts";
+
 export const ANALYSIS_MARKER = "推定（画像分析）";
 
 const INGREDIENT_PATTERN = /-?\s*.+?\s+\d+\s*(g|個|本|枚)/;
@@ -66,4 +68,55 @@ export function computeEnhancedTitle(currentTitle: string, dishName: string): st
   if (trimmed.startsWith("外食") && trimmed.includes("（")) return currentTitle;
 
   return currentTitle;
+}
+
+function richText(text: string) {
+  return [{ type: "text", text: { content: text } }];
+}
+
+const CONFIDENCE_JA: Record<MealVisionResult["confidence"], string> = {
+  high: "高",
+  medium: "中",
+  low: "低",
+};
+
+export function buildAnalysisBlocks(result: MealVisionResult): NotionBlock[] {
+  const blocks: NotionBlock[] = [];
+
+  blocks.push({
+    object: "block",
+    type: "heading_2",
+    heading_2: { rich_text: richText(ANALYSIS_MARKER) },
+  });
+
+  blocks.push({
+    object: "block",
+    type: "paragraph",
+    paragraph: { rich_text: richText(result.dishName) },
+  });
+
+  for (const item of result.items) {
+    blocks.push({
+      object: "block",
+      type: "bulleted_list_item",
+      bulleted_list_item: { rich_text: richText(item) },
+    });
+  }
+
+  const summary = `~${result.kcal} kcal | P: ${result.protein}g | F: ${result.fat}g | C: ${result.carbs}g`;
+  blocks.push({
+    object: "block",
+    type: "paragraph",
+    paragraph: { rich_text: richText(summary) },
+  });
+
+  const confJa = CONFIDENCE_JA[result.confidence];
+  const reason = result.confidenceReason ? ` / ${result.confidenceReason}` : "";
+  blocks.push({
+    object: "block",
+    type: "quote",
+    quote: { rich_text: richText(`画像分析による概算（信頼度: ${confJa}${reason}）`) },
+  });
+
+  return blocks;
 }

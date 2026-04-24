@@ -10,7 +10,7 @@
 
 import { readdirSync, readFileSync } from "fs";
 import { join, basename } from "path";
-import { getApiKey, getDbId, notionFetch, parseArgs, pickTaskIcon, pickCover } from "./lib/notion";
+import { getApiKey, getDbId, notionFetch, parseArgs } from "./lib/notion";
 
 const ROOT = join(import.meta.dir, "../..");
 const MESSAGES_DIR = join(ROOT, "aspects/church/messages");
@@ -112,66 +112,38 @@ function pickBestMatch(candidates: NotionMessage[], targetSeries: string | null)
   return [...candidates].sort((a, b) => (a.dateRaw ?? "").localeCompare(b.dateRaw ?? ""))[0];
 }
 
-// --- Create or update page ---
+// --- Update page body ---
+//
+// ポリシー: Notion ページのプロパティ（タイトル・シリーズ・テーマ・日付）は一切触らない。
+// それらはカレンダー同期・手動設定が source of truth。
+// このスクリプトはページ本文（ブロック）のみを MD から同期する。
+// 対応する Notion ページが存在しない場合はスキップ（作成しない）。
 
-async function upsertMessage(
+async function syncMessageBody(
   apiKey: string,
-  dbId: string,
   msg: ParsedMessage,
   existingId: string | null,
   dryRun: boolean
 ): Promise<void> {
-  const action = existingId ? "更新" : "作成";
-  console.log(`  ${action}: ${msg.date} 「${msg.title}」`);
+  if (!existingId) {
+    console.log(`  スキップ: ${msg.date} 「${msg.title}」（Notion ページ未作成）`);
+    return;
+  }
+
+  console.log(`  更新: ${msg.date} 「${msg.title}」`);
   if (dryRun) return;
 
-  const properties: Record<string, any> = {
-    "タイトル": {
-      title: [{ type: "text", text: { content: msg.title } }],
-    },
-    "テーマ": {
-      rich_text: [{ type: "text", text: { content: msg.points.slice(0, 2000) } }],
-    },
-  };
-
-  const seriesName = normalizeSeries(msg.series);
-  if (seriesName) {
-    properties["シリーズ"] = { select: { name: seriesName } };
-  }
-
-  // On create, set date from MD filename. On update, preserve existing time component.
-  if (!existingId && msg.date) {
-    properties["日付"] = { date: { start: msg.date } };
-  }
-
-  let pageId: string;
-
-  if (existingId) {
-    await notionFetch(apiKey, `/pages/${existingId}`, { properties }, "PATCH");
-    pageId = existingId;
-  } else {
-    const page = await notionFetch(apiKey, "/pages", {
-      parent: { database_id: dbId },
-      icon: pickTaskIcon("church"),
-      cover: pickCover(),
-      properties,
-    });
-    pageId = page.id;
-  }
-
-  // Write full content to page body (clear existing blocks first on update)
   const bodyBlocks = buildBlocks(msg.raw);
-  if (bodyBlocks.length > 0) {
-    if (existingId) {
-      const existing = await notionFetch(apiKey, `/blocks/${pageId}/children`);
-      for (const block of existing.results ?? []) {
-        await notionFetch(apiKey, `/blocks/${block.id}`, undefined, "DELETE");
-      }
-    }
-    await notionFetch(apiKey, `/blocks/${pageId}/children`, {
-      children: bodyBlocks,
-    }, "PATCH");
+  if (bodyBlocks.length === 0) return;
+
+  // Clear existing body blocks, then append new ones
+  const existing = await notionFetch(apiKey, `/blocks/${existingId}/children`);
+  for (const block of existing.results ?? []) {
+    await notionFetch(apiKey, `/blocks/${block.id}`, undefined, "DELETE");
   }
+  await notionFetch(apiKey, `/blocks/${existingId}/children`, {
+    children: bodyBlocks,
+  }, "PATCH");
 }
 
 // --- Build Notion blocks from Markdown ---
@@ -345,7 +317,7 @@ async function main() {
   for (const msg of messages) {
     const sameDate = existing.filter((e) => e.date === msg.date);
     const found = pickBestMatch(sameDate, normalizeSeries(msg.series));
-    await upsertMessage(apiKey, dbId, msg, found?.id ?? null, dryRun);
+    await syncMessageBody(apiKey, msg, found?.id ?? null, dryRun);
   }
 
   console.log(`\n完了${dryRun ? "（dry-run）" : ""}。`);

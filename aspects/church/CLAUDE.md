@@ -9,6 +9,14 @@
 
 **prayer-requests.md は MD のみ管理。Notion 同期不要。**
 
+## messages 同期の責務範囲（厳守）
+
+`notion-sync-messages.ts` はページ**本文（ブロック）のみ**を MD から同期する。**タイトル・シリーズ・テーマ・日付などのプロパティは一切触らない。**
+
+- タイトル（例: "Sunday Service" / "Good Friday Service"）はカレンダー同期・手動設定が source of truth
+- シリーズ・テーマなどのプロパティも手動管理
+- 対応する Notion ページが存在しない日の MD はスキップ（スクリプトでページ作成しない）
+
 ## 聖書通読ステータスの確認（厳守）
 
 bible-reading.csv や Notion の聖書通読ページを作成・更新するときは、**csv だけを信じず、必ず `aspects/church/devotions/` の最新ファイルを確認する。**

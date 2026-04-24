@@ -1,0 +1,115 @@
+import { describe, test, expect } from "bun:test";
+import {
+  extractImageUrls,
+  blocksToPlainText,
+  shouldAnalyze,
+  ANALYSIS_MARKER,
+} from "./notion-meal-analyze.ts";
+
+describe("extractImageUrls", () => {
+  test("extracts file-hosted image URL", () => {
+    const blocks = [
+      { type: "image", image: { type: "file", file: { url: "https://s3/file.jpg" } } },
+    ];
+    expect(extractImageUrls(blocks)).toEqual(["https://s3/file.jpg"]);
+  });
+
+  test("extracts external image URL", () => {
+    const blocks = [
+      { type: "image", image: { type: "external", external: { url: "https://ext/img.png" } } },
+    ];
+    expect(extractImageUrls(blocks)).toEqual(["https://ext/img.png"]);
+  });
+
+  test("multiple image blocks in order", () => {
+    const blocks = [
+      { type: "paragraph", paragraph: {} },
+      { type: "image", image: { type: "file", file: { url: "https://a" } } },
+      { type: "image", image: { type: "external", external: { url: "https://b" } } },
+    ];
+    expect(extractImageUrls(blocks)).toEqual(["https://a", "https://b"]);
+  });
+
+  test("no image blocks → empty array", () => {
+    const blocks = [{ type: "paragraph", paragraph: {} }];
+    expect(extractImageUrls(blocks)).toEqual([]);
+  });
+});
+
+describe("blocksToPlainText", () => {
+  test("concatenates rich_text across block types", () => {
+    const blocks = [
+      { type: "heading_2", heading_2: { rich_text: [{ plain_text: "昼食" }] } },
+      { type: "paragraph", paragraph: { rich_text: [{ plain_text: "豚ロース 150g" }] } },
+      { type: "bulleted_list_item", bulleted_list_item: { rich_text: [{ plain_text: "玉ねぎ 80g" }] } },
+    ];
+    const text = blocksToPlainText(blocks);
+    expect(text).toContain("昼食");
+    expect(text).toContain("豚ロース 150g");
+    expect(text).toContain("玉ねぎ 80g");
+  });
+
+  test("handles blocks without rich_text", () => {
+    const blocks = [{ type: "divider", divider: {} }];
+    expect(blocksToPlainText(blocks)).toBe("");
+  });
+
+  test("handles empty rich_text array", () => {
+    const blocks = [{ type: "paragraph", paragraph: { rich_text: [] } }];
+    expect(blocksToPlainText(blocks)).toBe("");
+  });
+});
+
+describe("shouldAnalyze", () => {
+  test("image + no marker + no ingredient list → true", () => {
+    const blocks = [
+      { type: "image", image: { type: "file", file: { url: "https://x" } } },
+    ];
+    expect(shouldAnalyze(blocks)).toBe(true);
+  });
+
+  test("image + marker present → false", () => {
+    const blocks = [
+      { type: "image", image: { type: "file", file: { url: "https://x" } } },
+      { type: "heading_2", heading_2: { rich_text: [{ plain_text: ANALYSIS_MARKER }] } },
+    ];
+    expect(shouldAnalyze(blocks)).toBe(false);
+  });
+
+  test("image + ingredient list (- X 150g) → false (self-cook)", () => {
+    const blocks = [
+      { type: "image", image: { type: "file", file: { url: "https://x" } } },
+      { type: "bulleted_list_item", bulleted_list_item: { rich_text: [{ plain_text: "豚ロース 150g" }] } },
+    ];
+    expect(shouldAnalyze(blocks)).toBe(false);
+  });
+
+  test("image + numeric kcal in body → false", () => {
+    const blocks = [
+      { type: "image", image: { type: "file", file: { url: "https://x" } } },
+      { type: "paragraph", paragraph: { rich_text: [{ plain_text: "~520 kcal" }] } },
+    ];
+    expect(shouldAnalyze(blocks)).toBe(false);
+  });
+
+  test("no image → false", () => {
+    const blocks = [{ type: "paragraph", paragraph: { rich_text: [{ plain_text: "text" }] } }];
+    expect(shouldAnalyze(blocks)).toBe(false);
+  });
+
+  test("ingredient with 個 unit → self-cook (false)", () => {
+    const blocks = [
+      { type: "image", image: { type: "file", file: { url: "https://x" } } },
+      { type: "bulleted_list_item", bulleted_list_item: { rich_text: [{ plain_text: "卵 2個" }] } },
+    ];
+    expect(shouldAnalyze(blocks)).toBe(false);
+  });
+
+  test("ingredient with 本 unit → self-cook (false)", () => {
+    const blocks = [
+      { type: "image", image: { type: "file", file: { url: "https://x" } } },
+      { type: "bulleted_list_item", bulleted_list_item: { rich_text: [{ plain_text: "長ねぎ 1本" }] } },
+    ];
+    expect(shouldAnalyze(blocks)).toBe(false);
+  });
+});

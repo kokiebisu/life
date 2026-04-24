@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import { extensionFromContentType, MAX_IMAGES, downloadImage } from "./vision.ts";
+import { extensionFromContentType, MAX_IMAGES, downloadImage, parseVisionJson } from "./vision.ts";
 import { existsSync, readFileSync } from "fs";
 
 describe("extensionFromContentType", () => {
@@ -101,5 +101,53 @@ describe("downloadImage", () => {
     } finally {
       globalThis.fetch = originalFetch;
     }
+  });
+});
+
+describe("parseVisionJson", () => {
+  test("valid JSON is parsed and imageCount is injected", () => {
+    const raw = JSON.stringify({
+      dishName: "ラーメン",
+      items: ["醤油ラーメン 1杯"],
+      kcal: 700,
+      protein: 25,
+      fat: 20,
+      carbs: 90,
+      confidence: "high",
+    });
+    const result = parseVisionJson(raw, 2);
+    expect(result.dishName).toBe("ラーメン");
+    expect(result.kcal).toBe(700);
+    expect(result.imageCount).toBe(2);
+    expect(result.confidence).toBe("high");
+  });
+
+  test("JSON wrapped in markdown code fence is extracted", () => {
+    const raw = '```json\n{"dishName":"A","items":[],"kcal":1,"protein":1,"fat":1,"carbs":1,"confidence":"low"}\n```';
+    const result = parseVisionJson(raw, 1);
+    expect(result.dishName).toBe("A");
+  });
+
+  test("JSON with extra whitespace and surrounding text", () => {
+    const raw = 'Here is the JSON:\n{"dishName":"B","items":[],"kcal":2,"protein":2,"fat":2,"carbs":2,"confidence":"medium"}\n';
+    const result = parseVisionJson(raw, 1);
+    expect(result.dishName).toBe("B");
+  });
+
+  test("missing required field throws", () => {
+    const raw = JSON.stringify({ dishName: "X" });
+    expect(() => parseVisionJson(raw, 1)).toThrow();
+  });
+
+  test("invalid confidence value throws", () => {
+    const raw = JSON.stringify({
+      dishName: "X", items: [], kcal: 1, protein: 1, fat: 1, carbs: 1,
+      confidence: "unknown",
+    });
+    expect(() => parseVisionJson(raw, 1)).toThrow();
+  });
+
+  test("non-JSON input throws", () => {
+    expect(() => parseVisionJson("not json", 1)).toThrow();
   });
 });

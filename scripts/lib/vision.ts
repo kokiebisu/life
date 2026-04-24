@@ -71,6 +71,60 @@ export async function downloadImage(
   };
 }
 
+const VALID_CONFIDENCE = new Set(["high", "medium", "low"]);
+
+export function parseVisionJson(raw: string, imageCount: number): MealVisionResult {
+  // 1. Try to extract JSON from markdown code fence
+  let text = raw.trim();
+  const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (fenceMatch) text = fenceMatch[1].trim();
+
+  // 2. If still has surrounding text, find the outermost {...}
+  if (!text.startsWith("{")) {
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start === -1 || end === -1 || end <= start) {
+      throw new Error(`No JSON object found in vision output: ${raw.slice(0, 100)}`);
+    }
+    text = text.slice(start, end + 1);
+  }
+
+  let parsed: any;
+  try {
+    parsed = JSON.parse(text);
+  } catch (e) {
+    throw new Error(`Vision output is not valid JSON: ${(e as Error).message}`);
+  }
+
+  const required = ["dishName", "items", "kcal", "protein", "fat", "carbs", "confidence"] as const;
+  for (const key of required) {
+    if (parsed[key] === undefined || parsed[key] === null) {
+      throw new Error(`Vision output missing required field: ${key}`);
+    }
+  }
+  if (typeof parsed.dishName !== "string") throw new Error("dishName must be string");
+  if (!Array.isArray(parsed.items)) throw new Error("items must be array");
+  if (typeof parsed.kcal !== "number") throw new Error("kcal must be number");
+  if (typeof parsed.protein !== "number") throw new Error("protein must be number");
+  if (typeof parsed.fat !== "number") throw new Error("fat must be number");
+  if (typeof parsed.carbs !== "number") throw new Error("carbs must be number");
+  if (!VALID_CONFIDENCE.has(parsed.confidence)) {
+    throw new Error(`Invalid confidence: ${parsed.confidence}`);
+  }
+
+  return {
+    dishName: parsed.dishName,
+    items: parsed.items.map(String),
+    kcal: parsed.kcal,
+    protein: parsed.protein,
+    fat: parsed.fat,
+    carbs: parsed.carbs,
+    confidence: parsed.confidence,
+    confidenceReason: typeof parsed.confidenceReason === "string" ? parsed.confidenceReason : undefined,
+    imageCount,
+  };
+}
+
 /**
  * 画像 URL のリストから 1 食分の栄養情報を推定する。
  * 最大 MAX_IMAGES 枚まで。超過分は無視（ログに警告）。

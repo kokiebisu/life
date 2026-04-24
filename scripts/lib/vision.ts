@@ -6,6 +6,7 @@
  */
 
 import { writeFileSync, unlinkSync, existsSync } from "fs";
+import { callClaude } from "./claude.ts";
 
 export interface MealVisionResult {
   dishName: string;
@@ -34,7 +35,9 @@ export const SUPPORTED_CONTENT_TYPES: Record<string, string> = {
  */
 export function extensionFromContentType(contentType: string | null): string | null {
   if (!contentType) return null;
-  const type = contentType.split(";")[0].trim().toLowerCase();
+  const head = contentType.split(";")[0];
+  if (!head) return null;
+  const type = head.trim().toLowerCase();
   return SUPPORTED_CONTENT_TYPES[type] ?? null;
 }
 
@@ -77,7 +80,7 @@ export function parseVisionJson(raw: string, imageCount: number): MealVisionResu
   // 1. Try to extract JSON from markdown code fence
   let text = raw.trim();
   const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-  if (fenceMatch) text = fenceMatch[1].trim();
+  if (fenceMatch && fenceMatch[1]) text = fenceMatch[1].trim();
 
   // 2. If still has surrounding text, find the outermost {...}
   if (!text.startsWith("{")) {
@@ -159,11 +162,56 @@ ${pathList}
 
 /**
  * 画像 URL のリストから 1 食分の栄養情報を推定する。
- * 最大 MAX_IMAGES 枚まで。超過分は無視（ログに警告）。
+ * - 最大 MAX_IMAGES 枚。超過分は無視（コンソール警告）
+ * - 一部のダウンロード失敗は許容（残った画像で続行）
+ * - 全画像失敗なら例外
+ * - JSON パース失敗時は 1 回だけリトライ
  */
 export async function analyzeMealImages(
   imageUrls: string[],
-  options?: { pageId?: string },
+  options: { pageId: string },
 ): Promise<MealVisionResult> {
-  throw new Error("not implemented");
+  if (imageUrls.length === 0) {
+    throw new Error("analyzeMealImages: imageUrls is empty");
+  }
+
+  const targetUrls = imageUrls.slice(0, MAX_IMAGES);
+  if (imageUrls.length > MAX_IMAGES) {
+    console.warn(
+      `[vision] ${imageUrls.length}枚の画像があるため、先頭${MAX_IMAGES}枚のみ使用します（pageId=${options.pageId}）`,
+    );
+  }
+
+  const downloads: DownloadedImage[] = [];
+  try {
+    const results = await Promise.all(
+      targetUrls.map((url, i) => downloadImage(url, { pageId: options.pageId, index: i })),
+    );
+    for (const r of results) {
+      if (r) downloads.push(r);
+    }
+    if (downloads.length === 0) {
+      throw new Error("すべての画像のダウンロードに失敗しました");
+    }
+
+    const prompt = buildVisionPrompt(downloads.map((d) => d.path));
+
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const raw = await callClaude([{ role: "user", content: prompt }], {
+        model: "claude-haiku-4-5-20251001",
+        maxTokens: 1024,
+        allowedTools: ["Read"],
+        maxTurns: 3,
+      });
+      try {
+        return parseVisionJson(raw, downloads.length);
+      } catch (e) {
+        if (attempt === 1) throw e;
+        console.warn(`[vision] JSON パース失敗、リトライします: ${(e as Error).message}`);
+      }
+    }
+    throw new Error("unreachable");
+  } finally {
+    for (const d of downloads) d.cleanup();
+  }
 }

@@ -270,6 +270,18 @@ git pull origin main
 
 セッションごとに worktree を作成して影響範囲を分離すること。
 
+## worktree 削除前の uncommitted check（厳守）
+
+`git worktree remove --force` の前に、**必ず** `git -C .worktrees/<branch> status --porcelain` で未コミット変更がないか確認する。
+
+- 空でない場合: その worktree に次の PR の変更が残っている可能性あり。`--force` で消すと untracked file は完全消失する
+- 残っている変更が必要なものなら: その worktree でコミット・push してから削除、または stash してから削除
+- 不要なゴミなら: ユーザーに確認してから `--force`
+
+`git fsck --lost-found` で復旧できる場合もあるが（stash や tracked file の blob は残る）、untracked file は消える。force は最後の手段。
+
+複数 PR を順番に作るとき、Group 1 の worktree に Group 2 の変更が残ったままになる動線が起きやすい。`status --porcelain` を必ず挟むこと。
+
 ## セッション開始時の worktree チェック（厳守）
 
 セッション開始時に `git worktree list` で残存 worktree を確認する。main 以外の worktree があれば:

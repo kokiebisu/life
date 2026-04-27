@@ -59,7 +59,7 @@ func maxSumK(nums []int, k int) int {
 
 | # | タイトル | 難易度 | パターン | ノート |
 |---|---|---|---|---|
-| 3 | Longest Substring Without Repeating Characters | Medium | 可変長 | — |
+| 3 | Longest Substring Without Repeating Characters | Medium | 可変長 | [2026-04-27](../notes/2026-04-27-1.md) |
 | 76 | Minimum Window Substring | Hard | 可変長 + count match | — |
 | 159 | Longest Substring with At Most Two Distinct Characters | Medium | 可変長 + 個数制限 | — |
 | 209 | Minimum Size Subarray Sum | Medium | 可変長 + 合計制約 | — |
@@ -72,4 +72,6 @@ func maxSumK(nums []int, k int) int {
 
 ## 詰まりポイント（解きながら追記）
 
-- （まだ問題を解いていない）
+- **`r++` の位置**: `longest = max(...)` の **前**に `r++` するとウィンドウ長 `r-l+1` がズレる。inner for 抜けた直後に best 更新→そのあと r++（または `for r := 0; r < n; r++` スタイルで自動化）
+- **`while` がない**: Go の `for cond { ... }` で代替
+- **連鎖代入 `l = r = 0` 不可**: `l, r := 0, 0`

@@ -61,3 +61,39 @@
 - t.Run の目的をすぐに言えなかった
 - Eviction Policy と Cache Invalidation を混同した
 - キャッシュ戦略は骨格は言えるが選択肢+トレードオフまで練習が必要
+
+## 2026-04-27（Graph/Tree Day 1）
+今日やったこと:
+- アルゴリズム: グラフ vs ツリー、隣接リスト（map[string][]string）vs struct方式の比較
+- ID vs 名前のトレードオフ（メモリ・ユニーク性・DB整合）
+- BFS（Goコード + トレース実演）・DFS（再帰版）
+- BFS/DFS 使い分け基準（最短ホップ→BFS、cycle検出→DFS）
+- DFS 3色塗り分けでの cycle 検出（GRAY/BLACK の区別が必要な理由）
+- Notion `勉強（トピック別）` DB に「カテゴリ: アルゴリズム」追加・本セッション登録
+
+詰まったところ:
+- 最初「ツリー構造」が全部表せると思っていた → 親が複数いるケースで限界に気づいた
+- struct方式の限界（インデックスが別途必要）が腑に落ちるまで2回説明
+- map の値を `[]Node` ではなく `[]string` にする理由（つながりとデータの分離）
+
+次回（Graph/Tree Day 2）:
+- コーディング R-G1: n次サプライヤー検索（BFS + depth制限）の実装
+- コーディング R-G2: 循環依存検出（DFS 3色）の実装
+- 余裕があればトポロジカルソート
+
+## 2026-04-28（コードレビュー面接対策）
+今日やったこと:
+- コードレビューの優先度ラベル（must/should/nit）と理由+修正案セットの言語化
+- PR レビュー実践: Resilire 風の並列サプライヤー取得コード
+- must 2件発見: results スライス concurrent append / s.cache map concurrent r/w
+- append の内部4ステップと cap pre-allocate でも race が残る理由
+- 修正案3案（channel / sync.Mutex / errgroup + index 書き込み）のトレードオフ
+
+詰まったところ:
+- 「最後の append の後に return が無い」と誤読（不要だった）
+- race の指摘を最初「channel が無い」と手段で言ってしまった（理由→修正案→トレードオフの順が正解）
+- fetchOne 周りの must（ctx 伝播・resp.Body close・エラー握りつぶし等）は次回継続
+
+明日やること:
+- 同じ題材で fetchOne 周りの残り must/should/nit を出し切る
+- もしくは別 PR レビュー問題で慣らす

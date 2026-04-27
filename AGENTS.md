@@ -43,7 +43,6 @@
 # 教会
 /devotion                # デボーション（自動で次の章を検出）
 /to-notion               # church MD ファイルを Notion に同期
-/sync-lessons            # sound レッスン内容を Notion カリキュラム DB に同期
 
 # Notion・カレンダー
 /from-notion             # Notion からデータ同期
@@ -95,12 +94,11 @@ memory-bank/             # セッション間の記憶（decisions.md）
 | ---------- | ---------- | ------------------------------------- |
 | diet       | 6人チーム  | ダイエット・健康管理 → Notion: 食事DB |
 | gym        | -          | ジムセッション記録 → Notion: ジムDB   |
-| guitar     | 3人チーム  | ギター練習 → Notion: ギターDB         |
+| guitar     | 3人チーム  | ギター練習                            |
 | study      | 9人チーム  | 学習（起業・法律・技術）              |
 | job/search | 6人チーム  | 就職活動                              |
 | reading    | 村上葉月   | 読書記録                              |
 | routine    | -          | 習慣・ルーティン → Notion: 習慣DB     |
-| sound      | 3人チーム  | 教会音響PA → Notion: カリキュラムDB   |
 | church     | -          | 教会関連                              |
 
 **その他:**
@@ -137,7 +135,7 @@ memory-bank/             # セッション間の記憶（decisions.md）
 - 食事エントリは原則1時間。fridge.md で食材在庫を確認する
 
 ## DB 優先度
-events > todo > guitar = sound > routine > meals > groceries
+events > todo > routine > meals > groceries
 
 ## md↔Notion 同期（必須）
 - md を変更したら Notion も更新。逆も同様。片方だけで終わらせない
@@ -543,7 +541,7 @@ Notion にページを**新規作成する前に**、必ず既存ページの存
 
 ## 重複バリデーション（厳守）<!-- コード化済み: validate-entry.ts + notion-add.ts checkDuplicate -->
 
-Notion にスケジュール系エントリ（devotion / events / todo / meals / groceries / guitar / sound / study）を **直接登録する前に**、必ず `validate-entry.ts` を実行する:
+Notion にスケジュール系エントリ（devotion / events / todo / meals / groceries / study）を **直接登録する前に**、必ず `validate-entry.ts` を実行する:
 
 ```
 bun run scripts/validate-entry.ts --date YYYY-MM-DD --title "タイトル" --start HH:MM --end HH:MM

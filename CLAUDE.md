@@ -43,7 +43,6 @@
 # 教会
 /devotion                # デボーション（自動で次の章を検出）
 /to-notion               # church MD ファイルを Notion に同期
-/sync-lessons            # sound レッスン内容を Notion カリキュラム DB に同期
 
 # Notion・カレンダー
 /from-notion             # Notion からデータ同期
@@ -95,12 +94,11 @@ memory-bank/             # セッション間の記憶（decisions.md）
 | ---------- | ---------- | ------------------------------------- |
 | diet       | 6人チーム  | ダイエット・健康管理 → Notion: 食事DB |
 | gym        | -          | ジムセッション記録 → Notion: ジムDB   |
-| guitar     | 3人チーム  | ギター練習 → Notion: ギターDB         |
+| guitar     | 3人チーム  | ギター練習                            |
 | study      | 9人チーム  | 学習（起業・法律・技術）              |
 | job/search | 6人チーム  | 就職活動                              |
 | reading    | 村上葉月   | 読書記録                              |
 | routine    | -          | 習慣・ルーティン → Notion: 習慣DB     |
-| sound      | 3人チーム  | 教会音響PA → Notion: カリキュラムDB   |
 | church     | -          | 教会関連                              |
 
 **その他:**

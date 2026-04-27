@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Guitar DB / Meals DB に Feedback (rich_text) プロパティを追加する
+ * Meals DB に Feedback (rich_text) プロパティを追加する
  * 一度だけ実行すればOK
  */
 
@@ -17,13 +17,9 @@ async function addFeedbackProperty(dbId: string, label: string) {
 }
 
 async function main() {
-  const curriculumDbId = getDbId("NOTION_CURRICULUM_DB");
   const mealsDbId = getDbId("NOTION_MEALS_DB");
 
-  await Promise.all([
-    addFeedbackProperty(curriculumDbId, "Curriculum DB"),
-    addFeedbackProperty(mealsDbId, "Meals DB"),
-  ]);
+  await addFeedbackProperty(mealsDbId, "Meals DB");
 
   console.log("完了！");
 }

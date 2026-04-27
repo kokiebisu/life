@@ -193,3 +193,13 @@ Client → API Server → [Redis チェック] → ヒット: 即返す
 2. testcontainersを使う理由は？モックDBとのトレードオフは？
 3. Cache Invalidationの3つの方法（TTL待ち・イベント駆動・Write-through）の使い分けは？
 4. EXPLAIN ANALYZEで見るべき3点は？
+
+## 🔁 復習で詰まったところ
+
+### 2026-04-27 - ❌ 忘れた
+- **Q: Cache Invalidationの3つの方法（TTL待ち・イベント駆動・Write-through）の使い分けは？**
+  - 詰まった内容: 3方法を完全に忘却
+  - 正解ポイント: ① **TTL 待ち** = 期限で自然消滅、シンプル、最大TTL分古いデータ残る、緩い要件向け ② **イベント駆動** = 更新時にキャッシュキー**削除** → 次読み込みで DB→キャッシュ、即反映、実装複雑、リアルタイム必要時 ③ **Write-through** = DB と キャッシュを**同時に上書き**、常に温まり、更新コスト高、読み取り多+更新少時。イベント駆動は「次読み込みで温まる」、Write-through は「書いた瞬間から温まる」が違い
+- **Q: EXPLAIN ANALYZEで見るべき3点は？**
+  - 詰まった内容: Seq/Index Scan は答えたが、actual time と Rows Removed by Filter を思い出せず（"cost" と回答）
+  - 正解ポイント: ① **Seq Scan vs Index Scan**（全件舐めかインデックス使えてるか）② **actual time**（実測時間 ms）③ **Rows Removed by Filter**（フィルタで捨てた行数。多いと無駄なスキャン）。EXPLAIN は cost 推定のみ、EXPLAIN ANALYZE は実行して actual time + actual rows を返す

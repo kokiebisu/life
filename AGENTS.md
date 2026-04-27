@@ -56,6 +56,7 @@
 /tidy                    # 指示ファイルの重複・配置を整理
 /cache                   # キャッシュ管理（status / clear / analyze）
 /learn                   # ミスからの学習・再発防止
+/automate                # セッション内容を仕組み化（skill/script/rule/hook 化を計画→実装）
 /analyze                 # ルール→コード リファクタリング分析
 ```
 
@@ -708,6 +709,7 @@ bun run scripts/notion/notion-sync-tasks.ts             # 実行
 
 - **`/analyze`** — ルールファイル（.ai/rules/・CLAUDE.md・skills/）を分析し、コードに置き換えた方が一貫性のある箇所を検出・レポート・実装する。「分析して」「リファクタして」に使う。 → `skills/analyze/SKILL.md`
 - **`/ask-diet`** — ダイエット・健康管理について相談したいとき。食事内容・カロリー・体重・栄養バランスなどの相談に使う。専門チームとして回答する。 → `skills/ask-diet/SKILL.md`
+- **`/automate`** — 成功した手順やセッションの作業内容を仕組み化（skill / script / rule / hook）したいとき。「これ仕組み化したい」「自動化したい」「次回も再現できるようにしたい」などに使う。 → `skills/automate/SKILL.md`
 - **`/backfill-cues`** — 既存の学習ノートにコーネル式キュー（自分への質問）を一括追加する。「キュー追加」「バックフィル」などに使う。 → `skills/backfill-cues/SKILL.md`
 - **`/cache`** — キャッシュの確認・クリア・分析をするとき。「キャッシュ確認して」「キャッシュクリアして」「ヒット率を見たい」などに使う。 → `skills/cache/SKILL.md`
 - **`/calendar`** — Notion カレンダーの予定を確認・追加・変更するとき。デイリープラン作成・スケジュール調整・既存予定の確認などに使う。 → `skills/calendar/SKILL.md`

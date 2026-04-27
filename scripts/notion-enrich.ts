@@ -37,7 +37,6 @@ const ALL_DB_ENV_KEYS: { envKey: string; label: string }[] = [
   // スケジュール系（SCHEDULE_DB_CONFIGS と一致）
   { envKey: "NOTION_DEVOTION_DB",       label: "devotion" },
   { envKey: "NOTION_EVENTS_DB",         label: "events" },
-  { envKey: "NOTION_CURRICULUM_DB",     label: "curriculum" },
   { envKey: "NOTION_MEALS_DB",          label: "meals" },
   { envKey: "NOTION_GROCERIES_DB",      label: "groceries" },
   { envKey: "NOTION_TODO_DB",           label: "todo" },

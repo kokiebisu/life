@@ -100,58 +100,6 @@ async function backfillEvents(dryRun: boolean, force: boolean) {
   console.log(`  → ${dryRun ? "would update" : "updated"} ${updated}/${pages.length}`);
 }
 
-async function backfillGuitar(dryRun: boolean, force: boolean) {
-  const dbConf = getScheduleDbConfigOptional("guitar");
-  if (!dbConf) { console.log("\n🎸 Guitar (ギター): スキップ（DB未設定）"); return; }
-  const pages = await queryAll(dbConf.dbId);
-  console.log(`\n🎸 Guitar (ギター): ${pages.length} pages`);
-
-  let updated = 0;
-  for (const page of pages) {
-    if (!force && page.icon && page.cover) continue;
-    const title = (page.properties[dbConf.config.titleProp]?.title || [])
-      .map((t: any) => t.plain_text || "").join("");
-    const icon = pickTaskIcon(title);
-    const cover = pickCover();
-
-    updated++;
-    if (dryRun) {
-      console.log(`  [DRY] ${icon.emoji} ${title}`);
-    } else {
-      await updatePage(page.id, icon, cover);
-      console.log(`  ${icon.emoji} ${title}`);
-    }
-  }
-  console.log(`  → ${dryRun ? "would update" : "updated"} ${updated}/${pages.length}`);
-}
-
-async function backfillSound(dryRun: boolean, force: boolean) {
-  const dbConf = getScheduleDbConfigOptional("sound");
-  if (!dbConf) { console.log("\n🎛️ Sound (音響): スキップ（DB未設定）"); return; }
-  const pages = await queryAll(dbConf.dbId);
-  // Filter to sound curriculum pages only
-  const soundPages = pages.filter((p: any) => p.properties?.["カリキュラム"]?.select?.name === "音響");
-  console.log(`\n🎛️ Sound (音響): ${soundPages.length} pages`);
-
-  let updated = 0;
-  for (const page of soundPages) {
-    if (!force && page.icon && page.cover) continue;
-    const title = (page.properties[dbConf.config.titleProp]?.title || [])
-      .map((t: any) => t.plain_text || "").join("");
-    const icon = pickTaskIcon(title, dbConf.config.defaultIcon);
-    const cover = pickCover();
-
-    updated++;
-    if (dryRun) {
-      console.log(`  [DRY] ${icon.emoji} ${title}`);
-    } else {
-      await updatePage(page.id, icon, cover);
-      console.log(`  ${icon.emoji} ${title}`);
-    }
-  }
-  console.log(`  → ${dryRun ? "would update" : "updated"} ${updated}/${soundPages.length}`);
-}
-
 async function backfillMeals(dryRun: boolean, force: boolean) {
   const dbConf = getScheduleDbConfigOptional("meals");
   if (!dbConf) { console.log("\n🍽️ Meals (食事): スキップ（DB未設定）"); return; }
@@ -312,14 +260,12 @@ async function main() {
   if (dryRun) console.log("🔍 Dry run mode - no changes will be made\n");
   if (force) console.log("⚡ Force mode - overwriting existing icons/covers\n");
 
-  const targets = db ? [db] : ["tasks", "events", "guitar", "sound", "meals", "todo", "other", "job", "articles"];
+  const targets = db ? [db] : ["tasks", "events", "meals", "todo", "other", "job", "articles"];
 
   for (const target of targets) {
     switch (target) {
       case "tasks": await backfillTasks(dryRun, force); break;
       case "events": await backfillEvents(dryRun, force); break;
-      case "guitar": await backfillGuitar(dryRun, force); break;
-      case "sound": await backfillSound(dryRun, force); break;
       case "meals": await backfillMeals(dryRun, force); break;
       case "todo": await backfillTodo(dryRun, force); break;
       case "other": await backfillOther(dryRun, force); break;

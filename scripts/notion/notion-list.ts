@@ -7,8 +7,8 @@
  *   bun run scripts/notion-list.ts --date 2026-02-14  # 指定日のタスク
  *   bun run scripts/notion-list.ts --days 7           # 今後7日間
  *   bun run scripts/notion-list.ts --json             # JSON出力
- *   bun run scripts/notion-list.ts --db guitar        # ギターDBのみ
- *   bun run scripts/notion-list.ts --db routine       # 習慣DBのみ
+ *   bun run scripts/notion/notion-list.ts --db events    # イベントDBのみ
+ *   bun run scripts/notion/notion-list.ts --db todo      # やることDBのみ
  */
 
 import {
@@ -26,14 +26,15 @@ function formatTime(iso: string): string {
 }
 
 const DB_LABEL: Record<ScheduleDbName, string> = {
-  routine: "習慣",
+  devotion: "デボーション",
   events: "イベント",
-  guitar: "ギター",
-  sound: "音響",
   meals: "食事",
   groceries: "買い出し",
   todo: "やること",
   other: "その他",
+  study: "学習",
+  topic: "学習トピック",
+  interview: "面接対策",
 };
 
 async function main() {

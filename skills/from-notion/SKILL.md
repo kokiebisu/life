@@ -54,7 +54,7 @@ bun run scripts/notion-pull.ts --no-enrich
 
 `notion-pull.ts` はDB間の時間重複を自動解決する。優先度の高いDBが勝ち、低優先エントリは削除される。
 
-**DB 優先度:** events > todo > guitar = sound > routine > meals > groceries
+**DB 優先度:** events > todo > routine > meals > groceries
 
 - 手動イベント追加後に `from:notion` → 自動エントリとの重複が解消
 - 削除されたルーティンは `notion-sync-schedule.ts` が再配置
@@ -65,15 +65,13 @@ bun run scripts/notion-pull.ts --no-enrich
 - **events / todo**: keep（絶対に動かさない）
 - **Devotion**: shift（後ろにずらす。削除禁止）
 - **meals / groceries**: delete（外食イベントと重複したら削除）
-- **routine（その他）/ guitar**: shift
+- **routine（その他）**: shift
 
 ## notion-pull 対象 DB
 
 | DB        | 同期先ファイル                         |
 | --------- | -------------------------------------- |
 | events    | `planning/events/YYYY-MM-DD.md`        |
-| guitar    | `aspects/guitar/events/YYYY-MM-DD.md`  |
-| sound     | `aspects/sound/events/YYYY-MM-DD.md`   |
 | meals     | `aspects/diet/events/YYYY-MM-DD.md`    |
 | groceries | `aspects/shopping/groceries/YYYY-MM-DD.md` |
 | todo      | `aspects/tasks.md`（Inbox / Archive） |

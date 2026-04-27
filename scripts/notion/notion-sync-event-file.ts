@@ -43,8 +43,6 @@ interface ParsedEvent {
 
 function resolveDbFromPath(filePath: string): ScheduleDbName {
   if (filePath.includes("/diet/")) return "meals";
-  if (filePath.includes("/guitar/")) return "guitar";
-  if (filePath.includes("/sound/")) return "sound";
   if (filePath.includes("/routine/")) return "devotion";
   return "events";
 }

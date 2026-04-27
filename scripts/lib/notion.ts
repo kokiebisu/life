@@ -70,7 +70,7 @@ export function getDbIdOptional(envKey: string): string | null {
 
 // --- Schedule DB Config (calendar-based DBs) ---
 
-export type ScheduleDbName = "devotion" | "events" | "guitar" | "sound" | "meals" | "groceries" | "todo" | "other" | "study" | "topic" | "interview";
+export type ScheduleDbName = "devotion" | "events" | "meals" | "groceries" | "todo" | "other" | "study" | "topic" | "interview";
 
 export interface ScheduleDbConfig {
   envKey: string;
@@ -86,8 +86,6 @@ export interface ScheduleDbConfig {
 export const SCHEDULE_DB_CONFIGS: Record<ScheduleDbName, ScheduleDbConfig> = {
   devotion: { envKey: "NOTION_DEVOTION_DB", titleProp: "Name", dateProp: "日付", descProp: "" },
   events:  { envKey: "NOTION_EVENTS_DB", titleProp: "名前", dateProp: "日付", descProp: "" },
-  guitar:  { envKey: "NOTION_CURRICULUM_DB", titleProp: "名前", dateProp: "日付", descProp: "", extraFilter: { property: "カリキュラム", select: { equals: "ギター" } } },
-  sound:   { envKey: "NOTION_CURRICULUM_DB", titleProp: "名前", dateProp: "日付", descProp: "", extraFilter: { property: "カリキュラム", select: { equals: "音響" } }, defaultIcon: "🎛️" },
   meals:      { envKey: "NOTION_MEALS_DB", titleProp: "名前", dateProp: "日付", descProp: "", defaultIcon: "🍽️" },
   groceries:  { envKey: "NOTION_GROCERIES_DB", titleProp: "件名", dateProp: "日付", descProp: "", defaultIcon: "🛒" },
   todo:    { envKey: "NOTION_TODO_DB", titleProp: "タスク名", dateProp: "日付", descProp: "" },
@@ -149,14 +147,6 @@ export function getMealsConfig() {
 
 export function getEventsConfig() {
   return getScheduleDbConfig("events");
-}
-
-export function getGuitarConfig() {
-  return getScheduleDbConfig("guitar");
-}
-
-export function getSoundConfig() {
-  return getScheduleDbConfig("sound");
 }
 
 export function getTodoConfig() {

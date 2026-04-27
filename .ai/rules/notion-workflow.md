@@ -173,7 +173,7 @@ Notion にページを**新規作成する前に**、必ず既存ページの存
 
 ## 重複バリデーション（厳守）<!-- コード化済み: validate-entry.ts + notion-add.ts checkDuplicate -->
 
-Notion にスケジュール系エントリ（devotion / events / todo / meals / groceries / guitar / sound / study）を **直接登録する前に**、必ず `validate-entry.ts` を実行する:
+Notion にスケジュール系エントリ（devotion / events / todo / meals / groceries / study）を **直接登録する前に**、必ず `validate-entry.ts` を実行する:
 
 ```
 bun run scripts/validate-entry.ts --date YYYY-MM-DD --title "タイトル" --start HH:MM --end HH:MM

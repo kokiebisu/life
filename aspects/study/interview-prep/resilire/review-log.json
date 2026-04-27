@@ -1,0 +1,50 @@
+{
+  "Graph/Tree / ツリーとグラフの違いは？": {
+    "last_reviewed": "2026-04-27",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-28"
+  },
+  "Graph/Tree / Goでグラフを表現する定番データ構造は？なぜstructの`Children []*Node`を使わないのか？": {
+    "last_reviewed": "2026-04-27",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-28"
+  },
+  "Graph/Tree / グラフ構造とノードの属性データを別の map で持つ理由は？": {
+    "last_reviewed": "2026-04-27",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-28"
+  },
+  "Graph/Tree / エッジ存在チェックを O(1) で行うにはどうする？": {
+    "last_reviewed": "2026-04-27",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-28"
+  },
+  "Graph/Tree / BFSとDFSの使い分けは？": {
+    "last_reviewed": "2026-04-27",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-28"
+  },
+  "Graph/Tree / BFSで visited を enqueue 時にマークする理由は？": {
+    "last_reviewed": "2026-04-27",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-28"
+  },
+  "Graph/Tree / DFSで cycle 検出するときに 3色塗り分け（WHITE/GRAY/BLACK）が必要な理由は？": {
+    "last_reviewed": "2026-04-27",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-28"
+  },
+  "Graph/Tree / BFSの計算量は？": {
+    "last_reviewed": "2026-04-27",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-04-28"
+  }
+}

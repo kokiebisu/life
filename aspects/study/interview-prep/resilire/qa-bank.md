@@ -168,4 +168,67 @@
 ❓ RedisがSPOFになる問題の対策は？
 → ①レプリケーション（マスター・スレイブ構成） ②フォールバック（ヘルスチェックでRedisの死活を確認し、落ちていたらES/DBに直接問い合わせ）
 
+## コードレビュー面接
+
+❓ コードレビューの優先度ラベル（must / should / nit）の3段階を、それぞれ「マージ可否」「例」とセットで説明してください
+→ **must/blocker** = バグ・データ破損・セキュリティ、マージ不可、例: race condition / SQL injection / resource leak。**should** = 設計・運用・テスタビリティの問題、議論の上で直す、例: errgroup 使うべき / エラー握りつぶし / N+1。**nit/suggestion** = 好み・命名・軽微な可読性、そのまま merge OK、例: 変数名・コメント追加・order。**理由 + 修正案**を必ずセットで言語化する。
+
+❓ コードレビュー指摘で「面接で評価される話し方」のテンプレは？
+→ 「これは **must** です。理由は〇〇。修正案としては△△」「これは **nit** なんですが、××だと将来見たとき分かりやすいかもしれません」。優先度ラベル + 理由 + 修正案 の3点セット。理由が言えないと「指摘の温度感が分からないレビュアー」と見られる。
+
+## Go: 並行性 race condition
+
+❓ Goで `results = append(results, info)` を複数 goroutine から並行実行すると何が起きるか？
+→ race condition。`append` は CPU 命令的に1命令ではなく ①len/cap 読み ②必要なら新配列確保 ③末尾書き込み ④新スライスヘッダ代入 の4ステップに分解される。同時実行されると上書き・データロストが発生。`go run -race` で必ず検出される。
+
+❓ `make([]T, 0, len(ids))` で cap を pre-allocate すれば append の race は防げるか？
+→ 防げない。新配列確保（手順②）は走らないが、手順①〜④自体が racy。「len=0 を読む」を A と B が同時に行い、両方が index 0 に書き、両方が len=1 にする → A のデータが B に上書きされて消える。
+
+❓ Go の map に複数 goroutine から書き込むと何が起きるか？panic との違いは？
+→ runtime が `fatal error: concurrent map writes` でプロセスごと殺す。これは panic ではなく runtime fatal error なので **recover 不可**。保護されてない map を並行で書く = 本番でプロセス死。対策は `sync.Mutex` / `sync.RWMutex` / `sync.Map`。
+
+❓ 並行な集約処理を直す3つの修正案と、それぞれをいつ選ぶか？
+→ ①**channel で集約**: 各 goroutine は送るだけ・main 1人で受けて append。データ集約・パイプライン的な使い方に。"share memory by communicating"。 ②**sync.Mutex**: append を `mu.Lock(); defer mu.Unlock()` でガード。短く済ませたいとき。 ③**errgroup + pre-allocated slice + index 書き込み**: index ごとに別アドレスを書くので race にならない。ctx キャンセル + エラー伝播も付いてくる。**外部 API 並列の定石、Resilire の本命**。
+
+❓ `sync.Mutex` で `Lock()` の直後に `defer Unlock()` を書くイディオムの理由は？
+→ 関数の途中で `return` や panic が起きても defer は実行されるため、ロックリーク（Unlock 忘れ → 次の Lock で永遠に待つデッドロック）を防げる。
+
+❓ `sync.Mutex` と `sync.RWMutex` の使い分けは？
+→ Mutex は読みも書きも排他（同時に1人）。RWMutex は読みは並列（RLock）・書きのみ排他（Lock）。read-heavy なキャッシュは RWMutex、書き込みも多いなら Mutex の方がオーバーヘッドが小さい。
+
+❓ channel で結果集約するときバッファサイズを `len(ids)` にする理由は？
+→ バッファ無しだと送信は受信が読むまでブロックする。`wg.Wait()` 後に close する設計の場合、送信中に受信が始まっていないとデッドロック。バッファ `len(ids)` あれば全 goroutine が受信前に送信完了できる。
+
+❓ `errgroup.WithContext` を使った並列処理で、各 goroutine の結果をどう集めると race にならないか？
+→ pre-allocated slice（`make([]T, len(ids))`）に対して **index ごとに書き込む**。`results[i] = info` は別アドレスへの書き込みなので race にならない。append のように共有スライスヘッダを更新しないのが鍵。
+
+## アルゴリズム: Graph / Tree
+
+❓ ツリーとグラフの違いは？
+→ ツリーは「親が1つ・ループなし」のグラフの特殊形。グラフは親が複数OK・ループOK。現実のサプライチェーンは親が複数いるためツリーで表せない（村田製作所がデンソーにもボッシュにもパナソニックにも供給する等）。
+
+❓ Goでグラフを表現する定番データ構造は？なぜstructの`Children []*Node`を使わないのか？
+→ 隣接リスト `map[string][]string` を使う。struct方式だと（1）名前で引けないので別途インデックスが必要、（2）同名ノードが別オブジェクトになりやすく整合性が崩れる。mapならkey=名前/IDで一意・O(1)アクセス・エッジ追加が`append`一発。
+
+❓ グラフ構造とノードの属性データを別の map で持つ理由は？
+→ 役割を分ける。`graph map[ID][]ID`はつながりだけ、`suppliers map[ID]Supplier`はノードの属性。これで（1）データ重複なし、（2）属性更新が1箇所で済む、（3）`map[ID][]Node`にすると同一ノードがコピーされてズレる。
+
+❓ エッジ存在チェックを O(1) で行うにはどうする？
+→ `map[string][]string`を`map[string]map[string]struct{}`に変える。`graph["村田"]["デンソー"]`でO(1)。`struct{}`はゼロサイズなのでメモリ最適。トレードオフ: 隣接ノードの順序は失われる。
+
+❓ BFSとDFSの使い分けは？
+→ 最短ホップ数→BFS（レベル=距離）、到達可能ノード全列挙→どっちでも、循環依存検出→DFS（コールスタック=今のパス）、トポロジカルソート→DFS。
+
+❓ BFSで visited を enqueue 時にマークする理由は？dequeue 時ではダメか？
+→ enqueue 時にマークしないと同じノードがキューに何度も入る（メモリ・時間が無駄、最悪指数爆発）。enqueue 時にマークすれば各ノードは一度しかキューに入らない。
+
+❓ Goでキューを表現するときの定番イディオムと注意点は？
+→ `queue := []string{...}`、enqueue は `append(queue, x)`、dequeue は `current := queue[0]; queue = queue[1:]`。`queue[1:]`は内部的にO(n)のため大規模では`container/list`やring bufferを使う。面接では読みやすさ優先でslice方式でOK。
+
+❓ DFSで cycle 検出するときに 3色塗り分け（WHITE/GRAY/BLACK）が必要な理由は？
+→ 2値のvisited(true/false)だと、A→B、A→C、B→Cのとき A→B→C 後に A→C を試すと「Cはvisited」で誤って cycle 判定してしまう。GRAY=今のパス上、BLACK=訪問完了して戻った、を区別すれば「GRAYを踏んだ時だけcycle」と正確に判定できる。
+
+❓ BFSの計算量は？
+→ 時間 O(V+E)、空間 O(V)。各ノード1回・各エッジ1回処理。visitedとqueueでV個分のメモリ。
+
 <!-- 以下に新しいセッションの問いを追記していく -->

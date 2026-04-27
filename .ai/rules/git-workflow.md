@@ -104,6 +104,17 @@ gh api repos/kokiebisu/life/pulls --method POST \
 
 `git reset --hard` を実行する前は必ず `git status` で unstaged changes がないことを確認すること。
 
+## `git stash drop` 禁止（厳守）
+
+`git stash drop` は使わない。代わりに `git stash pop` を使う。
+
+- 理由: stash には**現セッションと無関係な未コミット変更も含まれる**（他のスキル・他のセッションが残した dirty file）。drop は不可逆で、無関係な作業を巻き込んで消す
+- `pop` は apply 成功時だけ stash を消すので安全（conflict 時は stash を保持）
+- 「stash の中身は不要」と判断したくなっても、`pop` で戻して再判断する
+- 古い stash の整理が本当に必要な場合は、必ず `git stash show -p stash@{N}` で全内容を確認してから drop する
+
+復旧手段: `git fsck --lost-found` で dangling commit を見つけて `git checkout <sha> -- <path>` で個別ファイル復旧は可能だが、最後の手段。
+
 ## Submodule（sumitsugi）
 - `projects/sumitsugi` のサブモジュールポインタ変更は PR に含めない
 - サブモジュールの更新は sumitsugi リポジトリ側で管理する

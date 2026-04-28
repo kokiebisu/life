@@ -36,7 +36,7 @@ const DAILY_DIR = join(REPO_ROOT, "aspects/diet/daily");
 
 const NG_INGREDIENTS = ["トマト", "マヨネーズ", "ケチャップ", "マスタード"];
 const WINDOW_DAYS = 3;
-const ENTRY_THRESHOLD = 3; // 3件以上でスキップ
+const ENTRY_THRESHOLD = 5; // 5件以上でスキップ
 const SERVINGS = 3;
 
 function addDays(dateStr: string, n: number): string {

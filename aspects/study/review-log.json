@@ -1,122 +1,154 @@
 {
   "aspects/study/software-engineering/システム設計の面接試験/ch01.md": {
-    "last_reviewed": "2026-04-23",
-    "interval_days": 0,
+    "last_reviewed": "2026-04-28",
+    "interval_days": 1,
     "review_count": 0,
-    "confidence": "fuzzy"
+    "confidence": "fuzzy",
+    "pending_questions": [
+      "クロスシャード JOIN 問題の対処法 4つを挙げて、それぞれが効くシチュエーションを一言で説明して。"
+    ]
   },
   "aspects/study/software-engineering/システム設計の面接試験/ch02.md": {
-    "last_reviewed": "2026-04-23",
-    "interval_days": 0,
+    "last_reviewed": "2026-04-28",
+    "interval_days": 1,
     "review_count": 0,
-    "confidence": "fuzzy"
+    "confidence": "fuzzy",
+    "pending_questions": [
+      "DAU 1000万、1人 10 リクエスト/日 のサービスのピーク QPS を暗算で出して。途中の計算プロセスも声に出して。"
+    ]
   },
   "aspects/study/software-engineering/システム設計の面接試験/ch03.md": {
     "last_reviewed": "2026-04-24",
     "interval_days": 1,
     "review_count": 1,
-    "confidence": "perfect"
+    "confidence": "perfect",
+    "pending_questions": []
   },
   "aspects/study/software-engineering/システム設計の面接試験/ch04.md": {
-    "last_reviewed": "2026-04-24",
+    "last_reviewed": "2026-04-28",
     "interval_days": 1,
     "review_count": 0,
-    "confidence": "fuzzy"
+    "confidence": "fuzzy",
+    "pending_questions": [
+      "OSI L3/L4/L7 でのレート制限の違いは？"
+    ]
   },
   "aspects/study/software-engineering/システム設計の面接試験/ch05.md": {
     "last_reviewed": "2026-04-24",
     "interval_days": 1,
     "review_count": 1,
-    "confidence": "perfect"
+    "confidence": "perfect",
+    "pending_questions": []
   },
   "aspects/study/software-engineering/システム設計の面接試験/ch06.md": {
-    "last_reviewed": "2026-04-24",
+    "last_reviewed": "2026-04-28",
     "interval_days": 1,
     "review_count": 0,
-    "confidence": "forgot"
+    "confidence": "forgot",
+    "pending_questions": [
+      "単一 vs 分散KV Storeの判断基準を3つのケースで説明せよ",
+      "Leaderless と Leader-based レプリケーションの違い・代表例は？",
+      "Vector Clock とは何か？LWW（Last Write Wins）との違いは？"
+    ]
   },
   "aspects/study/software-engineering/システム設計の面接試験/ch07.md": {
     "last_reviewed": "2026-04-27",
     "interval_days": 1,
     "review_count": 0,
-    "confidence": "forgot"
+    "confidence": "forgot",
+    "pending_questions": []
   },
   "aspects/study/software-engineering/達人に学ぶDB設計徹底指南書/ch01.md": {
     "last_reviewed": "2026-04-23",
     "interval_days": 1,
     "review_count": 1,
-    "confidence": "perfect"
+    "confidence": "perfect",
+    "pending_questions": []
   },
   "aspects/study/software-engineering/達人に学ぶDB設計徹底指南書/ch02.md": {
     "last_reviewed": "2026-04-24",
     "interval_days": 1,
     "review_count": 0,
-    "confidence": "fuzzy"
+    "confidence": "fuzzy",
+    "pending_questions": []
   },
   "aspects/study/software-engineering/達人に学ぶDB設計徹底指南書/ch03.md": {
     "last_reviewed": "2026-04-24",
     "interval_days": 1,
     "review_count": 0,
-    "confidence": "fuzzy"
+    "confidence": "fuzzy",
+    "pending_questions": []
   },
   "aspects/study/software-engineering/達人に学ぶDB設計徹底指南書/ch04.md": {
     "last_reviewed": "2026-04-24",
     "interval_days": 1,
     "review_count": 1,
-    "confidence": "perfect"
+    "confidence": "perfect",
+    "pending_questions": []
   },
   "aspects/study/software-engineering/達人に学ぶDB設計徹底指南書/ch05.md": {
     "last_reviewed": "2026-04-27",
     "interval_days": 1,
     "review_count": 0,
-    "confidence": "fuzzy"
+    "confidence": "fuzzy",
+    "pending_questions": []
   },
   "aspects/study/interview-prep/resilire/notes/2026-04-09/note.md": {
     "last_reviewed": "2026-04-23",
     "interval_days": 1,
     "review_count": 1,
-    "confidence": "perfect"
+    "confidence": "perfect",
+    "pending_questions": []
   },
   "aspects/study/interview-prep/resilire/notes/2026-04-10/note.md": {
-    "last_reviewed": "2026-04-23",
-    "interval_days": 0,
+    "last_reviewed": "2026-04-28",
+    "interval_days": 1,
     "review_count": 0,
-    "confidence": "fuzzy"
+    "confidence": "forgot",
+    "pending_questions": [
+      "Go で「外部 ML API を呼ぶ Recommender 型」をノート見ずに書いて。MLClient を interface としてモック差し込み可能に + テスタビリティのメリット4つを挙げよ。"
+    ]
   },
   "aspects/study/interview-prep/resilire/notes/2026-04-11/note.md": {
     "last_reviewed": "2026-04-24",
     "interval_days": 1,
     "review_count": 0,
-    "confidence": "fuzzy"
+    "confidence": "fuzzy",
+    "pending_questions": []
   },
   "aspects/study/interview-prep/resilire/notes/2026-04-13/note.md": {
     "last_reviewed": "2026-04-27",
     "interval_days": 1,
     "review_count": 0,
-    "confidence": "fuzzy"
+    "confidence": "fuzzy",
+    "pending_questions": []
   },
   "aspects/study/interview-prep/resilire/notes/2026-04-15/note.md": {
     "last_reviewed": "2026-04-27",
     "interval_days": 1,
     "review_count": 0,
-    "confidence": "forgot"
+    "confidence": "forgot",
+    "pending_questions": []
   },
   "aspects/study/interview-prep/resilire/prep.md": {
     "last_reviewed": "2026-04-27",
     "interval_days": 1,
     "review_count": 0,
-    "confidence": "forgot"
+    "confidence": "forgot",
+    "pending_questions": []
   },
   "aspects/study/algorithm/notes/2026-04-27-1.md": {
     "last_reviewed": "2026-04-28",
     "interval_days": 1,
     "review_count": 0,
-    "confidence": "fuzzy"
+    "confidence": "fuzzy",
+    "pending_questions": []
   },
   "aspects/study/sql/notes/2026-04-27-1.md": {
     "last_reviewed": "2026-04-28",
     "interval_days": 1,
     "review_count": 0,
-    "confidence": "forgot"
+    "confidence": "forgot",
+    "pending_questions": []
   }
 }

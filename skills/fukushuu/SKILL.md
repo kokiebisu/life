@@ -174,9 +174,14 @@ due = (last_reviewed ≠ today) かつ (last_reviewed + interval_days ≤ today)
 
    ユーザーが異議（「いや今のは正解」等）を出したら素直に再判定する。
 6. 回答に応じて次回スケジュールを伝える + pending_questions を更新する:
-   - ⭕ 完璧 → review_count +1、通常間隔テーブル通り。「次回は〇〇日です」
-   - 🔺 あいまい → review_count 変更なし、interval_days は `max(interval_days, 1)`（未復習状態の 0 は 1 に底上げ、それ以外は据え置き）、last_reviewed を今日に更新。「同じ間隔でもう1回復習します。次回は〇〇日です」
-   - ❌ 忘れた → review_count を 0 にリセット、interval_days を 1 に。「もう一度、明日復習しましょう」
+   - ⭕ 完璧（全問 ✅） → review_count +1、通常間隔テーブル通り。**`pending_questions = []` にクリア**。「次回は〇〇日です」
+   - 🔺 あいまい（⚠ あり、❌ なし） → review_count 変更なし、interval_days は `max(interval_days, 1)`（未復習状態の 0 は 1 に底上げ、それ以外は据え置き）、last_reviewed を今日に更新。**`pending_questions = ⚠ と判定された質問のテキストだけ`を保存**。「詰まった N 問を次回もう一度確認します。次回は〇〇日です」
+   - ❌ 忘れた（❌ が1問以上） → review_count を 0 にリセット、interval_days を 1 に。**`pending_questions = ⚠ + ❌ と判定された質問のテキスト`を保存**。「もう一度、明日復習しましょう」
+
+   **pending_questions 保存時の注意:**
+   - 質問テキストは出題したそのままの文字列を保存する（要約・短縮しない）
+   - 動的生成キュー（`❓ 自分への質問` セクションが無くて生成した質問）も同じく保存対象
+   - 保存後、次回そのノートを復習するときは Step 4 の手順 3 の分岐で pending_questions が優先される
 
 ### コーネル式キューがないノートの場合
 

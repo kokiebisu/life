@@ -13,7 +13,6 @@
 
 ```bash
 ./dev                    # devcontainer を起動して Claude Code を開く
-./scripts/notion-cron-sync.sh          # 昨日の Notion データを md に同期（cron 用）
 ./scripts/life-os-sync.sh status       # life-os との乖離確認
 ./scripts/life-os-sync.sh pull         # life-os/main を life に取り込む
 ./scripts/life-os-sync.sh contrib      # life-os に貢献できるコミットを確認

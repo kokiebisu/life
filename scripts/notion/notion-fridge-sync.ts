@@ -7,7 +7,6 @@
  *   bun run scripts/notion/notion-fridge-sync.ts --dry-run  # ブロック数の確認のみ
  *
  * PostToolUse hook から自動呼び出しされる（fridge.md への Write を検知）。
- * cron（notion-cron-sync.sh）からも呼び出される。
  */
 
 import { join } from "path";

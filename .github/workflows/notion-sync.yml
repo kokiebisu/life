@@ -83,3 +83,34 @@ jobs:
           echo "date=$DATE" >> $GITHUB_OUTPUT
           echo "days=$DAYS" >> $GITHUB_OUTPUT
           echo "Target: $DATE (days=$DAYS)"
+
+      - name: Prepare branch
+        if: steps.check_disable.outputs.disabled != 'true' && inputs.dry_run != true
+        id: branch
+        run: |
+          BRANCH="chore/notion-sync-${{ steps.target.outputs.date }}"
+          echo "name=$BRANCH" >> $GITHUB_OUTPUT
+          git checkout -b "$BRANCH"
+
+      - name: Run notion-pull (dry-run)
+        if: steps.check_disable.outputs.disabled != 'true' && inputs.dry_run == true
+        run: |
+          bun run scripts/notion/notion-pull.ts \
+            --date ${{ steps.target.outputs.date }} \
+            --days ${{ steps.target.outputs.days }} \
+            --all-entries --no-enrich --dry-run
+
+      - name: Run notion-pull (production)
+        if: steps.check_disable.outputs.disabled != 'true' && inputs.dry_run != true
+        run: |
+          bun run scripts/notion/notion-pull.ts \
+            --date ${{ steps.target.outputs.date }} \
+            --days ${{ steps.target.outputs.days }} \
+            --all-entries --no-enrich
+
+      - name: Run fridge consume
+        if: steps.check_disable.outputs.disabled != 'true' && inputs.dry_run != true
+        run: |
+          DATE="${{ steps.target.outputs.date }}"
+          bun run scripts/notion/notion-fridge-consume.ts \
+            --from "$DATE" --to "$DATE" || true

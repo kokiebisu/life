@@ -141,6 +141,11 @@ CREATE TABLE urls (
 
 ## 🔁 復習で詰まったところ
 
+### 2026-04-28 - ❌ 忘れた
+- **Q: Go で「外部 ML API を呼ぶ Recommender 型」をノート見ずに書いて。MLClient を interface としてモック差し込み可能に + テスタビリティのメリット4つを挙げよ。**
+  - 詰まった内容: 1回目のコードは Recommender まで interface 化し MockRecommender を作る誤設計（DI の意図とズレ）+ コンパイルエラー2件（Fetch の引数型抜け / Recommender interface の戻り値不一致）。2回目で struct Recommender { ml MLClient } の正しい DI 形に修正できたが、Fetch に ctx を渡し忘れ + 戻り値ミスマッチが残った。テスタビリティのメリット4つは「忘れた」と即答
+  - 正解ポイント: DI の典型は「呼び出される側だけ interface 化」。`type Recommender struct { ml MLClient }` で interface フィールド経由で依存注入、本番は RealMLClient・テストは MockMLClient を差し替え。MLClient.Fetch には ctx を渡してキャンセル/タイムアウト伝播。メリット4つ = (1) 本物 API を叩かない（課金/レート制限回避）、(2) エッジケース再現（エラー・タイムアウト・空配列を意図的に返せる）、(3) 決定的（外部 API 変動で flaky にならない）、(4) 速い（ネットワーク往復ゼロ → CI 高速化）
+
 ### 2026-04-23
 - **Q: interface を使った DI パターンで、struct フィールドに interface を持たせる実装と、テスタビリティのメリット4つを挙げられる？**
   - 詰まった内容: 「struct フィールドに interface を持たせる」という実装パターンを言えなかった。テスタビリティのメリット4つも言えなかった

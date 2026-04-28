@@ -346,8 +346,10 @@ gh api repos/kokiebisu/life/pulls --method POST \
 - `pop` は apply 成功時だけ stash を消すので安全（conflict 時は stash を保持）
 - 「stash の中身は不要」と判断したくなっても、`pop` で戻して再判断する
 - 古い stash の整理が本当に必要な場合は、必ず `git stash show -p stash@{N}` で全内容を確認してから drop する
+- **複数 stash を drop する場合、必ず高い index から低い index へ順に drop する**（`{3}` → `{2}` → `{1}` → `{0}`）。低い index から drop すると残り stash の index が前にシフトし、想定外の別 stash を消す
+- 連続 drop の前に毎回 `git stash list` を再実行して、残った index を確認しなおす
 
-復旧手段: `git fsck --lost-found` で dangling commit を見つけて `git checkout <sha> -- <path>` で個別ファイル復旧は可能だが、最後の手段。
+復旧手段: `git fsck --no-reflogs --lost-found` で dangling commit を見つけて `git checkout <sha> -- <path>` で個別ファイル復旧は可能だが、最後の手段。untracked を含む stash は復旧困難。
 
 ## Submodule（sumitsugi）
 - `projects/sumitsugi` のサブモジュールポインタ変更は PR に含めない

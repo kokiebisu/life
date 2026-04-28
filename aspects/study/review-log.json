@@ -106,5 +106,17 @@
     "interval_days": 1,
     "review_count": 0,
     "confidence": "forgot"
+  },
+  "aspects/study/algorithm/notes/2026-04-27-1.md": {
+    "last_reviewed": "2026-04-28",
+    "interval_days": 1,
+    "review_count": 0,
+    "confidence": "fuzzy"
+  },
+  "aspects/study/sql/notes/2026-04-27-1.md": {
+    "last_reviewed": "2026-04-28",
+    "interval_days": 1,
+    "review_count": 0,
+    "confidence": "forgot"
   }
 }

@@ -21,3 +21,4 @@ aspects/study/interview-prep/resilire/notes/playground.go
 # /automate generated plans (per-session, not committed)
 docs/automate/
 
+*.go

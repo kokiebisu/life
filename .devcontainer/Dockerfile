@@ -28,9 +28,19 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
   && apt-get install -y --no-install-recommends gh \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Ensure default node user has access to /usr/local/share
-RUN mkdir -p /usr/local/share/npm-global && \
-  chown -R node:node /usr/local/share
+# Install Go
+ARG GO_VERSION=1.26.2
+RUN ARCH="$(dpkg --print-architecture)" \
+  && curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${ARCH}.tar.gz" -o /tmp/go.tar.gz \
+  && tar -C /usr/local -xzf /tmp/go.tar.gz \
+  && rm /tmp/go.tar.gz
+ENV PATH=/usr/local/go/bin:$PATH
+ENV GOPATH=/home/node/go
+ENV PATH=/home/node/go/bin:$PATH
+
+# Ensure default node user has access to /usr/local/share and GOPATH
+RUN mkdir -p /usr/local/share/npm-global /home/node/go && \
+  chown -R node:node /usr/local/share /home/node/go
 
 ARG USERNAME=node
 

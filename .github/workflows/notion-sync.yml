@@ -1,0 +1,69 @@
+name: notion-sync
+
+on:
+  schedule:
+    # 毎日 JST 03:00 = UTC 18:00（前日）
+    - cron: "0 18 * * *"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "同期する日付（YYYY-MM-DD）。空欄なら昨日"
+        type: string
+        default: ""
+      days:
+        description: "何日分同期するか（バックフィル用）"
+        type: string
+        default: "1"
+      dry_run:
+        description: "Dry run (no md write, no PR)"
+        type: boolean
+        default: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      TZ: Asia/Tokyo
+      NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+      NOTION_EVENTS_DB: ${{ secrets.NOTION_EVENTS_DB }}
+      NOTION_TODO_DB: ${{ secrets.NOTION_TODO_DB }}
+      NOTION_MEALS_DB: ${{ secrets.NOTION_MEALS_DB }}
+      NOTION_GROCERIES_DB: ${{ secrets.NOTION_GROCERIES_DB }}
+      NOTION_DEVOTION_DB: ${{ secrets.NOTION_DEVOTION_DB }}
+      NOTION_STUDY_DB: ${{ secrets.NOTION_STUDY_DB }}
+      NOTION_GYM_DB: ${{ secrets.NOTION_GYM_DB }}
+      NOTION_INTERVIEW_PREP_DB: ${{ secrets.NOTION_INTERVIEW_PREP_DB }}
+      NOTION_STUDY_TOPIC_DB: ${{ secrets.NOTION_STUDY_TOPIC_DB }}
+      NOTION_OTHER_DB: ${{ secrets.NOTION_OTHER_DB }}
+      NOTION_ARTICLES_DB: ${{ secrets.NOTION_ARTICLES_DB }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Configure git
+        run: |
+          git config user.name "notion-sync[bot]"
+          git config user.email "notion-sync@users.noreply.github.com"
+
+      - name: Check disable flag
+        id: check_disable
+        run: |
+          if [ -f .notion-sync.disabled ]; then
+            echo "disabled=true" >> $GITHUB_OUTPUT
+          else
+            echo "disabled=false" >> $GITHUB_OUTPUT
+          fi

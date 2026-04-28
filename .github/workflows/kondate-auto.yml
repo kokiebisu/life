@@ -60,6 +60,7 @@ jobs:
         run: |
           BRANCH="chore/kondate-auto-$(TZ=Asia/Tokyo date +%Y-%m-%d)"
           echo "name=$BRANCH" >> $GITHUB_OUTPUT
+          git push origin --delete "$BRANCH" 2>/dev/null || true
           git checkout -b "$BRANCH"
 
       - name: Run kondate-auto (dry-run)

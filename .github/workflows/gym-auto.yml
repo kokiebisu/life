@@ -65,6 +65,7 @@ jobs:
         run: |
           BRANCH="chore/gym-auto-$(TZ=Asia/Tokyo date +%Y-%m-%d)"
           echo "name=$BRANCH" >> $GITHUB_OUTPUT
+          git push origin --delete "$BRANCH" 2>/dev/null || true
           git checkout -b "$BRANCH"
 
       - name: Run gym-auto (dry-run)

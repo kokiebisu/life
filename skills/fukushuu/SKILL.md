@@ -269,7 +269,8 @@ Notion 側の更新に失敗した場合、md は更新済みのまま **「Noti
     "last_reviewed": "YYYY-MM-DD",
     "interval_days": 3,
     "review_count": 2,
-    "confidence": "perfect"
+    "confidence": "perfect",
+    "pending_questions": []
   }
 }
 ```
@@ -278,6 +279,7 @@ Notion 側の更新に失敗した場合、md は更新済みのまま **「Noti
 - `review_count`: ⭕ 完璧 → +1、🔺 あいまい → 変更なし、❌ 忘れた → 0 にリセット
 - `interval_days`: ⭕ 完璧 → interval_map から review_count に対応する値、🔺 あいまい → `max(interval_days, 1)`（0 は 1 に底上げ、それ以外は据え置き）、❌ 忘れた → 1
 - `confidence`: Claude が面接官として下した最新の判定結果。`"perfect"` / `"fuzzy"` / `"forgot"` のいずれか。既存エントリに `confidence` がなくても正常動作する（後方互換）
+- `pending_questions`: 前回詰まった質問テキストの配列。⭕ 完璧 → `[]` にクリア、🔺 あいまい → ⚠ 質問のみ、❌ 忘れた → ⚠ + ❌ 質問。Step 2 マイグレーションで全エントリに最低限 `[]` が入る
 
 ## Step 6: セッションサマリーを Notion「勉強（復習）」DB に書き出し（厳守）
 

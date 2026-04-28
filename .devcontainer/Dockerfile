@@ -74,18 +74,30 @@ ENV SHELL=/bin/zsh
 ENV EDITOR=nano
 ENV VISUAL=nano
 
-# Install Bun runtime
-RUN curl -fsSL https://bun.sh/install | bash
+# Install Bun runtime (GitHub Releases に依存するためリトライ付き)
+RUN for i in 1 2 3 4 5; do \
+      curl -fsSL https://bun.sh/install | bash && break; \
+      if [ $i -eq 5 ]; then exit 1; fi; \
+      echo "bun install retry $i/5 in $((i*5))s..."; sleep $((i*5)); \
+    done
 ENV PATH=/home/node/.bun/bin:$PATH
 
 # Install Claude Code CLI
-RUN curl -fsSL https://claude.ai/install.sh | bash
+RUN for i in 1 2 3 4 5; do \
+      curl -fsSL https://claude.ai/install.sh | bash && break; \
+      if [ $i -eq 5 ]; then exit 1; fi; \
+      echo "claude install retry $i/5 in $((i*5))s..."; sleep $((i*5)); \
+    done
 
 # Install Codex CLI
 RUN npm install -g @openai/codex
 
 # Install Starship prompt
-RUN curl -fsSL https://starship.rs/install.sh | sh -s -- -y --bin-dir /home/node/.local/bin
+RUN for i in 1 2 3 4 5; do \
+      curl -fsSL https://starship.rs/install.sh | sh -s -- -y --bin-dir /home/node/.local/bin && break; \
+      if [ $i -eq 5 ]; then exit 1; fi; \
+      echo "starship install retry $i/5 in $((i*5))s..."; sleep $((i*5)); \
+    done
 
 # Add ~/.local/bin to PATH
 ENV PATH=/home/node/.local/bin:$PATH

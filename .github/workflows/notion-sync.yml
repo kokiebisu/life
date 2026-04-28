@@ -114,3 +114,38 @@ jobs:
           DATE="${{ steps.target.outputs.date }}"
           bun run scripts/notion/notion-fridge-consume.ts \
             --from "$DATE" --to "$DATE" || true
+
+      - name: Check for changes
+        if: steps.check_disable.outputs.disabled != 'true' && inputs.dry_run != true
+        id: changes
+        run: |
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No changes to sync."
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit, push, create and merge PR
+        if: steps.check_disable.outputs.disabled != 'true' && inputs.dry_run != true && steps.changes.outputs.has_changes == 'true'
+        run: |
+          BRANCH="${{ steps.branch.outputs.name }}"
+          DATE="${{ steps.target.outputs.date }}"
+
+          git add -A
+          git commit -m "chore(notion-sync): sync from notion $DATE
+
+          Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
+          git push -u origin "$BRANCH"
+
+          PR_URL=$(gh api repos/${{ github.repository }}/pulls \
+            --method POST \
+            --field title="chore(notion-sync): sync from notion $DATE" \
+            --field head="$BRANCH" \
+            --field base="main" \
+            --field body="Notion から $DATE の予定/タスク/食事/買い出し/デボーション等を md に同期しました。" \
+            --jq '.html_url')
+
+          PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
+          gh api repos/${{ github.repository }}/pulls/$PR_NUMBER/merge \
+            --method PUT --field merge_method=squash

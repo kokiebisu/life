@@ -67,3 +67,19 @@ jobs:
           else
             echo "disabled=false" >> $GITHUB_OUTPUT
           fi
+
+      - name: Compute target date
+        if: steps.check_disable.outputs.disabled != 'true'
+        id: target
+        run: |
+          INPUT_DATE="${{ inputs.date }}"
+          if [ -n "$INPUT_DATE" ]; then
+            DATE="$INPUT_DATE"
+          else
+            DATE=$(TZ=Asia/Tokyo date -d "yesterday" +%Y-%m-%d)
+          fi
+          DAYS="${{ inputs.days }}"
+          DAYS="${DAYS:-1}"
+          echo "date=$DATE" >> $GITHUB_OUTPUT
+          echo "days=$DAYS" >> $GITHUB_OUTPUT
+          echo "Target: $DATE (days=$DAYS)"

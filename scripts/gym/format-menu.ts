@@ -141,6 +141,110 @@ ${cardioTableRows(cardio)}
 }
 
 /**
+ * Notion REST API 用のブロック配列を生成（gym-auto から直接 PATCH /blocks/{id}/children する用途）
+ *
+ * `formatNotionContent` は Notion MCP の `replace_content` で解釈される独自 markdown を返すが、
+ * REST API はこの形式を理解しないので、blockオブジェクトを直接構築する必要がある。
+ * /gym plan が MCP 経由で生成する本文と同じ見た目になるよう揃える。
+ */
+export function buildNotionBlocks(session: SessionInfo, exercises: Exercise[]): any[] {
+  const strength = exercises.filter((e): e is StrengthExercise => e.type === "strength");
+  const cardio = exercises.filter((e): e is CardioExercise => e.type === "cardio");
+
+  const summaryParts: string[] = [];
+  if (strength.length > 0) summaryParts.push(`筋トレ ${strength.length}種目`);
+  if (cardio.length > 0) summaryParts.push(`有酸素 ${cardio.length}種目`);
+
+  const plain = (content: string) => [{ type: "text", text: { content } }];
+  const bold = (content: string) => [
+    {
+      type: "text",
+      text: { content },
+      annotations: { bold: true },
+    },
+  ];
+
+  const blocks: any[] = [];
+
+  blocks.push({
+    object: "block",
+    type: "callout",
+    callout: {
+      rich_text: [
+        ...bold(`${session.date} ${session.time}`),
+        ...plain(` — ${summaryParts.join(" + ")}`),
+      ],
+      icon: { type: "emoji", emoji: "📊" },
+      color: "blue_background",
+    },
+  });
+
+  blocks.push({ object: "block", type: "divider", divider: {} });
+
+  if (strength.length > 0) {
+    blocks.push({
+      object: "block",
+      type: "heading_2",
+      heading_2: { rich_text: plain("💪 筋トレ"), color: "blue" },
+    });
+    const headerCells = ["FB", "種目", "重量（kg）", "セット", "回数"];
+    const dataRows = strength.map((e) => [
+      e.feedback ? normalizeFeedback(e.feedback) : "",
+      e.name,
+      e.weight,
+      String(e.sets),
+      String(e.reps),
+    ]);
+    blocks.push({
+      object: "block",
+      type: "table",
+      table: {
+        table_width: 5,
+        has_column_header: true,
+        has_row_header: false,
+        children: [headerCells, ...dataRows].map((cells) => ({
+          object: "block",
+          type: "table_row",
+          table_row: { cells: cells.map((c) => plain(c)) },
+        })),
+      },
+    });
+  }
+
+  if (cardio.length > 0) {
+    blocks.push({
+      object: "block",
+      type: "heading_2",
+      heading_2: { rich_text: plain("🏃 有酸素"), color: "green" },
+    });
+    const headerCells = ["FB", "種目", "時間", "傾斜", "スピード"];
+    const dataRows = cardio.map((e) => [
+      e.feedback ? normalizeFeedback(e.feedback) : "",
+      e.name,
+      e.duration,
+      e.incline ?? "",
+      e.speed ?? "",
+    ]);
+    blocks.push({
+      object: "block",
+      type: "table",
+      table: {
+        table_width: 5,
+        has_column_header: true,
+        has_row_header: false,
+        children: [headerCells, ...dataRows].map((cells) => ({
+          object: "block",
+          type: "table_row",
+          table_row: { cells: cells.map((c) => plain(c)) },
+        })),
+      },
+    });
+  }
+
+  return blocks;
+}
+
+/**
  * プレーンMarkdownテーブルを生成（ローカルMD・コーチ報告用）
  */
 export function formatMenu(exercises: Exercise[]): string {

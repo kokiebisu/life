@@ -34,6 +34,7 @@ import {
   type PrevSession,
   type SuggestedExercise,
 } from "./lib/generate-menu";
+import { buildNotionBlocks, type Exercise } from "./format-menu";
 
 const REPO_ROOT = resolve(fileURLToPath(import.meta.url), "../../..");
 const DISABLE_FLAG = join(REPO_ROOT, ".gym-auto.disabled");
@@ -194,44 +195,31 @@ function formatJpDateLabel(dateStr: string): string {
   return `${d.getUTCMonth() + 1}/${d.getUTCDate()}（${dow}）`;
 }
 
-function renderPlainBody(args: {
-  dateLabel: string;
-  time: string;
-  exercises: {
+function toFormatExercises(
+  raw: {
     type: "strength" | "cardio";
     name: string;
     weight?: string;
     sets?: number;
     reps?: number;
     duration?: string;
-  }[];
-  rationale: string;
-}): string {
-  const lines: string[] = [];
-  lines.push(`セッション: ${args.dateLabel} ${args.time}`);
-  lines.push("");
-  if (args.rationale) {
-    lines.push(`方針: ${args.rationale}`);
-    lines.push("");
-  }
-  const strength = args.exercises.filter((e) => e.type === "strength");
-  const cardio = args.exercises.filter((e) => e.type === "cardio");
-  if (strength.length) {
-    lines.push("筋トレ:");
-    for (const e of strength) {
-      lines.push(`- ${e.name}: ${e.weight ?? "?"}kg × ${e.reps ?? "?"}回 × ${e.sets ?? "?"}セット`);
-    }
-    lines.push("");
-  }
-  if (cardio.length) {
-    lines.push("有酸素:");
-    for (const e of cardio) {
-      lines.push(`- ${e.name}: ${e.duration ?? "?"}`);
-    }
-    lines.push("");
-  }
-  lines.push("（gym-auto による自動生成。実績は /gym log で記録すると本文が更新されます）");
-  return lines.join("\n");
+  }[],
+): Exercise[] {
+  return raw.map((e) =>
+    e.type === "strength"
+      ? {
+          type: "strength" as const,
+          name: e.name,
+          weight: e.weight ?? "",
+          sets: e.sets ?? 0,
+          reps: e.reps ?? 0,
+        }
+      : {
+          type: "cardio" as const,
+          name: e.name,
+          duration: e.duration ?? "",
+        },
+  );
 }
 
 async function createGymPage(args: {
@@ -254,19 +242,13 @@ async function createGymPage(args: {
   return { pageId: res.id, url: res.url };
 }
 
-async function writePageBody(pageId: string, markdown: string): Promise<void> {
+async function writePageBlocks(pageId: string, blocks: any[]): Promise<void> {
   const apiKey = getApiKey();
-  const lines = markdown.split("\n");
-  const children = lines.map((l) => ({
-    object: "block",
-    type: "paragraph",
-    paragraph: { rich_text: [{ type: "text", text: { content: l } }] },
-  }));
-  for (let i = 0; i < children.length; i += 100) {
+  for (let i = 0; i < blocks.length; i += 100) {
     await notionFetch(
       apiKey,
       `/blocks/${pageId}/children`,
-      { children: children.slice(i, i + 100) },
+      { children: blocks.slice(i, i + 100) },
       "PATCH",
     );
   }
@@ -343,13 +325,11 @@ async function main() {
   const page = await createGymPage({ date: today, start: slot.start, end: slot.end });
   console.log(`[created] page ${page.pageId} ${page.url}`);
 
-  const body = renderPlainBody({
-    dateLabel: formatJpDateLabel(today),
-    time: `${slot.start}〜${slot.end}`,
-    exercises: menu.exercises,
-    rationale: menu.rationale,
-  });
-  await writePageBody(page.pageId, body);
+  const blocks = buildNotionBlocks(
+    { date: formatJpDateLabel(today), time: `${slot.start}〜${slot.end}` },
+    toFormatExercises(menu.exercises),
+  );
+  await writePageBlocks(page.pageId, blocks);
 
   runSubprocess(["bun", "run", "scripts/cache-status.ts", "--clear"]);
 

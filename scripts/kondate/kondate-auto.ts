@@ -27,7 +27,7 @@ import { readHistory, appendHistoryEntry } from "./lib/menu-history";
 import { generateMenu, type MenuContext, type MenuResult, type PastMeal } from "./lib/generate-menu";
 import { appendDailyMealEntry } from "./lib/daily-writer";
 
-const REPO_ROOT = resolve(fileURLToPath(import.meta.url), "../../../..");
+const REPO_ROOT = resolve(fileURLToPath(import.meta.url), "../../..");
 const DISABLE_FLAG = join(REPO_ROOT, ".kondate-auto.disabled");
 const HISTORY_PATH = join(REPO_ROOT, "aspects/diet/kondate-history.md");
 const FRIDGE_PATH = join(REPO_ROOT, "aspects/diet/fridge.md");

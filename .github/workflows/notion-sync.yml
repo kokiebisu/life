@@ -19,6 +19,10 @@ on:
         type: boolean
         default: false
 
+concurrency:
+  group: notion-sync-${{ github.event.inputs.date || github.run_id }}
+  cancel-in-progress: false
+
 jobs:
   sync:
     runs-on: ubuntu-latest
@@ -96,16 +100,16 @@ jobs:
         if: steps.check_disable.outputs.disabled != 'true' && inputs.dry_run == true
         run: |
           bun run scripts/notion/notion-pull.ts \
-            --date ${{ steps.target.outputs.date }} \
-            --days ${{ steps.target.outputs.days }} \
+            --date "${{ steps.target.outputs.date }}" \
+            --days "${{ steps.target.outputs.days }}" \
             --all-entries --no-enrich --dry-run
 
       - name: Run notion-pull (production)
         if: steps.check_disable.outputs.disabled != 'true' && inputs.dry_run != true
         run: |
           bun run scripts/notion/notion-pull.ts \
-            --date ${{ steps.target.outputs.date }} \
-            --days ${{ steps.target.outputs.days }} \
+            --date "${{ steps.target.outputs.date }}" \
+            --days "${{ steps.target.outputs.days }}" \
             --all-entries --no-enrich
 
       - name: Run fridge consume
@@ -144,7 +148,8 @@ jobs:
             --field head="$BRANCH" \
             --field base="main" \
             --field body="Notion から $DATE の予定/タスク/食事/買い出し/デボーション等を md に同期しました。" \
-            --jq '.html_url')
+            --jq '.html_url' 2>/dev/null) || \
+          PR_URL=$(gh api "repos/${{ github.repository }}/pulls?head=${{ github.repository_owner }}:$BRANCH&state=open" --jq '.[0].html_url')
 
           PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
           gh api repos/${{ github.repository }}/pulls/$PR_NUMBER/merge \

@@ -21,6 +21,17 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/humanize-check.sh 2>/dev/null || true"
+          }
+        ]
+      }
     ]
   },
   "enabledPlugins": {

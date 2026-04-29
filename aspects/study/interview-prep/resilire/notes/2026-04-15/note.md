@@ -196,6 +196,11 @@ Client → API Server → [Redis チェック] → ヒット: 即返す
 
 ## 🔁 復習で詰まったところ
 
+### 2026-04-29 - 🔺 あいまい
+- **Q: EXPLAIN ANALYZEで見るべき3点は？**
+  - 詰まった内容: 3点目に「cost」と回答（前回 2026-04-27 も同じ詰まり）
+  - 正解ポイント: 3点目は **actual time**（実測時間 ms）。cost は EXPLAIN（推定値）の値で、ANALYZE は実行して実測値を返すのが特徴。`Seq/Index Scan` `actual time` `Rows Removed by Filter` の3点
+
 ### 2026-04-27 - ❌ 忘れた
 - **Q: Cache Invalidationの3つの方法（TTL待ち・イベント駆動・Write-through）の使い分けは？**
   - 詰まった内容: 3方法を完全に忘却

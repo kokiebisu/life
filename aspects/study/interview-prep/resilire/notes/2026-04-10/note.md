@@ -141,6 +141,11 @@ CREATE TABLE urls (
 
 ## 🔁 復習で詰まったところ
 
+### 2026-04-29 - 🔺 あいまい
+- **Q: Go で「外部 ML API を呼ぶ Recommender 型」をノート見ずに書いて。MLClient を interface としてモック差し込み可能に + テスタビリティのメリット4つを挙げよ。**
+  - 詰まった内容: DI パターンの本体（struct + interface フィールド + Mock 実装）は正解。table-driven test まで応用。ただし構造体リテラル構文ミス（`[]struct{...}{Name: "..."}` と書き、要素を `{}` で囲み忘れ）。メリット4つは3/4挙げて「決定的（flaky 防止）」が抜けた
+  - 正解ポイント: ① **table-driven test 構文** = `[]struct{...}{ {Name: "...", ...}, {Name: "...", ...} }` のように **要素ごとに `{}` で囲む** + カンマ区切り。② **メリット4つ** = (1) 本物 API 叩かない / (2) エッジケース再現 / (3) **決定的（外部 API の変動で flaky にならない、同じ入力で常に同じ結果）** / (4) 速い
+
 ### 2026-04-28 - ❌ 忘れた
 - **Q: Go で「外部 ML API を呼ぶ Recommender 型」をノート見ずに書いて。MLClient を interface としてモック差し込み可能に + テスタビリティのメリット4つを挙げよ。**
   - 詰まった内容: 1回目のコードは Recommender まで interface 化し MockRecommender を作る誤設計（DI の意図とズレ）+ コンパイルエラー2件（Fetch の引数型抜け / Recommender interface の戻り値不一致）。2回目で struct Recommender { ml MLClient } の正しい DI 形に修正できたが、Fetch に ctx を渡し忘れ + 戻り値ミスマッチが残った。テスタビリティのメリット4つは「忘れた」と即答

@@ -13,6 +13,7 @@
 
 ```bash
 ./dev                    # devcontainer を起動して Claude Code を開く
+./dev <branch>           # worktree を作って新 VS Code ウィンドウで開く（複数セッション分離用、devcontainer 内専用）
 ./scripts/life-os-sync.sh status       # life-os との乖離確認
 ./scripts/life-os-sync.sh pull         # life-os/main を life に取り込む
 ./scripts/life-os-sync.sh contrib      # life-os に貢献できるコミットを確認

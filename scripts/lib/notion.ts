@@ -382,6 +382,37 @@ export interface SimilarEntry {
 }
 
 /**
+ * 既存エントリと新規エントリのタイトル・時間帯を比較し、類似判定を返す。
+ * 時間帯（start/end）を options で指定すると、時刻が一致しないエントリは除外される。
+ *
+ * - "exact": 正規化タイトルが完全一致
+ * - "similar": 正規化タイトルが部分一致（どちらかがもう一方を包含）
+ * - null: タイトル不一致または時間帯不一致
+ */
+export function evaluateEntryMatch(
+  existingTitle: string,
+  existingStart: string | null,
+  existingEnd: string | null,
+  newTitle: string,
+  options?: { start?: string; end?: string },
+): "exact" | "similar" | null {
+  const normalizedNew = normalizeTitle(newTitle);
+  const normalizedExisting = normalizeTitle(existingTitle);
+
+  const titleMatch = normalizedNew === normalizedExisting;
+  const titleSimilar = !titleMatch &&
+    (normalizedNew.includes(normalizedExisting) || normalizedExisting.includes(normalizedNew));
+
+  if (!titleMatch && !titleSimilar) return null;
+
+  // 時間帯が異なれば別エントリとして許可（Devotion 朝/夜等）
+  if (options?.start && existingStart && options.start !== existingStart) return null;
+  if (options?.end && existingEnd && options.end !== existingEnd) return null;
+
+  return titleMatch ? "exact" : "similar";
+}
+
+/**
  * 全スケジュール DB を横断して、指定日に類似タイトルのエントリを検索。
  * options.start を指定すると、時間帯が異なるエントリを除外する（Devotion 朝/夜の区別用）。
  */
@@ -395,7 +426,6 @@ export async function findSimilarEntries(
   },
 ): Promise<SimilarEntry[]> {
   const apiKey = getApiKey();
-  const normalizedNew = normalizeTitle(title);
   const results: SimilarEntry[] = [];
 
   const dbNames: ScheduleDbName[] = options?.db
@@ -416,21 +446,15 @@ export async function findSimilarEntries(
     for (const page of pages) {
       const existingTitle = (page.properties?.[config.titleProp]?.title || [])
         .map((t: any) => t.plain_text || "").join("");
-      const normalizedExisting = normalizeTitle(existingTitle);
-
-      const titleMatch = normalizedNew === normalizedExisting;
-      const titleSimilar = !titleMatch &&
-        (normalizedNew.includes(normalizedExisting) || normalizedExisting.includes(normalizedNew));
-
-      if (!titleMatch && !titleSimilar) continue;
-
       const existingDate = page.properties?.[config.dateProp]?.date;
       const existingStart = getTimeFromISO(existingDate?.start);
       const existingEnd = getTimeFromISO(existingDate?.end);
 
-      // 時間帯が異なれば別エントリとして許可（Devotion 朝/夜等）
-      if (options?.start && existingStart && options.start !== existingStart) continue;
-      if (options?.end && existingEnd && options.end !== existingEnd) continue;
+      const matchType = evaluateEntryMatch(existingTitle, existingStart, existingEnd, title, {
+        start: options?.start,
+        end: options?.end,
+      });
+      if (!matchType) continue;
 
       results.push({
         id: page.id,
@@ -438,7 +462,7 @@ export async function findSimilarEntries(
         db: dbName,
         start: existingStart,
         end: existingEnd,
-        matchType: titleMatch ? "exact" : "similar",
+        matchType,
       });
     }
   }

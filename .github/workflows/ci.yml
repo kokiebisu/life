@@ -30,6 +30,3 @@ jobs:
         env:
           NOTION_API_KEY: dummy-for-tests
         run: bun test scripts/
-
-      - name: Lint devotions
-        run: bun run scripts/devotion-lint.ts

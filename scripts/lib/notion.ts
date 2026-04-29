@@ -107,36 +107,6 @@ export function getScheduleDbConfigOptional(name: ScheduleDbName): { apiKey: str
   return { apiKey: getApiKey(), dbId, config };
 }
 
-// --- Article DB Config ---
-
-export type ArticleDbName = "articles";
-
-export interface ArticleDbConfig {
-  envKey: string;
-  titleProp: string;
-  sourceProp: string;
-  urlProp: string;
-  aspectProp: string;
-  statusProp: string;
-}
-
-export const ARTICLE_DB_CONFIGS: Record<ArticleDbName, ArticleDbConfig> = {
-  articles: {
-    envKey: "NOTION_ARTICLES_DB",
-    titleProp: "タイトル",
-    sourceProp: "ソース",
-    urlProp: "URL",
-    aspectProp: "Aspect",
-    statusProp: "Status",
-  },
-};
-
-export function getArticleDbConfig(name: ArticleDbName): { apiKey: string; dbId: string; config: ArticleDbConfig } {
-  const config = ARTICLE_DB_CONFIGS[name];
-  return { apiKey: getApiKey(), dbId: getDbId(config.envKey), config };
-}
-
-
 export function getDevotionConfig() {
   return { apiKey: getApiKey(), dbId: getDbId("NOTION_DEVOTION_DB") };
 }
@@ -376,16 +346,6 @@ const GRADIENT_COVERS = [
   "https://images.unsplash.com/photo-1557682260-96773eb01377?w=1200",
   "https://images.unsplash.com/photo-1557682268-e3955ed5d83f?w=1200",
 ];
-
-export function pickArticleIcon(source: string): { type: "emoji"; emoji: string } {
-  const map: Record<string, string> = {
-    "Hacker News": "🟠",
-    "Zenn": "💠",
-    "note": "📝",
-    "Twitter": "🐦",
-  };
-  return { type: "emoji", emoji: map[source] || "📰" };
-}
 
 export function pickTaskIcon(title: string, defaultEmoji = "📅"): { type: "emoji"; emoji: string } {
   for (const [pattern, emoji] of TASK_ICON_KEYWORDS) {

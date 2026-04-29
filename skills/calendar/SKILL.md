@@ -23,7 +23,6 @@ Notion カレンダーの予定を取得・追加する。
 
 ### Other DBs
 
-- `NOTION_ARTICLES_DB` — 記事（タイトル / ソース / URL / Aspect / Status）
 - **クイックメモ DB** — 思考キャプチャ。`/process` コマンドで処理する
 
 ## 予定の取得

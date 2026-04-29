@@ -18,6 +18,7 @@
 ./scripts/life-os-sync.sh pull         # life-os/main を life に取り込む
 ./scripts/life-os-sync.sh contrib      # life-os に貢献できるコミットを確認
 ./scripts/gen-agents-md.sh             # skills/ + .ai/rules/ から AGENTS.md を再生成（Codex 用）
+bd ready -l defer --json               # defer キューの ready タスクを確認（→ /resume で再開）
 ```
 
 ### Claude Code スキル

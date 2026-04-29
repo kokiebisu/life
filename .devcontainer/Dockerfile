@@ -92,6 +92,11 @@ RUN for i in 1 2 3 4 5; do \
 # Install Codex CLI
 RUN npm install -g @openai/codex
 
+# Install beads (bd) CLI from source
+# npm pre-built binary requires GLIBC 2.32+ which bullseye (2.31) doesn't have,
+# so we build from source via Go (GOPATH=/home/node/go is already in PATH).
+RUN go install github.com/steveyegge/beads/cmd/bd@latest
+
 # Install Starship prompt
 RUN for i in 1 2 3 4 5; do \
       curl -fsSL https://starship.rs/install.sh | sh -s -- -y --bin-dir /home/node/.local/bin && break; \

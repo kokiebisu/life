@@ -127,7 +127,3 @@ gh api repos/kokiebisu/life/pulls --method POST \
 
 復旧手段: `git fsck --no-reflogs --lost-found` で dangling commit を見つけて `git checkout <sha> -- <path>` で個別ファイル復旧は可能だが、最後の手段。untracked を含む stash は復旧困難。
 
-## Submodule（sumitsugi）
-- `projects/sumitsugi` のサブモジュールポインタ変更は PR に含めない
-- サブモジュールの更新は sumitsugi リポジトリ側で管理する
-- `git status` に出ても基本スキップする

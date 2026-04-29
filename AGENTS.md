@@ -36,7 +36,6 @@ aspects/                 # 生活の各側面（各ディレクトリに CLAUDE.
   events/                # 一回限りの予定
   daily/                 # デイリーログ
   devotions/             # デボーションノート（YYYY-MM-DD.md）
-projects/sumitsugi/      # 個人プロジェクト（サブモジュール）
 ```
 
 ## Git & Security
@@ -72,7 +71,6 @@ projects/sumitsugi/      # 個人プロジェクト（サブモジュール）
 - `aspects/tasks.md` — タスク管理（Inbox / Archive）
 - `aspects/events/` — 一回限りの予定
 - `aspects/daily/` — デイリーログ
-- `projects/sumitsugi/` — 個人プロジェクト・本業（サブモジュール）
 
 ## Devcontainer
 
@@ -498,10 +496,6 @@ gh api repos/kokiebisu/life/pulls --method POST \
 
 復旧手段: `git fsck --no-reflogs --lost-found` で dangling commit を見つけて `git checkout <sha> -- <path>` で個別ファイル復旧は可能だが、最後の手段。untracked を含む stash は復旧困難。
 
-## Submodule（sumitsugi）
-- `projects/sumitsugi` のサブモジュールポインタ変更は PR に含めない
-- サブモジュールの更新は sumitsugi リポジトリ側で管理する
-- `git status` に出ても基本スキップする
 
 ---
 

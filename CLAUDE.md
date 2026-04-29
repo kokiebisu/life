@@ -36,7 +36,6 @@ aspects/                 # 生活の各側面（各ディレクトリに CLAUDE.
   events/                # 一回限りの予定
   daily/                 # デイリーログ
   devotions/             # デボーションノート（YYYY-MM-DD.md）
-projects/sumitsugi/      # 個人プロジェクト（サブモジュール）
 ```
 
 ## Git & Security
@@ -72,7 +71,6 @@ projects/sumitsugi/      # 個人プロジェクト（サブモジュール）
 - `aspects/tasks.md` — タスク管理（Inbox / Archive）
 - `aspects/events/` — 一回限りの予定
 - `aspects/daily/` — デイリーログ
-- `projects/sumitsugi/` — 個人プロジェクト・本業（サブモジュール）
 
 ## Devcontainer
 

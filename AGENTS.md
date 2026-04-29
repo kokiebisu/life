@@ -19,42 +19,9 @@
 ./scripts/gen-agents-md.sh             # skills/ + .ai/rules/ から AGENTS.md を再生成（Codex 用）
 ```
 
-### Claude Code コマンド
+### Claude Code スキル
 
-```bash
-# 食事・健康
-/ask-diet                # ダイエットチームに相談
-/meal                    # 食事を記録（daily + Notion meals + fridge 一括）
-/kondate                 # 献立を計画（在庫ベース + Notion 登録）
-/fridge-sync             # fridge.md を Notion の冷蔵庫ページに同期
-
-# 就職活動
-/ask-job-search          # 就職活動チームに相談
-/interview-prep          # 技術面接の対話式学習セッション
-
-# ジム
-/gym                     # ジムセッション（plan / log）
-
-# 学習
-/study                   # 学習セッション開始・ノート記録・Notion 登録
-/fukushuu                # 忘却曲線ベースの復習（スペーシドリピティション）
-
-# 教会
-/devotion                # デボーション（自動で次の章を検出）
-/to-notion               # church MD ファイルを Notion に同期
-
-# Notion・カレンダー
-/from-notion             # Notion からデータ同期
-/calendar                # Notion カレンダー操作
-/event                   # イベント登録
-
-# その他
-/pr                      # 変更をグループ化してPR作成
-/tidy                    # 指示ファイルの重複・配置を整理
-/learn                   # ミスからの学習・再発防止
-/automate                # セッション内容を仕組み化（skill/script/rule/hook 化を計画→実装）
-/analyze                 # ルール→コード リファクタリング分析
-```
+スキル一覧と説明は `Skill` ツールで自動展開される（`.claude/skills/<name>/SKILL.md`）。CLAUDE.md では再列挙しない。
 
 > **スキル自動起動（厳守）:** 「デボーションしたい」「デボーションやりたい」などの発言は即 `/devotion` スキルを起動する。章や箇所をユーザーに聞かない（スキルが自動検出する）。
 
@@ -68,7 +35,6 @@ aspects/                 # 生活の各側面（各ディレクトリに CLAUDE.
   daily/                 # デイリーログ
   devotions/             # デボーションノート（YYYY-MM-DD.md）
 projects/sumitsugi/      # 個人プロジェクト（サブモジュール）
-memory-bank/             # セッション間の記憶（decisions.md）
 ```
 
 ## Git & Security
@@ -116,10 +82,6 @@ memory-bank/             # セッション間の記憶（decisions.md）
 
 - **常に Subagent-Driven（現セッション内）で実行する。** Parallel Session は使わない
 - 理由: タスクは順番依存が多く、1人リポジトリなのでワークツリー分離のメリットがない
-
-## Memory Bank
-
-`memory-bank/decisions.md` に設計判断とその理由を記録する。重要な判断をしたら追記すること。
 
 ---
 
@@ -400,20 +362,6 @@ gh api repos/kokiebisu/life/pulls --method POST \
 - `projects/sumitsugi` のサブモジュールポインタ変更は PR に含めない
 - サブモジュールの更新は sumitsugi リポジトリ側で管理する
 - `git status` に出ても基本スキップする
-
----
-
-# 面接ノート作成ルール
-
-## 面接ノート作成時（厳守）
-
-Notion に面接ページを作成する際、「聞きたいこと」セクションに
-**この会社特有のプラス評価につながる質問を1つ必ず追加する。**
-
-- 内容は募集要項・公式ページから具体的な情報を抜粋して作る
-- `aspects/job/search/interviews/questions-to-ask.md` の汎用質問と重複しない
-- 例: ARR・技術選定の背景・特定機能の課題・最近のプロダクト戦略など
-  → 「〜というプロダクト戦略を拝見しましたが、エンジニアとしてどう関わっていますか？」
 
 ---
 

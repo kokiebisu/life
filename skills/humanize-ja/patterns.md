@@ -269,3 +269,45 @@ humanizer-ja の以下のパターンは履歴書文脈では採用しない:
 | 主導動詞 | 主導 | リード / 牽引 / 旗振り / 推進 |
 
 **警戒度:** post-check モード（`/humanize <file>`）では、これらのグループを **追加 grep キーワード** として走らせ、見落としを防ぐ。
+
+### C10. JP-EN 全角半角境界スペース（v3.2 追加）
+
+LLM は markdown 整形時に「日本語と英数字の間に半角スペース」を入れる癖がある。視覚的にバランスが取れて見えるが、Yagish のような form 入力では密度が落ちて読みにくく、**人間が書いた日本語履歴書では稀** な典型的 AI 生成シグナル。
+
+**NG 例:**
+
+- ❌ 約 5 年 / 10% 以上 / 2024 年 10 月
+- ❌ BCIT で Computer Science を専攻
+- ❌ Claude Code を CI に統合
+
+**OK（境界スペースを除去）:**
+
+- ✅ 約5年 / 10%以上 / 2024年10月
+- ✅ BCITでComputer Scienceを専攻
+- ✅ Claude CodeをCIに統合
+
+**保持する例外:**
+
+- 多語英語フレーズ内のスペース: `Ruby on Rails`, `Claude Code`, `Design Doc`
+- 製品名内のスペース: `freee Eラーニング`, `freee 共通決済基盤` は文脈による（ブランド表記に従う）
+
+**検知（hook 自動）:**
+
+`scripts/humanize-check.sh` が `aspects/job/` 配下の編集後に以下を grep:
+
+```
+(\p{sc=Han}|\p{sc=Hiragana}|\p{sc=Katakana}) [A-Za-z0-9%]
+[A-Za-z0-9%] (\p{sc=Han}|\p{sc=Hiragana}|\p{sc=Katakana})
+```
+
+`\p{sc=Han}` は Script（Script_Extensions ではない）指定のため、`〜` (U+301C) の誤マッチを回避できる。
+
+**修正（perl one-liner）:**
+
+```bash
+F=path/to/file.md
+perl -i -CSD -pe 's/(\p{Han}|\p{Hiragana}|\p{Katakana}|[々ー、。「」『』（）]) ([A-Za-z0-9%])/$1$2/g; s/([A-Za-z0-9%]) (\p{Han}|\p{Hiragana}|\p{Katakana}|[々ー、。「」『』（）])/$1$2/g' "$F"
+sed -i 's/ 〜/〜/g; s/〜 /〜/g' "$F"   # 〜 周辺は別途整形
+```
+
+**過去の漏れ:** PR #629（2026-04-29）で resume-yagish.md を 8 ペルソナでレビューしたが、文意・構成・重複は見たが境界スペースという「形」のチェックを失念。ユーザー指摘で修正。

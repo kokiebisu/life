@@ -18,6 +18,7 @@
 ./scripts/life-os-sync.sh pull         # life-os/main を life に取り込む
 ./scripts/life-os-sync.sh contrib      # life-os に貢献できるコミットを確認
 ./scripts/gen-agents-md.sh             # skills/ + .ai/rules/ から AGENTS.md を再生成（Codex 用）
+bd ready -l defer --json               # defer キューの ready タスクを確認（→ /resume で再開）
 ```
 
 ### Claude Code スキル
@@ -234,6 +235,117 @@ events > todo > routine > meals > groceries
 
 - ハローワークで手続き（離職票届き次第）
 - 失業保険の手続きと再就職手当の活用を検討中
+
+---
+
+# Defer ルール（厳守）
+
+トークン消費が大きそうなタスクが投げられたら、**着手前に**ユーザーに defer 提案する。承諺を得たら beads キューに保存して現セッションでは実行しない。次セッション以降に `/resume` で再開する。
+
+## 重さ判断ヒューリスティック（着手前に見積もる）
+
+以下のいずれかに該当したら「重い」と判断する:
+
+- **読むファイル 30 件以上** が必要（grep / find で範囲を見るのは別、実際に Read するのが多い場合）
+- **Subagent 並列 3 個以上**（Explore / general-purpose / Plan agent を複数同時起動）
+- **大規模生成**: スキル丸ごと、長尺の Plan、ファイル多数の refactor、md 全面書き換え
+- **ループ系**: `/loop` で 10 反復以上、全件処理（Notion DB 全件読込、ログ全量解析等）
+- **大量データ整形・抽出**: ログ全量、Notion DB 全件、リポジトリ全 md など
+- **ユーザー発言の量化表現**: 「全部」「一括」「100 件」「全件」「片っ端から」「全数」
+
+軽いタスク（3〜5 ファイル編集、1 つの skill 呼び出し、特定ファイルの review 等）は defer しない。
+
+## 該当時の手順
+
+1. **着手前に**ユーザーに defer 提案（AskUserQuestion 1 問、推奨 = defer）
+2. 承諺 → 下記「bd 操作テンプレ」で登録、現セッションでは実行しない
+3. 拒否（「いや、やって」等）→ そのまま実行
+
+## bd 操作テンプレ（defer / resume スキル両方が参照する）
+
+### defer 登録
+
+```bash
+RECIPE=$(cat <<'EOF'
+## 元プロンプト
+
+> ユーザーの元発言（一字一句コピペ）
+
+## 想定出力
+
+- 何を作る/返すのか（コード変更、レポート、PR 等）
+
+## 実行レシピ
+
+### 読むべきファイル
+
+- /workspaces/life/path/to/file.ts
+- ...
+
+### 手順
+
+1. ...
+2. ...
+
+### 注意点・落とし穴
+
+- ...
+
+## 関連コンテキスト
+
+- 直前の会話で出た判断・前提（次セッションでは会話履歴は失われている）
+- 関連 commit / PR / Notion ページ
+EOF
+)
+
+echo "$RECIPE" | bd create "<10 字程度の短いタイトル>" \
+  -t task \
+  -p 2 \
+  -l defer \
+  --description=- \
+  --json
+```
+
+返却される `id`（例: `life-a3f`）を後続オペレーションで使う。
+
+### チェックポイント（実行中に進捗を残す）
+
+```bash
+bd update <id> --append-notes "checkpoint: read 5/10 files, drafted function A" --json
+```
+
+`/resume` を中断する場合、必ずこれを書いてから手放す。次回再開時に notes を読んで続きから着手できる。
+
+### 依存関係（B は A 完了後）
+
+```bash
+bd dep add <B-id> <A-id>
+```
+
+`bd ready -l defer` は A 完了まで B を返さなくなる。
+
+### 再開フロー（/resume が呼ぶ）
+
+```bash
+bd ready -l defer --json                          # ready なものを抽出（priority 順）
+bd update <id> --claim --json                     # claim（in_progress + assignee）
+bd show <id> --json                               # description + notes 取得
+# ... 実行 ...
+bd close <id> --reason "<完了メッセージ>" --json  # 完了
+```
+
+## bd 関連の注意
+
+- **`-C` フラグはない** — bd には git のような `-C <dir>` 形式がない。`.beads/` は cwd 自動検出される（/workspaces/life で実行する）
+- **stealth モード** — `.beads/` は gitignored、ローカル Dolt DB のみ。複数デバイス sync は v1 では非対応
+- **既存 git hooks** — `.git/hooks/pre-commit` と `post-merge` に bd 関連処理があるが、Dolt backend 検出時は no-op するので干渉しない
+
+## やらないこと
+
+- defer 提案を**勝手にスキップ**しない（軽そうに見えても、量化表現があれば必ず提案する）
+- defer 提案後に**勝手に実行を始め**ない（ユーザー承諺なしに動かない）
+- 提案を**選択肢として並べ**ない（推奨 = defer を明示する）
+- 元プロンプトを**要約**しない（将来の自分が読むので一字一句コピペ）
 
 ---
 
@@ -759,6 +871,7 @@ bun run scripts/notion/notion-sync-tasks.ts             # 実行
 - **`/automate`** — 成功した手順やセッションの作業内容を仕組み化（skill / script / rule / hook）したいとき。「これ仕組み化したい」「自動化したい」「次回も再現できるようにしたい」などに使う。 → `skills/automate/SKILL.md`
 - **`/backfill-cues`** — 既存の学習ノートにコーネル式キュー（自分への質問）を一括追加する。「キュー追加」「バックフィル」などに使う。 → `skills/backfill-cues/SKILL.md`
 - **`/calendar`** — Notion カレンダーの予定を確認・追加・変更するとき。デイリープラン作成・スケジュール調整・既存予定の確認などに使う。 → `skills/calendar/SKILL.md`
+- **`/defer`** — 重そうなタスクをトークンリセット後に回したいとき。「これ defer」「あとで」「これ重そう」などに使う。直前または引数のタスクを beads キュー（label=defer）に保存する。 → `skills/defer/SKILL.md`
 - **`/devotion`** — デボーション（聖書の学び）を始めるとき。「デボーションしたい」「デボーションやろう」「聖書読もう」などに使う。章は自動検出する。 → `skills/devotion/SKILL.md`
 - **`/event`** — イベント・予定を Notion カレンダーに登録するとき。飲み会・会議・外出など日時が決まっている予定の登録に使う。移動時間・重複チェックも自動処理する。 → `skills/event/SKILL.md`
 - **`/fridge-sync`** — fridge.md（冷蔵庫在庫）を Notion の「冷蔵庫の在庫」ページに同期するとき。「冷蔵庫同期して」「fridge 更新して」に使う。 → `skills/fridge-sync/SKILL.md`
@@ -771,6 +884,7 @@ bun run scripts/notion/notion-sync-tasks.ts             # 実行
 - **`/learn`** — Claude のミスを指摘して再発防止策を適用するとき。「また同じミスをした」「ルールに追加して」「再発防止して」などに使う。 → `skills/learn/SKILL.md`
 - **`/meal`** — 食事を記録するとき。「〇〇食べた」「朝食記録したい」「ご飯ログ」など食事トラッキングに使う。daily ファイル・Notion meals DB・fridge.md を一括更新する。 → `skills/meal/SKILL.md`
 - **`/pr`** — プルリクエストを作成するとき。変更をグループ化して PR を作成する。コミット後に自動で呼ばれることもある。 → `skills/pr/SKILL.md`
+- **`/resume`** — defer したタスクを再開するとき。「resume」「さっきの続き」「defer した何かやろう」などに使う。bd ready -l defer から選んで実行する。 → `skills/resume/SKILL.md`
 - **`/study`** — 学習セッションの開始・ノート記録・Notion登録。引数: $ARGUMENTS → `skills/study/SKILL.md`
 - **`/tidy`** — 指示ファイル（CLAUDE.md・rules・commands・memory）の重複・配置ミスを整理するとき。「ルールが散らかってきた」「指示ファイル整理したい」などに使う。 → `skills/tidy/SKILL.md`
 - **`/to-notion`** — church MDファイル（prayer-requests.md, verses.md, messages/）をNotionに同期するとき。引数: $ARGUMENTS → `skills/to-notion/SKILL.md`

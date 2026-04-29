@@ -52,11 +52,15 @@
     ]
   },
   "aspects/study/software-engineering/システム設計の面接試験/ch07.md": {
-    "last_reviewed": "2026-04-27",
+    "last_reviewed": "2026-04-29",
     "interval_days": 1,
     "review_count": 0,
     "confidence": "forgot",
-    "pending_questions": []
+    "pending_questions": [
+      "Snowflake・UUID v4・ULID の違い（ビット数・ソート可否・マシンID要否）を比較せよ",
+      "内部 ID に BIGINT、URL に BASE62 を使い分ける理由は？",
+      "分散環境でのマシン ID 管理の3つの方法と、それぞれの向き不向きは？"
+    ]
   },
   "aspects/study/software-engineering/達人に学ぶDB設計徹底指南書/ch01.md": {
     "last_reviewed": "2026-04-23",
@@ -66,17 +70,17 @@
     "pending_questions": []
   },
   "aspects/study/software-engineering/達人に学ぶDB設計徹底指南書/ch02.md": {
-    "last_reviewed": "2026-04-24",
+    "last_reviewed": "2026-04-29",
     "interval_days": 1,
-    "review_count": 0,
-    "confidence": "fuzzy",
+    "review_count": 1,
+    "confidence": "perfect",
     "pending_questions": []
   },
   "aspects/study/software-engineering/達人に学ぶDB設計徹底指南書/ch03.md": {
-    "last_reviewed": "2026-04-24",
+    "last_reviewed": "2026-04-29",
     "interval_days": 1,
-    "review_count": 0,
-    "confidence": "fuzzy",
+    "review_count": 1,
+    "confidence": "perfect",
     "pending_questions": []
   },
   "aspects/study/software-engineering/達人に学ぶDB設計徹底指南書/ch04.md": {
@@ -87,11 +91,13 @@
     "pending_questions": []
   },
   "aspects/study/software-engineering/達人に学ぶDB設計徹底指南書/ch05.md": {
-    "last_reviewed": "2026-04-27",
+    "last_reviewed": "2026-04-29",
     "interval_days": 1,
     "review_count": 0,
     "confidence": "fuzzy",
-    "pending_questions": []
+    "pending_questions": [
+      "非正規化が「最後の手段」とされる理由は？先に検討すべきことは何か？"
+    ]
   },
   "aspects/study/interview-prep/resilire/notes/2026-04-09/note.md": {
     "last_reviewed": "2026-04-23",
@@ -110,11 +116,13 @@
     ]
   },
   "aspects/study/interview-prep/resilire/notes/2026-04-11/note.md": {
-    "last_reviewed": "2026-04-24",
+    "last_reviewed": "2026-04-29",
     "interval_days": 1,
     "review_count": 0,
     "confidence": "fuzzy",
-    "pending_questions": []
+    "pending_questions": [
+      "goroutineとOSスレッドの違いは？M:Nモデルとは？"
+    ]
   },
   "aspects/study/interview-prep/resilire/notes/2026-04-13/note.md": {
     "last_reviewed": "2026-04-27",

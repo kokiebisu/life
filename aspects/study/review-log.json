@@ -41,12 +41,11 @@
     "pending_questions": []
   },
   "aspects/study/software-engineering/システム設計の面接試験/ch06.md": {
-    "last_reviewed": "2026-04-28",
+    "last_reviewed": "2026-04-29",
     "interval_days": 1,
     "review_count": 0,
     "confidence": "forgot",
     "pending_questions": [
-      "単一 vs 分散KV Storeの判断基準を3つのケースで説明せよ",
       "Leaderless と Leader-based レプリケーションの違い・代表例は？",
       "Vector Clock とは何か？LWW（Last Write Wins）との違いは？"
     ]
@@ -107,10 +106,10 @@
     "pending_questions": []
   },
   "aspects/study/interview-prep/resilire/notes/2026-04-10/note.md": {
-    "last_reviewed": "2026-04-28",
+    "last_reviewed": "2026-04-29",
     "interval_days": 1,
     "review_count": 0,
-    "confidence": "forgot",
+    "confidence": "fuzzy",
     "pending_questions": [
       "Go で「外部 ML API を呼ぶ Recommender 型」をノート見ずに書いて。MLClient を interface としてモック差し込み可能に + テスタビリティのメリット4つを挙げよ。"
     ]
@@ -125,18 +124,20 @@
     ]
   },
   "aspects/study/interview-prep/resilire/notes/2026-04-13/note.md": {
-    "last_reviewed": "2026-04-27",
+    "last_reviewed": "2026-04-29",
     "interval_days": 1,
-    "review_count": 0,
-    "confidence": "fuzzy",
+    "review_count": 1,
+    "confidence": "perfect",
     "pending_questions": []
   },
   "aspects/study/interview-prep/resilire/notes/2026-04-15/note.md": {
-    "last_reviewed": "2026-04-27",
+    "last_reviewed": "2026-04-29",
     "interval_days": 1,
     "review_count": 0,
-    "confidence": "forgot",
-    "pending_questions": []
+    "confidence": "fuzzy",
+    "pending_questions": [
+      "EXPLAIN ANALYZEで見るべき3点は？それぞれが何を意味するか？"
+    ]
   },
   "aspects/study/interview-prep/resilire/prep.md": {
     "last_reviewed": "2026-04-27",

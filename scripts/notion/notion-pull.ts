@@ -53,7 +53,7 @@ function eventFilePath(db: ScheduleDbName, date: string): string {
 
 // --- Parsing (same regex as notion-sync-event-file.ts) ---
 
-interface FileEntry {
+export interface FileEntry {
   done: boolean;
   startTime: string;
   endTime: string;
@@ -64,7 +64,7 @@ interface FileEntry {
   feedbackLine: string;
 }
 
-function parseEventFile(filePath: string): FileEntry[] {
+export function parseEventFile(filePath: string): FileEntry[] {
   if (!existsSync(filePath)) return [];
   const content = readFileSync(filePath, "utf-8");
   const lines = content.split("\n");
@@ -111,7 +111,7 @@ function parseEventFile(filePath: string): FileEntry[] {
 // Meal prefixes that can change between sync cycles (朝食→昼食 etc.)
 const MEAL_PREFIXES = /^(朝食|昼食|夕食|間食|おやつ|ブランチ)/;
 
-function titlesMatch(a: string, b: string): boolean {
+export function titlesMatch(a: string, b: string): boolean {
   const na = normalizeTitle(a);
   const nb = normalizeTitle(b);
   if (na.includes(nb) || nb.includes(na)) return true;
@@ -128,7 +128,7 @@ function titlesMatch(a: string, b: string): boolean {
 
 // --- Time extraction from ISO string ---
 
-function extractTime(iso: string): string {
+export function extractTime(iso: string): string {
   if (!iso || !iso.includes("T")) return "";
   const d = new Date(iso);
   const h = d.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", hour: "2-digit", minute: "2-digit", hour12: false });
@@ -137,7 +137,7 @@ function extractTime(iso: string): string {
 
 // --- Merge ---
 
-interface MergedEntry {
+export interface MergedEntry {
   done: boolean;
   startTime: string;
   endTime: string;
@@ -159,7 +159,7 @@ interface MergedEntry {
   oldFeedbackLine: string;
 }
 
-function mergeEntries(notionEntries: NormalizedEntry[], fileEntries: FileEntry[], dbName: ScheduleDbName): { merged: MergedEntry[]; added: number; updated: number; kept: number; dropped: string[] } {
+export function mergeEntries(notionEntries: NormalizedEntry[], fileEntries: FileEntry[], dbName: ScheduleDbName): { merged: MergedEntry[]; added: number; updated: number; kept: number; dropped: string[] } {
   const used = new Set<number>();
   const merged: MergedEntry[] = [];
   let added = 0, updated = 0, kept = 0;
@@ -315,13 +315,13 @@ const DB_PRIORITY: Record<ScheduleDbName, number> = {
   groceries: 10,
 };
 
-function timeToMinutes(time: string): number {
+export function timeToMinutes(time: string): number {
   if (!time) return 0;
   const [h, m] = time.split(":").map(Number);
   return h * 60 + m;
 }
 
-function hasTimeOverlap(a: MergedEntry, b: MergedEntry): boolean {
+export function hasTimeOverlap(a: MergedEntry, b: MergedEntry): boolean {
   if (a.allDay || b.allDay) return false;
   if (!a.startTime || !b.startTime || !a.endTime || !b.endTime) return false;
   const aStart = timeToMinutes(a.startTime);
@@ -331,7 +331,7 @@ function hasTimeOverlap(a: MergedEntry, b: MergedEntry): boolean {
   return aStart < bEnd && bStart < aEnd;
 }
 
-interface OverlapRemoval {
+export interface OverlapRemoval {
   entry: MergedEntry;
   db: ScheduleDbName;
   reason: string;
@@ -341,7 +341,7 @@ interface OverlapRemoval {
  * Cross-DB overlap resolution: higher-priority DB entries win.
  * Modifies entriesByDb in-place (removes losers).
  */
-function resolveOverlaps(
+export function resolveOverlaps(
   entriesByDb: Map<ScheduleDbName, MergedEntry[]>,
 ): OverlapRemoval[] {
   const allEntries: { entry: MergedEntry; db: ScheduleDbName }[] = [];
@@ -386,7 +386,7 @@ function resolveOverlaps(
 
 // --- Render ---
 
-function renderFile(date: string, entries: MergedEntry[]): string {
+export function renderFile(date: string, entries: MergedEntry[]): string {
   // Sort: timed entries by startTime, then all-day at end
   entries.sort((a, b) => {
     if (a.allDay && !b.allDay) return 1;
@@ -467,7 +467,7 @@ async function enrichEntries(entries: MergedEntry[], date: string, dryRun: boole
 
 // --- Tasks.md parsing & merge (todo DB) ---
 
-interface TaskEntry {
+export interface TaskEntry {
   done: boolean;
   title: string;
   rawLine: string; // original line for preservation
@@ -508,7 +508,7 @@ function parseTasksFile(): { header: string; inbox: TaskEntry[]; footer: string 
   return { header, inbox, footer };
 }
 
-function mergeTaskEntries(
+export function mergeTaskEntries(
   notionEntries: NormalizedEntry[],
   inbox: TaskEntry[],
 ): { updatedInbox: TaskEntry[]; newEntries: NormalizedEntry[]; completed: number; added: number; kept: number } {
@@ -634,12 +634,12 @@ function renderTasksFile(header: string, inbox: TaskEntry[], footer: string, new
 
 // --- Dry-run anomaly validation ---
 
-interface DryRunAnomaly {
+export interface DryRunAnomaly {
   entry: string;
   reason: string;
 }
 
-function validateDryRunEntries(entries: MergedEntry[]): DryRunAnomaly[] {
+export function validateDryRunEntries(entries: MergedEntry[]): DryRunAnomaly[] {
   const anomalies: DryRunAnomaly[] = [];
   for (const e of entries) {
     if (e.allDay || !e.startTime) continue;
@@ -1032,7 +1032,9 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error("Error:", err.message);
-  process.exit(1);
-});
+if (import.meta.main) {
+  main().catch((err) => {
+    console.error("Error:", err.message);
+    process.exit(1);
+  });
+}

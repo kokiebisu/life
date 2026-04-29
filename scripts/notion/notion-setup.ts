@@ -3,14 +3,13 @@
  * Notion データベースセットアップ
  *
  * 使い方:
- *   bun run scripts/notion-setup.ts --type articles --parent <PAGE_ID>
- *   bun run scripts/notion-setup.ts --type articles --create-parent "Life Hub"
+ *   bun run scripts/notion-setup.ts --type church_messages --parent <PAGE_ID>
+ *   bun run scripts/notion-setup.ts --type church_messages --create-parent "Life Hub"
  *
  * --create-parent: 親ページを新規作成してその下に DB を作成
  *   (Notion API integration がアクセスできるページ配下に作成されます)
  *
- * 作成後、.env.local に DB ID を追加してください:
- *   NOTION_ARTICLES_DB=xxx
+ * 作成後、.env.local に DB ID を追加してください。
  */
 
 import { getApiKey, notionFetch, parseArgs } from "./lib/notion";
@@ -25,39 +24,6 @@ const DB_SCHEMAS: Record<string, { title: string; properties: Record<string, unk
       "聖書箇所": { rich_text: {} },
       "ポイント": { rich_text: {} },
       "メモ": { rich_text: {} },
-    },
-  },
-  articles: {
-    title: "Articles",
-    properties: {
-      "タイトル": { title: {} },
-      "URL": { url: {} },
-      "ソース": {
-        select: {
-          options: [
-            { name: "Hacker News", color: "orange" },
-            { name: "Zenn", color: "blue" },
-            { name: "note", color: "green" },
-            { name: "Twitter", color: "default" },
-            { name: "Other", color: "gray" },
-          ],
-        },
-      },
-      "Aspect": {
-        multi_select: {
-          options: [
-            { name: "sumitsugi", color: "purple" },
-            { name: "diet", color: "green" },
-            { name: "guitar", color: "orange" },
-            { name: "study", color: "yellow" },
-            { name: "reading", color: "pink" },
-            { name: "fukuoka", color: "red" },
-          ],
-        },
-      },
-      "要約": { rich_text: {} },
-      "既読": { checkbox: {} },
-      "公開日": { date: {} },
     },
   },
 };
@@ -114,8 +80,8 @@ async function main() {
 
   if (!type || !DB_SCHEMAS[type]) {
     console.error("Usage:");
-    console.error("  bun run scripts/notion-setup.ts --type articles --parent <PAGE_ID>");
-    console.error('  bun run scripts/notion-setup.ts --type articles --create-parent "Life Hub"');
+    console.error("  bun run scripts/notion-setup.ts --type church_messages --parent <PAGE_ID>");
+    console.error('  bun run scripts/notion-setup.ts --type church_messages --create-parent "Life Hub"');
     process.exit(1);
   }
 

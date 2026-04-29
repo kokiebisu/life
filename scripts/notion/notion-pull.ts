@@ -928,7 +928,6 @@ async function main() {
       ["NOTION_GYM_DB",            { titleProp: "名前",        label: "gym",             dateProp: "日付" }],
       ["NOTION_MAJIWARI_DB",       { titleProp: "名前",        label: "majiwari",        dateProp: "日付" }],
       ["NOTION_OTHER_DB",          { titleProp: "名前",        label: "other",           dateProp: "日付" }],
-      ["NOTION_ARTICLES_DB",       { titleProp: "タイトル",    label: "articles" }],
       ["NOTION_CHURCH_MESSAGES_DB",{ titleProp: "名前",        label: "church_messages" }],
     ];
     for (const [envKey, conf] of extraDbs) {

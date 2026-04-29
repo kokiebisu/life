@@ -35,7 +35,6 @@
 - `NOTION_INTERVIEW_PREP_DB`
 - `NOTION_STUDY_TOPIC_DB`
 - `NOTION_OTHER_DB`
-- `NOTION_ARTICLES_DB`
 
 `gh` 認証用に `GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}`、タイムゾーン用に `TZ: Asia/Tokyo` をワークフロー env に設定する。
 
@@ -108,7 +107,6 @@ jobs:
       NOTION_INTERVIEW_PREP_DB: ${{ secrets.NOTION_INTERVIEW_PREP_DB }}
       NOTION_STUDY_TOPIC_DB: ${{ secrets.NOTION_STUDY_TOPIC_DB }}
       NOTION_OTHER_DB: ${{ secrets.NOTION_OTHER_DB }}
-      NOTION_ARTICLES_DB: ${{ secrets.NOTION_ARTICLES_DB }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout

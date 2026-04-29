@@ -18,7 +18,7 @@
 import {
   getApiKey, getDbId, getDbIdOptional, getScheduleDbConfigOptional,
   notionFetch, parseArgs,
-  pickTaskIcon, pickArticleIcon, pickCover,
+  pickTaskIcon, pickCover,
 } from "./lib/notion";
 
 const apiKey = getApiKey();
@@ -225,32 +225,6 @@ async function backfillOther(dryRun: boolean, force: boolean) {
   console.log(`  → ${dryRun ? "would update" : "updated"} ${updated}/${pages.length}`);
 }
 
-async function backfillArticles(dryRun: boolean, force: boolean) {
-  const dbId = getDbIdOptional("NOTION_ARTICLES_DB");
-  if (!dbId) { console.log("\n📰 Articles: スキップ（DB未設定）"); return; }
-  const pages = await queryAll(dbId);
-  console.log(`\n📰 Articles: ${pages.length} pages`);
-
-  let updated = 0;
-  for (const page of pages) {
-    if (!force && page.icon && page.cover) continue;
-    const title = page.properties["タイトル"]?.title?.[0]?.plain_text || "";
-    const source = page.properties["ソース"]?.select?.name || "";
-    const aspects = (page.properties.Aspect?.multi_select || []).map((s: any) => s.name).join(",");
-    const icon = pickArticleIcon(source);
-    const cover = pickCover();
-
-    updated++;
-    if (dryRun) {
-      console.log(`  [DRY] ${icon.emoji} ${title.slice(0, 50)}`);
-    } else {
-      await updatePage(page.id, icon, cover);
-      console.log(`  ${icon.emoji} ${title.slice(0, 50)}`);
-    }
-  }
-  console.log(`  → ${dryRun ? "would update" : "updated"} ${updated}/${pages.length}`);
-}
-
 async function main() {
   const { flags, opts } = parseArgs();
   const dryRun = flags.has("dry-run");
@@ -260,7 +234,7 @@ async function main() {
   if (dryRun) console.log("🔍 Dry run mode - no changes will be made\n");
   if (force) console.log("⚡ Force mode - overwriting existing icons/covers\n");
 
-  const targets = db ? [db] : ["tasks", "events", "meals", "todo", "other", "job", "articles"];
+  const targets = db ? [db] : ["tasks", "events", "meals", "todo", "other", "job"];
 
   for (const target of targets) {
     switch (target) {
@@ -270,7 +244,6 @@ async function main() {
       case "todo": await backfillTodo(dryRun, force); break;
       case "other": await backfillOther(dryRun, force); break;
       case "job": await backfillJob(dryRun, force); break;
-      case "articles": await backfillArticles(dryRun, force); break;
       default: console.error(`Unknown db: ${target}`); process.exit(1);
     }
   }

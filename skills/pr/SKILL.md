@@ -113,6 +113,8 @@ If Agent Teams is available but all groups have chain dependencies (each depends
 
 **IMPORTANT**: 必ず worktree を作成してから作業する。main への直接コミット禁止。
 
+> **`cd <worktree>` 禁止 / `git -C` 一択（厳守）** — 詳細は [.ai/rules/git-workflow.md](../../../.ai/rules/git-workflow.md) 参照。Bash の cwd は persist するため `cd .worktrees/...` した後の `git stash pop` / `worktree remove` で別セッションの未コミット変更を巻き込んで喪失する事故が発生済み。**`cd` してよいのは `cd /workspaces/life` だけ。**
+
 For each approved group (in dependency order):
 
 1. **Stash unstaged changes**（あれば）:
@@ -126,19 +128,19 @@ For each approved group (in dependency order):
    ```bash
    BRANCH="<type>/<short-description>"
    git worktree add .worktrees/$BRANCH -b $BRANCH
+   WT=.worktrees/$BRANCH   # 以降は $WT を git -C で指す
    ```
 
-3. **Worktree に変更を適用**:
+3. **Worktree に変更を適用**（`git -C` で cwd を変えない）:
 
    ```bash
-   cd .worktrees/$BRANCH
-   git stash pop   # stash した場合のみ（stash は worktree 間で共有される）
+   git -C $WT stash pop   # stash した場合のみ（stash は worktree 間で共有される）
    ```
 
 4. **Stage only group files**:
 
    ```bash
-   git add <file1> <file2> ...
+   git -C $WT add <file1> <file2> ...
    ```
 
 5. **Commit with conventional commit format**:
@@ -151,16 +153,20 @@ For each approved group (in dependency order):
    - `perf:` - Performance
    - `ci:` - CI/CD
 
+   ```bash
+   git -C $WT commit -m "<type>: <description>"
+   ```
+
 6. **Push branch**:
 
    ```bash
-   git push -u origin HEAD
+   git -C $WT push -u origin HEAD
    ```
 
-7. **Immediately create PR** (DO NOT SKIP THIS):
+7. **Immediately create PR** (DO NOT SKIP THIS) — `gh` は cwd 依存なのでサブシェルで囲む:
 
    ```bash
-   gh pr create --title "<type>: <description>" --body "$(cat <<'EOF'
+   (cd $WT && gh pr create --title "<type>: <description>" --body "$(cat <<'EOF'
    ## Summary
    <2-4 bullet points describing what changed and why>
 
@@ -174,7 +180,7 @@ For each approved group (in dependency order):
 
    Generated with Claude Code
    EOF
-   )"
+   )")
    ```
 
 8. **Monitor CI and merge** (per PR):
@@ -185,11 +191,10 @@ For each approved group (in dependency order):
    gh pr merge <pr-number> --squash --delete-branch
    ```
 
-9. **Worktree cleanup**（必ず main に戻ってから）:
+9. **Worktree cleanup**（cwd は終始 `/workspaces/life`）:
 
    ```bash
-   cd /workspaces/life
-   git worktree remove .worktrees/$BRANCH --force
+   git worktree remove $WT --force
    git branch -D $BRANCH 2>/dev/null || true
    git pull origin main
    ```

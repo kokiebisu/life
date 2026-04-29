@@ -27,6 +27,8 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Run tests
+        env:
+          NOTION_API_KEY: dummy-for-tests
         run: bun test scripts/
 
       - name: Lint devotions

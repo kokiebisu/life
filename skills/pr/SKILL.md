@@ -183,21 +183,24 @@ For each approved group (in dependency order):
    )")
    ```
 
-8. **Monitor CI and merge** (per PR):
+8. **Monitor CI** (per PR):
 
    ```bash
    gh pr checks <pr-number>
    # Wait for all checks to pass
-   gh pr merge <pr-number> --squash --delete-branch
    ```
 
-9. **Worktree cleanup**（cwd は終始 `/workspaces/life`）:
+9. **Worktree cleanup → マージの順（厳守）**（cwd は終始 `/workspaces/life`）:
 
    ```bash
+   # 先に worktree を削除する（branch が checked-out 状態だと --delete-branch が失敗するため）
    git worktree remove $WT --force
-   git branch -D $BRANCH 2>/dev/null || true
+   # その後マージ。--delete-branch は local + remote の両方を削除する
+   gh pr merge <pr-number> --squash --delete-branch
    git pull origin main
    ```
+
+   **Why:** `gh pr merge --delete-branch` は merge 後に local branch も削除しようとする。branch が worktree に checked-out されたままだと local branch 削除に失敗してコマンドが exit 1 になる（merge 自体は成功するが、後続スクリプトが「失敗した」と誤解する原因になる）。worktree を先に削除してから merge することで、`--delete-branch` が local + remote の両方をクリーンに削除できる。
 
 10. If more groups remain, return to substep 1 for the next group.
 
@@ -303,9 +306,18 @@ The lead monitors teammate progress:
 - If a teammate hits CI failure after 5 iterations: mark as blocked, continue with others
 - When all independent teammates finish: proceed to merge
 
-### Phase 4: Merge All
+### Phase 4: Worktree Cleanup → Merge の順（厳守）
 
-Merge all successful PRs:
+`--delete-branch` は branch が worktree に checked-out 状態だと local 削除に失敗するため、**worktree 削除を先に行う。**
+
+**worktree 削除（branch を free にする）:**
+
+```bash
+# 各 worktree を削除（branch がどこにも checked-out されていない状態にする）
+git worktree remove /workspace/.worktrees/pr-group-{n} --force
+```
+
+**マージ（local + remote の branch も削除）:**
 
 ```bash
 # For each PR (no dependency order needed -- they're independent)
@@ -320,19 +332,10 @@ If there are groups that depend on now-merged groups:
 2. Repeat Step 6B Phase 1-4 for the next batch of unblocked groups
 3. Continue until all groups are processed
 
-### Phase 6: Worktree Cleanup
-
-**3 SEPARATE Bash calls per worktree (CRITICAL -- never chain):**
+### Phase 6: Final Sync
 
 ```bash
-# Call 1: Ensure CWD is safe
-cd /workspace
-
-# Call 2: Remove worktree
-git worktree remove /workspace/.worktrees/pr-group-{n} --force
-
-# Call 3: Clean up branches and pull
-git branch -D pr-group-{n} 2>/dev/null; git pull origin main
+git pull origin main
 ```
 
 ### Phase 7: Dismiss Team
@@ -387,9 +390,12 @@ Update DASHBOARD.md if applicable.
 3. If CI fails: fix iteratively, go back to 2
 4. Check for PR review comments (`gh pr view <number> --comments`)
 5. Address relevant comments, push fixes, go back to 2
-6. Merge (`gh pr merge <number> --squash --delete-branch`)
-7. Switch to main (`git checkout main && git pull origin main`)
-8. Clean up merged branches (see below)
+6. **worktree を先に削除**（`git worktree remove $WT --force`）— branch を free にする
+7. Merge (`gh pr merge <number> --squash --delete-branch`) — worktree 削除後に実行
+8. `git pull origin main`
+9. Clean up merged branches (see below)
+
+> **Why この順序:** `gh pr merge --delete-branch` は merge 後に local branch を削除しようとする。branch が worktree に checked-out されたままだと local 削除に失敗してコマンドが exit 1 を返す（merge 自体は成功するが、自動化スクリプトが失敗扱いする原因になる）。
 
 ### When to merge automatically
 - Docs, config, small fixes, refactoring (no behavior changes)
@@ -399,14 +405,15 @@ Update DASHBOARD.md if applicable.
 
 ### Creating Multiple PRs from Grouped Changes
 For each group:
-1. `git checkout -b <branch-name>`
-2. `git add <specific-files>` (NOT `git add .`)
-3. `git status` — verify only intended files
-4. `git commit -m "..."`
-5. `git push -u origin HEAD && gh pr create ...`
-6. `gh pr merge <number> --squash --delete-branch`
-7. `git checkout main && git pull origin main`
-8. Repeat
+1. `git worktree add .worktrees/<branch-name> -b <branch-name>`
+2. `git -C $WT add <specific-files>` (NOT `git add .`)
+3. `git -C $WT status` — verify only intended files
+4. `git -C $WT commit -m "..."`
+5. `git -C $WT push -u origin HEAD && (cd $WT && gh pr create ...)`
+6. `git worktree remove $WT --force` — **先に worktree 削除**
+7. `gh pr merge <number> --squash --delete-branch` — **その後マージ**
+8. `git pull origin main`
+9. Repeat
 
 ### Post-Merge Cleanup
 ```bash

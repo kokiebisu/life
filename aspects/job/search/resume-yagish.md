@@ -123,12 +123,12 @@ Ruby, Ruby on Rails, TypeScript, Terraform, Kubernetes, ArgoCD, AWS, GitHub Acti
 
 **プロジェクトや業務内容の説明**
 
-広告ターゲット選定の検索・レコメンド機能を提供する新規マイクロサービスをリード設計・実装。所属チームは約10名のエンジニア構成。既存のAds Manager（Flaskモノリス）から疎結合に切り出し、Goで新規構築しました。
+広告ターゲット選定の検索・レコメンド機能を提供する新規マイクロサービスをリード設計・実装。所属チームは約4名のエンジニア構成。既存のAds Manager（Flaskモノリス）から疎結合に切り出し、Goで新規構築しました。
 
 【設計・実装】
 - 入力の有無 × ユーザー履歴の有無で3経路に分岐: 入力あり → Elasticsearch（OpenSearch）で検索 / 入力なし & 経験ユーザー → LLMエンドポイント（AI基盤チーム提供）でパーソナライズ / 入力なし & 未経験ユーザー → Top 5 Popular（cronで月次集計、Redisキャッシュから取得）
 - LLMエンドポイント障害時はTop 5 PopularへフォールバックするML切替設計
-- 言語選定: Flaskモノリスからの疎結合化を物理的に担保するためGoで新規構築（言語境界＝サービス境界）。LLM・ES・Cacheへの並列外部呼び出しにgoroutineの並列モデルがフィット
+- 言語選定: 3軸でGoを採用 — (1) Flaskモノリスからの疎結合化を物理的に担保（言語境界＝サービス境界）、(2) AdsランカーチームがGoへ直近リプレイス済みでboilerplate・運用知見を流用可能、(3) LLM・ES・Cacheへの並列外部呼び出しにgoroutineの並列モデルがフィット
 - Elasticsearchのインデックス設計・クエリ最適化、RedisキャッシュとElastiCacheクラスタ構築（DevOpsと協力）、ECS / S3 / RDSを組み合わせたスケーラブルなアーキテクチャ、TerraformによるIaC化
 - APIテスト・ユニットテスト・インテグレーションテストを整備
 

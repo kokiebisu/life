@@ -49,10 +49,8 @@
 /event                   # イベント登録
 
 # その他
-/goal                    # 壁打ちして新しい目標を追加
 /pr                      # 変更をグループ化してPR作成
 /tidy                    # 指示ファイルの重複・配置を整理
-/cache                   # キャッシュ管理（status / clear / analyze）
 /learn                   # ミスからの学習・再発防止
 /automate                # セッション内容を仕組み化（skill/script/rule/hook 化を計画→実装）
 /analyze                 # ルール→コード リファクタリング分析

@@ -77,6 +77,7 @@ memory-bank/             # セッション間の記憶（decisions.md）
 
 - コミット形式・PR ワークフロー → `.ai/rules/git-workflow.md`
 - セキュリティガイドライン → `.ai/rules/security.md`
+- 認証（OAuth token のみ / API Key 禁止）→ `.ai/rules/auth.md`
 
 ## Fork 管理（life-os との同期）
 

@@ -31,10 +31,12 @@ main worktree の場合のみ:
      - 生成例: `bash -c "openssl rand -hex 2"` → `a3f7`
      - または: `head -c 4 /dev/urandom | base32 | tr '[:upper:]' '[:lower:]' | tr -d '=' | head -c 5`
    - 例: `kondate/week-plan-a3f7`、`fukushuu/review-x9k2`、`gym/morning-7q4d`、`feat/notion-sync-b2e1`
-2. **（任意）コンテキスト保存**: branch 名だけでは表現できない複雑な context（特定ファイル参照、過去会話の要点等）が必要な場合のみ、`.claude/pending-context/<branch>.md` に markdown で書き出す
+2. **コンテキスト保存**: ユーザー発言の意図を `.claude/pending-context/<branch>.md` に markdown で書き出す
+   - branch 名（prefix）だけでは「どの skill を起動するか」しか伝わらない。**ニュアンス・前提・条件**は明示的に書かないと新セッションには届かない（main セッションの会話履歴は新セッションに引き継がれない）
+   - 例: 「明日の朝食、卵使い切りたい」 → branch 名 `kondate/eggs-leftover-a3f7` だけだと「献立を考える」しか伝わらない。pending-context に「卵使い切り方針、明日の朝食限定」を書く
    - 新ウィンドウのセッションが起動時に SessionStart hook（[.claude/hooks/session-start-pending-context.sh](../../.claude/hooks/session-start-pending-context.sh)）でこのファイルを systemMessage として読み込む
    - 読まれたファイルは hook 側で削除される（一回読み）
-   - 通常は「Spawn 先での挙動」の prefix → skill 自動起動で十分なので、このステップはスキップして OK
+   - **省略してよいケース**: ユーザー発言が aspect 名だけ（「fukushuu やろう」「ジムログしたい」）で追加のニュアンス・前提・条件が無い場合
 3. `Bash` で `./dev <branch>` を実行（既存の worktree mode を呼ぶ）
 4. ユーザーに1行で「新ウィンドウで `<branch>` セッション開いた。続きはそっちで」と返す
 
@@ -72,9 +74,9 @@ cwd が `.worktrees/<prefix>/...` のセッションは、起動直後に **cwd 
 
 ### Why
 
-- `./dev <branch>` で起動したセッションは「何をしに開かれたか」を branch 名で表明している
-- prefix を見れば spawn 元の意図（どの aspect に取り組むか）が分かる
-- pending-context のような追加機構なしに、命名規則だけで自動 skill 起動が成立する
+- `./dev <branch>` で起動したセッションは「何の aspect の作業か」を branch 名で表明している
+- prefix を見れば「どの skill を起動するか」は決まる
+- ただし、ニュアンス・前提・条件は branch 名では表現できない → pending-context（spawn 元 step 2）と組み合わせて初めて意図が完全に伝わる
 
 ## 判断しないケース（= spawn しない）
 

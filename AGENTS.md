@@ -268,6 +268,17 @@ Types: feat, fix, refactor, docs, chore
 
 **PR を出すときは必ず git worktree を使う。** main への直接コミット・プッシュ禁止。
 
+### `cd <worktree>` 禁止 / `git -C` 一択（厳守）
+
+worktree 内で git 操作するときは**絶対に `cd .worktrees/<branch>` しない。** 必ず `git -C .worktrees/<branch> <cmd>` を使う。
+
+- **理由:** Bash tool の cwd は呼び出し間で persist する。worktree に `cd` した後の `git stash pop` / `git status` / `git worktree remove` 等が、main を意図していたのに worktree を対象にしてしまう。`--force remove` と組み合わさると別セッションの未コミット変更を消失させる
+- **過去のインシデント:** 2026-04-29 PR #605 セッションで unrelated changes を worktree に巻き込んで force remove で喪失（dangling stash から復旧）
+- **唯一の例外:** `gh pr create` のように `git -C` 形式を持たないコマンドは `(cd /workspaces/life/.worktrees/$BRANCH && gh pr create ...)` のように**サブシェル**で囲む。サブシェルは exit すると cwd が戻るので persist しない
+- **`cd` してよいのは `cd /workspaces/life`（main に戻すとき）だけ。** 他の `cd` は禁止
+
+### 標準フロー（コピペ用）
+
 ```bash
 # 1. unstaged changes があれば stash
 git stash
@@ -275,18 +286,17 @@ git stash
 # 2. worktree を作成（main から feature ブランチ）
 BRANCH="<type>/<short-description>"
 git worktree add .worktrees/$BRANCH -b $BRANCH
+WT=.worktrees/$BRANCH
 
-# 3. worktree 内で作業
-cd .worktrees/$BRANCH
-git stash pop   # stash した場合のみ
-git add <files>
-git commit -m "..."
-git push -u origin HEAD
-gh pr create ...
+# 3. worktree 内で作業（git -C で cwd を変えない）
+git -C $WT stash pop   # stash した場合のみ
+git -C $WT add <files>
+git -C $WT commit -m "..."
+git -C $WT push -u origin HEAD
+(cd $WT && gh pr create ...)   # gh は cwd 依存なのでサブシェル
 
-# 4. マージ後に worktree を削除
-cd /workspaces/life
-git worktree remove .worktrees/$BRANCH --force
+# 4. マージ後に worktree を削除（cwd は終始 /workspaces/life）
+git worktree remove $WT --force
 git branch -D $BRANCH 2>/dev/null || true
 git pull origin main
 ```

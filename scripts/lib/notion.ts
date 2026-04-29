@@ -316,7 +316,6 @@ const TASK_ICON_KEYWORDS: [RegExp, string][] = [
   [/料理|自炊|cook/i, "🍳"],
   [/勉強|学習|study/i, "📖"],
   [/読書|book|reading/i, "📚"],
-  [/sumitsugi/i, "🧶"],
   [/面接|interview/i, "👔"],
   [/ミーティング|会議|MTG|meeting|壁打ち/i, "🤝"],
   [/医者|病院|歯医者/i, "🏥"],

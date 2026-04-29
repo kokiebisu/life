@@ -25,7 +25,7 @@
       }
     }
   },
-  "postCreateCommand": "git submodule update --init --recursive && git config --global worktree.guessRemote true && git update-index --assume-unchanged projects/sumitsugi && ./scripts/gen-agents-md.sh",
+  "postCreateCommand": "git config --global worktree.guessRemote true && ./scripts/gen-agents-md.sh",
   "remoteUser": "node",
   "mounts": [
     "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/node/.ssh,type=bind,consistency=cached",

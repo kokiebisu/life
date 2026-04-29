@@ -123,13 +123,13 @@ Ruby, Ruby on Rails, TypeScript, Terraform, Kubernetes, ArgoCD, AWS, GitHub Acti
 
 **プロジェクトや業務内容の説明**
 
-広告の消費者ターゲットにレコメンド機能を追加し、ユーザーが最適な追加ターゲットを受け取れる導線を構築するプロジェクトをリード。所属チームは約10名のエンジニア構成。バックエンドアーキテクチャの設計・技術選定・実装・テストまで担当しました。
+広告ターゲット選定の検索・レコメンド機能を提供する新規マイクロサービスをリード設計・実装。所属チームは約10名のエンジニア構成。既存のAds Manager（Flaskモノリス）から疎結合に切り出し、Goで新規構築しました。
 
 【設計・実装】
-- 既存FlaskからFastAPI（ASGI）へ移行し、非同期I/Oでの並列処理に対応
-- 未経験ユーザー向けTop 5 Popular（cronで月次集計）と経験ユーザー向けPersonalized Suggestions（AI基盤チームのLLM連携）の2段階設計を採用
-- MLエンドポイント障害時にTop 5 Popularへ自動切替するフォールバック設計
-- Elasticsearchのインデックス作成・クエリ最適化、RedisキャッシュとElastiCacheクラスタ構築（DevOpsと協力）、ECS / S3 / RDSを組み合わせたスケーラブルなアーキテクチャ、TerraformによるIaC化
+- 入力の有無 × ユーザー履歴の有無で3経路に分岐: 入力あり → Elasticsearch（OpenSearch）で検索 / 入力なし & 経験ユーザー → LLMエンドポイント（AI基盤チーム提供）でパーソナライズ / 入力なし & 未経験ユーザー → Top 5 Popular（cronで月次集計、Redisキャッシュから取得）
+- LLMエンドポイント障害時はTop 5 PopularへフォールバックするML切替設計
+- 言語選定: Flaskモノリスからの疎結合化を物理的に担保するためGoで新規構築（言語境界＝サービス境界）。LLM・ES・Cacheへの並列外部呼び出しにgoroutineの並列モデルがフィット
+- Elasticsearchのインデックス設計・クエリ最適化、RedisキャッシュとElastiCacheクラスタ構築（DevOpsと協力）、ECS / S3 / RDSを組み合わせたスケーラブルなアーキテクチャ、TerraformによるIaC化
 - APIテスト・ユニットテスト・インテグレーションテストを整備
 
 【成果】
@@ -139,7 +139,7 @@ Ruby, Ruby on Rails, TypeScript, Terraform, Kubernetes, ArgoCD, AWS, GitHub Acti
 - 実装は締切より2週間早く完了。PMのスコープ拡大提案も技術分析の上で優先順位を再調整しプロジェクトを軌道に戻した
 
 【使用技術】
-Python, Go, TypeScript, React, SCSS, Elasticsearch, Redis, AWS (ECS, S3, RDS, ElastiCache, OpenSearch), Docker, PostgreSQL, MySQL
+Go, Python, TypeScript, React, SCSS, Elasticsearch, Redis, AWS (ECS, S3, RDS, ElastiCache, OpenSearch), Docker, PostgreSQL, MySQL
 
 ---
 

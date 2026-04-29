@@ -830,8 +830,12 @@ main worktree の場合のみ:
      - 生成例: `bash -c "openssl rand -hex 2"` → `a3f7`
      - または: `head -c 4 /dev/urandom | base32 | tr '[:upper:]' '[:lower:]' | tr -d '=' | head -c 5`
    - 例: `kondate/week-plan-a3f7`、`fukushuu/review-x9k2`、`gym/morning-7q4d`、`feat/notion-sync-b2e1`
-2. `Bash` で `./dev <branch>` を実行（既存の worktree mode を呼ぶ）
-3. ユーザーに1行で「新ウィンドウで `<branch>` セッション開いた。続きはそっちで」と返す
+2. **（任意）コンテキスト保存**: branch 名だけでは表現できない複雑な context（特定ファイル参照、過去会話の要点等）が必要な場合のみ、`.claude/pending-context/<branch>.md` に markdown で書き出す
+   - 新ウィンドウのセッションが起動時に SessionStart hook（[.claude/hooks/session-start-pending-context.sh](../../.claude/hooks/session-start-pending-context.sh)）でこのファイルを systemMessage として読み込む
+   - 読まれたファイルは hook 側で削除される（一回読み）
+   - 通常は「Spawn 先での挙動」の prefix → skill 自動起動で十分なので、このステップはスキップして OK
+3. `Bash` で `./dev <branch>` を実行（既存の worktree mode を呼ぶ）
+4. ユーザーに1行で「新ウィンドウで `<branch>` セッション開いた。続きはそっちで」と返す
 
 それ以上の応答は不要。spawn 後の続きの作業は新ウィンドウのセッションで行う。
 
@@ -882,8 +886,7 @@ cwd が `.worktrees/<prefix>/...` のセッションは、起動直後に **cwd 
 
 ## Out of scope（今後の検討）
 
-- **複雑な context 引き継ぎ**: branch 名で表現できない context（特定ファイル参照、過去会話の要点等）が必要な場合は別途検討。pending-context 機構（SessionStart hook 経由）の追加が候補だが、現状は branch prefix → skill 起動で実用的に対応できることが多い
-- **完全自動進行**: skill 起動後にユーザー指示を待たず Claude が走り続ける挙動は、各 skill 側の責務（skill 内で進めるかユーザー確認を挟むかを判断する）
+- **完全自動進行**: skill 起動後にユーザー指示を待たず Claude が走り続ける挙動は、各 skill 側の責務（skill 内で進めるかユーザー確認を挟むかを判断する）。新セッション起動時に最初の prompt を自動投入する仕組みは VS Code 拡張仕様の調査後に検討
 
 ---
 

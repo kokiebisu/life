@@ -115,7 +115,7 @@ const TITLE_KEYWORD_LIST: { keywords: (string | RegExp)[]; canonical: string }[]
 ];
 
 /** タイトルを TITLE_KEYWORD_LIST に基づいて正規化する */
-function normalizeByKeywordList(title: string): string {
+export function normalizeByKeywordList(title: string): string {
   for (const entry of TITLE_KEYWORD_LIST) {
     for (const kw of entry.keywords) {
       const matched = typeof kw === "string" ? title.includes(kw) : kw.test(title);
@@ -294,7 +294,9 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error("Error:", err.message);
-  process.exit(1);
-});
+if (import.meta.main) {
+  main().catch((err) => {
+    console.error("Error:", err.message);
+    process.exit(1);
+  });
+}

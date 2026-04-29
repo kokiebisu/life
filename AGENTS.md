@@ -764,6 +764,7 @@ bun run scripts/notion/notion-sync-tasks.ts             # 実行
 - **`/from-notion`** — Notion の変更をリポジトリの md ファイルに逆同期するとき。Notion 上で時間変更・完了マーク・フィードバックをした後に使う。 → `skills/from-notion/SKILL.md`
 - **`/fukushuu`** — 学習ノートを復習したいとき。「復習しよう」「スペーシドリピティションやりたい」などに使う。忘却曲線に基づいて期日が来たノートをクイズ形式で復習する。 → `skills/fukushuu/SKILL.md`
 - **`/gym`** — ジムセッションの予定登録（/gym plan）と実績ログ記録（/gym log）。引数: $ARGUMENTS → `skills/gym/SKILL.md`
+- **`/humanize-ja`** — 履歴書・職務経歴書・面接対策・採用担当者向けメッセージなど、外部に出す日本語文章を `aspects/job/` 配下で生成・編集するときに使う。AI 生成っぽい文章（「〜を担当」「〜を実現」「〜という二重の技術的不確実性」など）を回避し、ケン本人の voice に寄せる。`/humanize <file>` で既存ファイルを post-hoc にリライトできる。 → `skills/humanize-ja/SKILL.md`
 - **`/interview-prep`** — 技術面接の対話式学習セッション。「面接対策やろう」「Day 1 やろう」「Go goroutine やろう」「DB やろう」「システム設計やろう」など、就職活動の技術面接対策を進めたいときに起動する。引数: $ARGUMENTS → `skills/interview-prep/SKILL.md`
 - **`/kondate`** — 献立を計画したいとき。「献立考えて」「食事プランを立てたい」「何食分か作り置き計画したい」などに使う。在庫ベースで提案し Notion meals DB と daily ファイルに一括登録する。 → `skills/kondate/SKILL.md`
 - **`/learn`** — Claude のミスを指摘して再発防止策を適用するとき。「また同じミスをした」「ルールに追加して」「再発防止して」などに使う。 → `skills/learn/SKILL.md`

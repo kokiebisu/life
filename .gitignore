@@ -24,4 +24,7 @@ docs/automate/
 # beads (bd) defer queue — local Dolt DB, not committed
 .beads/
 
+# Auto session spawn pending-context（.ai/rules/session-spawn.md 参照）— 一回読みで消える
+.claude/pending-context/
+
 *.go

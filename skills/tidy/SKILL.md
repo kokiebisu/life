@@ -14,8 +14,8 @@ description: 指示ファイル（CLAUDE.md・rules・commands・memory）の重
 - `/workspaces/life/.claude/rules/*.md` — 全セッションに自動ロード
 - `/home/node/.claude/projects/-workspaces-life/memory/MEMORY.md` — 自動ロード（200行制限）
 
-### コマンド実行時のみロード（= コスト低）
-- `/workspaces/life/.claude/commands/*.md` — スキル起動時のみ
+### スキル起動時のみロード（= コスト低）
+- `/workspaces/life/.claude/skills/*/SKILL.md` — スキル起動時のみ
 - `aspects/*/CLAUDE.md` — そのディレクトリ作業時のみ
 
 ### セッション開始時に読むファイル（= 明示的 Read）
@@ -27,10 +27,9 @@ description: 指示ファイル（CLAUDE.md・rules・commands・memory）の重
 
 ```
 CLAUDE.md
-.claude/rules/*.md
-.claude/commands/*.md
+.ai/rules/*.md
+.claude/skills/*/SKILL.md
 aspects/*/CLAUDE.md (再帰的に検索)
-memory-bank/*.md
 /home/node/.claude/projects/-workspaces-life/memory/MEMORY.md
 ```
 
@@ -42,8 +41,8 @@ memory-bank/*.md
 同じ情報が複数ファイルに書かれていないか。特に:
 - 優先度リスト（sumitsugi > 運動 > ...）が複数箇所にないか
 - ルーティンスケジュールが複数箇所にないか
-- チームメンバー一覧が commands/ と aspects/CLAUDE.md の両方にないか
-- Notion コマンド例が rules/ と commands/ で重複していないか
+- チームメンバー一覧が skills/ と aspects/*/CLAUDE.md の両方にないか
+- Notion コマンド例が rules/ と skills/ で重複していないか
 - ユーザー状況が memory-bank/ と MEMORY.md で重複していないか
 
 ### 2b. 配置の問題

@@ -20,7 +20,6 @@ Glob で `aspects/study/**/notes/*.md` を取得し、以下を**除外**する:
 - `**/CLAUDE.md`
 - `**/README.md`
 - `**/roadmap.md`
-- `aspects/study/team/**`
 
 各ノートを Read し、`## ❓ 自分への質問（コーネル式キュー）` セクションの有無をチェックする。
 

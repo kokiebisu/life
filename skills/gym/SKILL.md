@@ -57,7 +57,7 @@ bun run scripts/gym/sync-notion-to-md.ts
 
 ```bash
 # 1. その日の既存予定をすべて確認する（厳守）
-bun run scripts/notion-list.ts --date YYYY-MM-DD
+bun run scripts/notion/notion-list.ts --date YYYY-MM-DD
 
 # 2. 同名エントリの重複チェック
 bun run scripts/validate-entry.ts --date YYYY-MM-DD --title "ジム" --start HH:MM --end HH:MM

@@ -61,7 +61,6 @@ Glob で `aspects/study/**/*.md` を取得し、以下を**除外**する:
 - `**/tracker.md`（進捗管理・10日スケジュール等のメタ文書）
 - `**/qa-bank.md`（独自Q&Aバンクは別機構で運用）
 - `**/system-design-chapters.md`（Chapter優先度マップ・メタ参照）
-- `aspects/study/team/**`
 
 残ったノートを以下の2カテゴリに分類する:
 
@@ -265,7 +264,7 @@ Notion 側の更新に失敗した場合、md は更新済みのまま **「Noti
 
 ```json
 {
-  "aspects/study/system-design/fundamentals/scale-from-zero.md": {
+  "aspects/study/<note-path>.md": {
     "last_reviewed": "YYYY-MM-DD",
     "interval_days": 3,
     "review_count": 2,

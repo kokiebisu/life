@@ -1,6 +1,7 @@
 {
   "name": "life",
   "module": "index.ts",
+  "license": "MIT",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "setup": "bun run scripts/setup.ts"

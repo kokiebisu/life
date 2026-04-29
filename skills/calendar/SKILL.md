@@ -29,17 +29,17 @@ Notion カレンダーの予定を取得・追加する。
 ## 予定の取得
 
 ```bash
-bun run scripts/notion-list.ts                    # 今日の予定
-bun run scripts/notion-list.ts --days 7           # 今後7日間
-bun run scripts/notion-list.ts --date 2026-02-14  # 指定日
-bun run scripts/notion-list.ts --json             # JSON出力
+bun run scripts/notion/notion-list.ts                    # 今日の予定
+bun run scripts/notion/notion-list.ts --days 7           # 今後7日間
+bun run scripts/notion/notion-list.ts --date 2026-02-14  # 指定日
+bun run scripts/notion/notion-list.ts --json             # JSON出力
 ```
 
 ## 予定の追加
 
 ```bash
-bun run scripts/notion-add.ts --title "タイトル" --date YYYY-MM-DD --start HH:MM --end HH:MM
-bun run scripts/notion-add.ts --title "タイトル" --date YYYY-MM-DD --allday
+bun run scripts/notion/notion-add.ts --title "タイトル" --date YYYY-MM-DD --start HH:MM --end HH:MM
+bun run scripts/notion/notion-add.ts --title "タイトル" --date YYYY-MM-DD --allday
 ```
 
 説明はページ作成後に `notion-update-page` の `replace_content` で本文に書く。
@@ -56,7 +56,7 @@ bun run scripts/notion-add.ts --title "タイトル" --date YYYY-MM-DD --allday
 
 | 項目 | DB | 理由 |
 |------|-----|------|
-| 食事（朝食・昼食・夕食） | meals | 週次献立（`aspects/diet/weekly/`）からメニュー名・kcal を取得してタイトルに反映 |
+| 食事（朝食・昼食・夕食） | meals | 献立履歴（`aspects/diet/kondate-history.md`）からメニュー名・kcal を取得してタイトルに反映 |
 | 買い出し・買い物 | groceries | 食材・日用品の買い出し。meals DB には入れない |
 | それ以外のルーティン | routine | 通常のルーティン |
 

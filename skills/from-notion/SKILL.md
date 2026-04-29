@@ -38,16 +38,16 @@ pull 後、自動解決された `conflictResolutions` を確認:
 
 ```bash
 # プレビュー
-bun run scripts/notion-pull.ts --dry-run
+bun run scripts/notion/notion-pull.ts --dry-run
 
 # 実行
-bun run scripts/notion-pull.ts
+bun run scripts/notion/notion-pull.ts
 
 # 特定日
-bun run scripts/notion-pull.ts --date $ARGUMENTS --dry-run
+bun run scripts/notion/notion-pull.ts --date $ARGUMENTS --dry-run
 
 # エンリッチなし
-bun run scripts/notion-pull.ts --no-enrich
+bun run scripts/notion/notion-pull.ts --no-enrich
 ```
 
 ## Cross-DB 重複自動解決

@@ -144,10 +144,10 @@
 
 ```bash
 # 標準（レシピ自動生成あり）
-bun run scripts/notion-add.ts --db meals --title "鶏むね肉ソテー" --date 2026-02-26 --start 12:00 --end 13:00
+bun run scripts/notion/notion-add.ts --db meals --title "鶏むね肉ソテー" --date 2026-02-26 --start 12:00 --end 13:00
 
 # レシピ不要な場合（外食・他人作など）
-bun run scripts/notion-add.ts --db meals --title "豚キムチ・はらちゃん作" --date 2026-02-26 --start 20:00 --end 21:00 --no-recipe
+bun run scripts/notion/notion-add.ts --db meals --title "豚キムチ・はらちゃん作" --date 2026-02-26 --start 20:00 --end 21:00 --no-recipe
 ```
 
 **自動スキップされるパターン:** 外食、コンビニ、〇〇作、カップ、残り物、テイクアウト、出前、デリバリー
@@ -307,10 +307,10 @@ Notion 食事DB の `フィードバック` プロパティで食後の感想を
 
 ```bash
 # 日付指定で再生成
-bun run scripts/notion-grocery-gen.ts --date 2026-02-18
+bun run scripts/notion/notion-grocery-gen.ts --date 2026-02-18
 
 # プレビュー（Notionに書き込まない）
-bun run scripts/notion-grocery-gen.ts --date 2026-02-18 --dry-run
+bun run scripts/notion/notion-grocery-gen.ts --date 2026-02-18 --dry-run
 ```
 
 **なぜ手動編集NG:**
@@ -478,9 +478,9 @@ bun run scripts/notion-grocery-gen.ts --date 2026-02-18 --dry-run
 `notion-grocery-gen.ts` で daily 献立から買い出しリスト本文を自動生成できる:
 
 ```bash
-bun run scripts/notion-grocery-gen.ts --page-id <id>       # ページ指定
-bun run scripts/notion-grocery-gen.ts --date 2026-02-17     # 日付から検索
-bun run scripts/notion-grocery-gen.ts --date 2026-02-17 --dry-run  # プレビュー
+bun run scripts/notion/notion-grocery-gen.ts --page-id <id>       # ページ指定
+bun run scripts/notion/notion-grocery-gen.ts --date 2026-02-17     # 日付から検索
+bun run scripts/notion/notion-grocery-gen.ts --date 2026-02-17 --dry-run  # プレビュー
 ```
 
 **スクリプトは自動的に `aoba-prices.csv` を参照して価格を見積もる。**

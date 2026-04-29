@@ -49,7 +49,7 @@ bun run scripts/validate-entry.ts --date YYYY-MM-DD --title "勉強" --start HH:
 カテゴリ・本・Chapter を渡すと callout メタ情報も自動で書き込まれる:
 
 ```bash
-bun run scripts/notion-add.ts --title "勉強" --date YYYY-MM-DD --start HH:MM --end HH:MM --db study \
+bun run scripts/notion/notion-add.ts --title "勉強" --date YYYY-MM-DD --start HH:MM --end HH:MM --db study \
   --category "<カテゴリ名>" --book "<本のタイトル>" --chapter "<数字>"
 ```
 

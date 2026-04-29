@@ -29,7 +29,7 @@ $ARGUMENTS — 章番号 or 日付（省略可。省略時は自動検出）
 
 1. **前回の章を確認する**
    ```bash
-   ls aspects/devotions/2*.md | sort | tail -1
+   find aspects/devotions -name "*.md" | sort | tail -1
    ```
    最新ファイルを読んで前回の章番号を取得する（推測しない）
 
@@ -99,7 +99,7 @@ $ARGUMENTS — 章番号 or 日付（省略可。省略時は自動検出）
 3. **Notion に同期する**
    - Notion **Devotion DB**（`NOTION_DEVOTION_DB`）の当日のエントリを探す:
      ```bash
-     bun run scripts/notion-list.ts --date $(TZ=Asia/Tokyo date +%Y-%m-%d) --json
+     bun run scripts/notion/notion-list.ts --date $(TZ=Asia/Tokyo date +%Y-%m-%d) --json
      ```
    - エントリが見つかったら（仮置き enrich フロー）:
      - `notion-update-page` の `replace_content` でページ本文にローカル md と同じ内容を書き出す（省略・要約しない）
@@ -113,7 +113,7 @@ $ARGUMENTS — 章番号 or 日付（省略可。省略時は自動検出）
      - **終了時刻**: `TZ=Asia/Tokyo date +"%H:%M"` で現在時刻を取得して使う
      - **ユーザーに時刻を聞かない（厳守）**
      ```bash
-     bun run scripts/notion-add.ts --db devotion --title "デボーション" --date YYYY-MM-DD --start HH:MM --end HH:MM
+     bun run scripts/notion/notion-add.ts --db devotion --title "デボーション" --date YYYY-MM-DD --start HH:MM --end HH:MM
      ```
      その後 `notion-update-page` で以下を設定する:
      - Book（書籍名）と Chapter（数値）。Book の選択肢にない書籍は `notion-update-data-source` で追加してから設定する

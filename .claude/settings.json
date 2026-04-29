@@ -20,6 +20,14 @@
             "command": "bun run scripts/study-status.ts | jq -Rsc 'rtrimstr(\"\\n\") | select(. != \"\") | {systemMessage: .}'"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/session-start-pending-context.sh"
+          }
+        ]
       }
     ],
     "PostToolUse": [

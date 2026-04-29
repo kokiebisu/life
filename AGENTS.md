@@ -826,8 +826,12 @@ main worktree の場合のみ:
 1. branch 名を生成
    - 命名規則: `<aspect>/<short-kebab>`
    - 例: `kondate/week-plan`、`feat/notion-sync`、`gym/morning-routine`
-2. `Bash` で `./dev <branch>` を実行（既存の worktree mode を呼ぶ）
-3. ユーザーに1行で「新ウィンドウで `<branch>` セッション開いた。続きはそっちで」と返す
+2. **コンテキスト保存**: `.claude/pending-context/<branch>.md` に「やりたいこと + 必要 context」を markdown で書き出す
+   - 新ウィンドウのセッションが起動時に SessionStart hook（[.claude/hooks/session-start-pending-context.sh](../../.claude/hooks/session-start-pending-context.sh)）でこのファイルを systemMessage として読み込む
+   - 読まれたファイルは hook 側で削除される（一回読み）
+   - 内容例: 「明日の献立を考えたい。fridge.md を確認して、月曜〜金曜の主菜を提案する」
+3. `Bash` で `./dev <branch>` を実行（既存の worktree mode を呼ぶ）
+4. ユーザーに1行で「新ウィンドウで `<branch>` セッション開いた。続きはそっちで」と返す
 
 それ以上の応答は不要。spawn 後の続きの作業は新ウィンドウのセッションで行う。
 
@@ -842,7 +846,6 @@ main worktree の場合のみ:
 
 ## Out of scope（今後の拡張）
 
-- 新セッションへのコンテキスト引き継ぎは未実装。次フェーズで `.claude/pending-context/<branch>.md` 経由で引き継ぐ予定
 - 新ウィンドウでの完全自動進行（最初の prompt を自動投入）は VS Code 拡張仕様の調査後に検討
 
 ---

@@ -1,5 +1,20 @@
 # 面接ストーリー（STAR形式）
 
+## 採用理由 → ストーリー対応表
+
+面接相手の採用動機を察したら、対応するストーリーを即出す。「メイン」がそのテーマの主役、「サブ」は補強材料。
+
+| # | 採用理由 | メイン | サブ | アピールの核 |
+|---|---------|-------|-----|------------|
+| ① | **馬力**（実行リソース） | Story 5: AI駆動開発 | Story 9: CI/CD 70%短縮、Story 8: Coinmiles引き継ぎ | 3名×7ヶ月で1,000コース・6,000動画SaaSをリリース / CI 約2時間→ 70%短縮 |
+| ② | **多様な考え・知見** | Story 1: Recommendation (Go版) | Story 3: OIDC、Story 2: 従業員マスタ統合 | CAP / RPO・RTO / ダブルミーニング回避 / back-of-envelope / 既存DB制約をセキュリティ境界として読み替える |
+| ③ | **カルチャー作り** | Story 5: AI駆動開発 | Story 6: スクラム立て直し、Story 7: 構造を変える | 個人技ではなくチームの仕組みに落とす（`.claude` 共有、PR粒度command、ペアプロ、意思決定権限の明文化） |
+| ④ | **チームの穴を埋める** | Story 8: Coinmiles引き継ぎ | Story 4: EKS統合、Story 7: 構造を変える | CTO+リード退職の穴に自ら志願 / インフラ運用負荷を統合で解消 / 信頼崩壊を構造で埋める |
+| ⑤ | **育成** | Story 6: スクラム立て直し | Story 5: AI駆動開発、Story 7: 設計レビューのオーナーシップ | ペアプロでドメイン継承、ジュニアが自走するまでの仕組み（粒度・参加・権限） |
+| ⑥ | **利益を出せるか** | Story 1: Recommendation | Story 2: 従業員マスタ、Story 4: EKS、Story 9: CI/CD | churn -20% / impression +10% / 導入 +20% / EKSコスト減+SOC1準拠 / リリース速度向上 |
+
+---
+
 ## Story 1: Recommendation Microservice @ Groundtruth（FastAPI版 / 汎用）
 
 **Situation**

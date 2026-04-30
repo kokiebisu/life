@@ -1,30 +1,21 @@
-# Study - 学習管理
+# study
 
-技術面接対策・ソフトウェアエンジニアリングの学習を管理します。
+起業・法律・技術の学習ノート。`/study` でセッションを開始しノートを蓄積、`/fukushuu` で忘却曲線ベースに復習し、`/interview-prep` で技術面接対策を進める。
 
-## 活用方法
+## Overview
 
-### アルゴリズム学習
+学習目標はテックリード / シニアフルスタック / 新規立ち上げソフトウェアエンジニア。トピックがこの目標に合わない場合は優先度低として通知される。本ありのセッションは章ごと、本なしは日付+連番で記録する。
 
-CS基礎・面接対策・実務応用を統合したアルゴリズム学習は `algorithms/README.md` を参照。
-
-### 学習ロードマップ
-
-段階的な学習計画は `roadmap.md` を参照してください。
-
-## 学習セッションの記録
-
-`/study` コマンドで学習セッションを開始できます。
-
-- Notion Study DB にセッションを登録（カレンダー連携）
-- Claude と対話しながらコーネル式ノートを記録
-- ローカル MD と Notion ページを同期管理
-- ファイルパス: `aspects/study/{category}/notes/YYYY-MM-DD-{book-slug}.md`
-
-### 使い方
+## What's here
 
 ```
-/study                          # 対話式でカテゴリ・時刻を確認
-/study algorithms               # カテゴリ指定
-/study algorithms --start 14:00 # 開始時刻も指定
+{category}/                  ジャンルごと（algorithms / system-design / law など）
+  notes/YYYY-MM-DD-N.md      本なしセッション
+  {本のタイトル}/ch{NN}.md   本ありセッション（章番号 2 桁ゼロパディング）
 ```
+
+## Related
+
+- Notion: 勉強 DB（読書 / 面接対策 / トピック別 / 復習の 4 種類）
+- Skills: `/study` `/fukushuu` `/interview-prep` `/backfill-cues`
+- Top-level: [../../README.md](../../README.md)

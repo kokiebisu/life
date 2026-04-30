@@ -135,7 +135,7 @@ docs/              設計ドキュメント
 
 ### 学習・思考系
 
-`/fukushuu` `/ask-diet`
+`/fukushuu`
 
 ### 同期・運用系
 
@@ -143,7 +143,7 @@ docs/              設計ドキュメント
 
 ### メタ系（システム自体を進化させる）
 
-`/learn` `/tidy` `/analyze` `/humanize-ja` `/automate` `/backfill-cues` `/defer` `/resume`
+`/learn` `/tidy` `/analyze` `/humanize-ja` `/automate` `/defer` `/resume`
 
 ## Tech Stack
 

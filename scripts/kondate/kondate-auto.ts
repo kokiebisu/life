@@ -26,6 +26,7 @@ import { computeEmptySlots, type ExistingEntry, type Slot } from "./lib/empty-sl
 import { readHistory, appendHistoryEntry } from "./lib/menu-history";
 import { generateMenu, type MenuContext, type MenuResult, type PastMeal } from "./lib/generate-menu";
 import { appendDailyMealEntry } from "./lib/daily-writer";
+import { decideGroceryDateTime, formatGroceryTitle } from "./lib/grocery-schedule";
 
 const REPO_ROOT = resolve(fileURLToPath(import.meta.url), "../../..");
 const DISABLE_FLAG = join(REPO_ROOT, ".kondate-auto.disabled");
@@ -104,6 +105,54 @@ function runNotionAdd(args: {
   };
 }
 
+function runGroceryAdd(args: {
+  date: string;
+  start: string;
+  end: string;
+}): void {
+  const cmd = [
+    "bun",
+    "run",
+    "scripts/notion/notion-add.ts",
+    "--db",
+    "groceries",
+    "--title",
+    formatGroceryTitle(args.date),
+    "--date",
+    args.date,
+    "--start",
+    args.start,
+    "--end",
+    args.end,
+  ];
+  const result = spawnSync(cmd[0], cmd.slice(1), {
+    cwd: REPO_ROOT,
+    encoding: "utf-8",
+  });
+  if (result.status !== 0) {
+    throw new Error(`grocery notion-add failed: ${result.stderr || result.stdout}`);
+  }
+}
+
+function runGroceryGen(args: { date: string; endDate: string }): void {
+  const cmd = [
+    "bun",
+    "run",
+    "scripts/notion/notion-grocery-gen.ts",
+    "--date",
+    args.date,
+    "--end-date",
+    args.endDate,
+  ];
+  const result = spawnSync(cmd[0], cmd.slice(1), {
+    cwd: REPO_ROOT,
+    encoding: "utf-8",
+  });
+  if (result.status !== 0) {
+    throw new Error(`grocery-gen failed: ${result.stderr || result.stdout}`);
+  }
+}
+
 async function main() {
   const { flags } = parseArgs();
   const dryRun = flags.has("dry-run");
@@ -162,6 +211,13 @@ async function main() {
   console.log("[generate] calling Claude API...");
   const menu = await generateMenu(ctx);
   console.log(`[generated] ${menu.menu_name} (${menu.cuisine}) → ${menu.recipe_url}`);
+  if (menu.missing_ingredients.length > 0) {
+    console.log(
+      `[missing] ${menu.missing_ingredients.map((m) => `${m.name} ${m.amount}`).join(", ")}`,
+    );
+  } else {
+    console.log("[missing] (none — all ingredients in fridge)");
+  }
 
   if (dryRun) {
     console.log("[dry-run] skipping Notion registration and history update");
@@ -206,6 +262,28 @@ async function main() {
   });
 
   console.log(`[done] registered ${results.length} entries`);
+
+  // 8. Register groceries page if any ingredient is missing from fridge
+  if (menu.missing_ingredients.length === 0) {
+    console.log("[groceries] no missing ingredients, skipping");
+    return;
+  }
+  const sortedDates = [...new Set(targetSlots.map((s) => s.date))].sort();
+  const firstCookingDate = sortedDates[0]!;
+  const lastCookingDate = sortedDates[sortedDates.length - 1]!;
+  const grocery = decideGroceryDateTime(firstCookingDate, today);
+  console.log(
+    `[groceries] missing: ${menu.missing_ingredients.map((m) => m.name).join(", ")}`,
+  );
+  console.log(
+    `[groceries] adding page: ${grocery.date} ${grocery.start}-${grocery.end}`,
+  );
+  runGroceryAdd(grocery);
+  console.log(
+    `[groceries] generating list for ${grocery.date}..${lastCookingDate}`,
+  );
+  runGroceryGen({ date: grocery.date, endDate: lastCookingDate });
+  console.log("[groceries] done");
 }
 
 main().catch((e) => {

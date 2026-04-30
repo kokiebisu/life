@@ -23,6 +23,7 @@ const menu: MenuResult = {
     { name: "鶏むね肉", amount: "300g" },
     { name: "塩", amount: "小さじ1" },
   ],
+  missing_ingredients: [],
   steps: ["下味", "茹でる"],
   estimated_pfc: { p: 40, f: 8, c: 2, kcal: 220 },
 };

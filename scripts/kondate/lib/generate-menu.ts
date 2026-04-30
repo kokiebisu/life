@@ -16,6 +16,7 @@ export interface MenuResult {
   cuisine: "和" | "洋" | "中";
   recipe_url: string;
   ingredients: Ingredient[];
+  missing_ingredients: Ingredient[];
   steps: string[];
   estimated_pfc: {
     p: number;
@@ -80,6 +81,12 @@ ${ctx.nutritionTargets}
 ## 使用禁止食材（NG）
 ${ngLines}
 
+## 不足食材の判定（厳守）
+\`ingredients\` の各食材を「冷蔵庫の在庫」と突き合わせ、在庫に**ない**ものだけを \`missing_ingredients\` に列挙してください。
+- 醤油・みりん・酒・砂糖・塩・胡椒・ごま油・サラダ油・酢・味噌など**常備調味料は除外**（冷蔵庫の在庫に書かれていなくても買い出しに入れない）
+- 在庫の数量が不足している場合も missing に含める
+- 全部在庫にある場合は \`missing_ingredients: []\` を返す
+
 ## 出力形式
 以下の JSON 形式で回答してください（他のテキストは不要）:
 \`\`\`json
@@ -89,6 +96,9 @@ ${ngLines}
   "recipe_url": "https://...",
   "ingredients": [
     { "name": "食材名", "amount": "分量" }
+  ],
+  "missing_ingredients": [
+    { "name": "食材名", "amount": "必要量" }
   ],
   "steps": ["手順1", "手順2"],
   "estimated_pfc": {
@@ -157,11 +167,16 @@ export function parseMenuResponse(raw: string): MenuResult {
     throw new Error("Missing required field: estimated_pfc");
   }
 
+  const missing = Array.isArray(obj.missing_ingredients)
+    ? (obj.missing_ingredients as Ingredient[])
+    : [];
+
   return {
     menu_name: obj.menu_name,
     cuisine: obj.cuisine as "和" | "洋" | "中",
     recipe_url: obj.recipe_url,
     ingredients: obj.ingredients as Ingredient[],
+    missing_ingredients: missing,
     steps: obj.steps as string[],
     estimated_pfc: obj.estimated_pfc as MenuResult["estimated_pfc"],
   };

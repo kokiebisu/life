@@ -62,6 +62,12 @@ describe("buildPrompt", () => {
     expect(prompt).toContain("cuisine");
     expect(prompt).toContain("recipe_url");
   });
+
+  test("instructs the model to compute missing_ingredients", () => {
+    const prompt = buildPrompt(baseContext);
+    expect(prompt).toContain("missing_ingredients");
+    expect(prompt).toContain("常備調味料は除外");
+  });
 });
 
 describe("parseMenuResponse", () => {
@@ -71,6 +77,7 @@ describe("parseMenuResponse", () => {
       cuisine: "和",
       recipe_url: "https://www.kurashiru.com/recipes/xxx",
       ingredients: [{ name: "豚こま", amount: "300g" }],
+      missing_ingredients: [{ name: "生姜", amount: "1片" }],
       steps: ["step1", "step2"],
       estimated_pfc: { p: 25, f: 15, c: 20, kcal: 350 },
     });
@@ -78,6 +85,21 @@ describe("parseMenuResponse", () => {
     expect(result.menu_name).toBe("豚の生姜焼き");
     expect(result.cuisine).toBe("和");
     expect(result.ingredients).toHaveLength(1);
+    expect(result.missing_ingredients).toHaveLength(1);
+    expect(result.missing_ingredients[0]?.name).toBe("生姜");
+  });
+
+  test("defaults missing_ingredients to empty array when omitted", () => {
+    const response = JSON.stringify({
+      menu_name: "オートミール",
+      cuisine: "洋",
+      recipe_url: "https://example.com/oats",
+      ingredients: [{ name: "オートミール", amount: "40g" }],
+      steps: ["step1"],
+      estimated_pfc: { p: 5, f: 2, c: 25, kcal: 150 },
+    });
+    const result = parseMenuResponse(response);
+    expect(result.missing_ingredients).toEqual([]);
   });
 
   test("parses JSON wrapped in markdown code fence", () => {

@@ -16,7 +16,13 @@
       "mcp__claude_ai_Notion__notion-move-pages",
       "mcp__claude_ai_Notion__notion-create-view",
       "Skill(schedule)",
-      "Skill(schedule:*)"
+      "Skill(schedule:*)",
+      "Bash(git -C .worktrees/chore/remove-sumitsugi-submodule status --porcelain)",
+      "Bash(git worktree *)",
+      "Bash(git branch *)",
+      "Bash(git pull *)",
+      "Bash(rm -rf .git/modules/projects .git/modules/sumitsugi)",
+      "Skill(trading-ideas:research)"
     ]
   },
   "hooks": {

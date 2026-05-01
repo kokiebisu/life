@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
-# Generates AGENTS.md for Codex CLI from CLAUDE.md + .ai/rules/ + skills/ summaries
-# Run this after editing .ai/rules/, skills/, or CLAUDE.md
+# Generates AGENTS.md for Codex CLI from CLAUDE.md + rules + skills summaries
+# Rules are read from .claude/rules/ when present, falling back to .ai/rules/.
+# Run this after editing .claude/rules/, .ai/rules/, skills/, or CLAUDE.md
 
 set -e
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUTPUT="$REPO_ROOT/AGENTS.md"
+RULES_DIR="$REPO_ROOT/.claude/rules"
+if [ ! -d "$RULES_DIR" ]; then
+  RULES_DIR="$REPO_ROOT/.ai/rules"
+fi
 
 {
   # Main instructions
@@ -13,7 +18,7 @@ OUTPUT="$REPO_ROOT/AGENTS.md"
   echo ""
 
   # Rules (full content)
-  for f in "$REPO_ROOT/.ai/rules/"*.md; do
+  for f in "$RULES_DIR/"*.md; do
     echo "---"
     echo ""
     cat "$f"

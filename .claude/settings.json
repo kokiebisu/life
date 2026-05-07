@@ -52,6 +52,7 @@
     "typescript-lsp@claude-plugins-official": false,
     "serena@claude-plugins-official": false,
     "context7@claude-plugins-official": false,
-    "skill-creator@claude-plugins-official": true
+    "skill-creator@claude-plugins-official": true,
+    "trading-ideas@claude-equity-research-marketplace": true
   }
 }

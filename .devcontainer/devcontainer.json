@@ -6,7 +6,6 @@
   "customizations": {
     "vscode": {
       "extensions": [
-        "Anthropic.claude-code",
         "esbenp.prettier-vscode",
         "eamodio.gitlens",
         "yzhang.markdown-all-in-one",
@@ -14,7 +13,8 @@
         "ms-azuretools.vscode-containers",
         "GitHub.vscode-pull-request-github",
         "xshrim.txt-syntax",
-        "golang.Go"
+        "golang.Go",
+        "openai.chatgpt"
       ],
       "settings": {
         "editor.formatOnSave": true,
@@ -30,7 +30,7 @@
   "mounts": [
     "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/node/.ssh,type=bind,consistency=cached",
     "source=${localEnv:HOME}${localEnv:USERPROFILE}/.config/gh,target=/home/node/.config/gh,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/.claude,target=/home/node/.claude,type=bind,consistency=cached",
+    // "source=${localEnv:HOME}/.claude,target=/home/node/.claude,type=bind,consistency=cached",
     "source=${localEnv:HOME}/.codex,target=/home/node/.codex,type=bind,consistency=cached",
     "source=vscode-server-data,target=/home/node/.vscode-server/data,type=volume",
     "source=vscode-server-extensions,target=/home/node/.vscode-server/extensions,type=volume"
@@ -41,9 +41,9 @@
     "OPENAI_API_KEY": "${localEnv:OPENAI_API_KEY}"
   },
   "containerEnv": {
-    "CLAUDE_CONFIG_DIR": "/home/node/.claude",
-    "CODEX_CONFIG_DIR": "/home/node/.codex",
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    // "CLAUDE_CONFIG_DIR": "/home/node/.claude",
+    // "CODEX_CONFIG_DIR": "/home/node/.codex",
+    // "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
     "TZ": "Asia/Tokyo"
   }
 }

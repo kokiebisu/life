@@ -27,4 +27,4 @@ docs/automate/
 # Auto session spawn pending-context（.ai/rules/session-spawn.md 参照）— 一回読みで消える
 .claude/pending-context/
 
-*.go
+# *.go

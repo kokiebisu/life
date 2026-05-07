@@ -1,21 +1,17 @@
 {
   "aspects/study/software-engineering/システム設計の面接試験/ch01.md": {
-    "last_reviewed": "2026-04-28",
+    "last_reviewed": "2026-05-06",
     "interval_days": 1,
-    "review_count": 0,
-    "confidence": "fuzzy",
-    "pending_questions": [
-      "クロスシャード JOIN 問題の対処法 4つを挙げて、それぞれが効くシチュエーションを一言で説明して。"
-    ]
+    "review_count": 1,
+    "confidence": "perfect",
+    "pending_questions": []
   },
   "aspects/study/software-engineering/システム設計の面接試験/ch02.md": {
-    "last_reviewed": "2026-04-28",
+    "last_reviewed": "2026-05-06",
     "interval_days": 1,
-    "review_count": 0,
-    "confidence": "fuzzy",
-    "pending_questions": [
-      "DAU 1000万、1人 10 リクエスト/日 のサービスのピーク QPS を暗算で出して。途中の計算プロセスも声に出して。"
-    ]
+    "review_count": 1,
+    "confidence": "perfect",
+    "pending_questions": []
   },
   "aspects/study/software-engineering/システム設計の面接試験/ch03.md": {
     "last_reviewed": "2026-04-24",
@@ -25,7 +21,7 @@
     "pending_questions": []
   },
   "aspects/study/software-engineering/システム設計の面接試験/ch04.md": {
-    "last_reviewed": "2026-04-28",
+    "last_reviewed": "2026-05-06",
     "interval_days": 1,
     "review_count": 0,
     "confidence": "fuzzy",
@@ -147,11 +143,13 @@
     "pending_questions": []
   },
   "aspects/study/algorithm/notes/2026-04-27-1.md": {
-    "last_reviewed": "2026-04-28",
+    "last_reviewed": "2026-05-06",
     "interval_days": 1,
     "review_count": 0,
     "confidence": "fuzzy",
-    "pending_questions": []
+    "pending_questions": [
+      "count 版と last-seen-index 版の違いを説明してください。どちらが `at most K distinct characters` みたいな発展問題に拡張しやすいですか？理由も答えてください。"
+    ]
   },
   "aspects/study/sql/notes/2026-04-27-1.md": {
     "last_reviewed": "2026-04-28",

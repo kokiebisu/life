@@ -87,10 +87,10 @@ created: 2026-05-09
 ### 技術判断
 
 - 判断軸: 画面の体感速度、外部依存、ゼロ件を避ける UX
-- 選択肢: Flask モノリスに追加 / Python 独立サービス / Go 独立サービス
+- 選択肢: Flask モノリスに追加 / FastAPI 独立サービス / Flask + gevent / Go 独立サービス
 - 採用: Go 独立サービス
-- 理由: 並列I/O、timeout、障害分離、fallback を素直に実装できる
-- トレードオフ: Go の学習コストはあるが、境界の小さい集約APIに限定した
+- 理由: 小さな集約サービスに限定すれば、goroutine と context で deadline / fallback を一貫して扱いやすい
+- トレードオフ: Go の学習コストはある。FastAPI でも成立しうるため、Go が唯一解とは言わない
 - 今なら改善: shadow traffic、cold start 対策、フォールバック率の監視設計
 
 ### Q&A
@@ -99,7 +99,10 @@ created: 2026-05-09
 A. 100ms を削るためだけではない。ML と ES は互いに依存しない外部I/Oなので、直列にすると遅延のばらつきや timeout まで足し合わされる。並列化すると、片方が遅い/落ちた時にもう片方の結果で返せる。
 
 **Q. なぜ Go？**  
-A. goroutine と context timeout が標準機能で、外部I/Oを並列に待つ設計に向いていたため。チーム全体を Go に移したわけではなく、境界の小さい集約APIに限定した。
+A. Go が唯一解というより、今回の本質はサービス分離、deadline、fallback。Go は goroutine と context timeout が標準で、小さな集約APIでは実装と運用が読みやすいと判断した。
+
+**Q. FastAPI じゃダメだった？**
+A. ダメではない。FastAPI + async client でも成立する。ただ、async 対応 client を end-to-end で揃える必要があり、sync client が混ざると event loop を塞ぐ。当時は FastAPI の本番運用知見も薄かったので、小さな独立サービスに限定して Go を選んだ。今なら FastAPI も真面目に比較する。
 
 **Q. ML が落ちたら品質が下がらない？**  
 A. 下がる。ただ、ゼロ件でユーザーを止めるより、ES や人気 Top 5 で進められる方が UX 上よい。だからフォールバック率を品質指標として見る。

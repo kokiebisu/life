@@ -34,12 +34,8 @@ updated: 2026-05-11
 | 同時クリック UX は？ | [Q9](#q9-同時クリック-ux--進捗表示は) | 当時はブロック、今なら合流 |
 | 進捗表示は？ / WebSocket は？ | [Q9](#q9-同時クリック-ux--進捗表示は) | リロード確認のみ、今なら 1〜2 秒ポーリング |
 | 監視は？ / 429 にどう気づく？ | [Q10](#q10-監視は) | 記憶曖昧、見るべき指標は明確 |
-| starvation は？ | [Q11](#q11-starvation--sleep--deadlock-は) | 完全防止できてない、今なら queue 分離 |
-| sleep で worker 塞いでない？ | [Q11](#q11-starvation--sleep--deadlock-は) | 今なら acquire 失敗で reenqueue |
-| deadlock は？ | [Q11](#q11-starvation--sleep--deadlock-は) | 1 ジョブ 1 ロック設計で構造的に回避 |
-| X-lock / S-lock の使い分け | [Q12](#q12-x-lock--s-lock-の使い分け) | SELECT FOR UPDATE と DynamoDB conditional write |
-| 実装と改善案の境界は？ | [Q13](#q13-どこまで実装で-どこから改善案) | (表参照) |
-| シニアとしての設計判断は？ | [Q14](#q14-シニアとしての設計判断は) | 事故止め → 観測 → 改善 |
+| 実装と改善案の境界は？ | [Q11](#q11-どこまで実装で-どこから改善案) | (表参照) |
+| シニアとしての設計判断は？ | [Q12](#q12-シニアとしての設計判断は) | 事故止め → 観測 → 改善 |
 
 ### ハマった時の逃げセリフ
 
@@ -102,13 +98,12 @@ updated: 2026-05-11
 - **N+1（SELECT 側）**: 一括招待は人数分ループ。ループ内 DB クエリが残ると worker CPU と DB が詰まる
 - 招待対象のユーザー・所属・権限を**事前にまとめて preload / eager load** してから job に入る
 - **bulk insert（INSERT 側）**: `create!` を人数分回すと round-trip も人数分
-- 対策は activerecord-import の `import` / `import!`、または Rails 6+ の `upsert_all` で 1 SQL にまとめる（当時実際に使ったかは記憶曖昧、今ならこれを使う）
+- 対策は bulk insert（`activerecord-import` / `upsert_all`）で 1 SQL にまとめる（当時実際に使ったかは記憶曖昧、今ならこれを使う）
 - callback / validation は基本飛ぶので、**冪等性・必須項目は DB 制約に寄せる**（`(company_id, employee_external_id)` の unique 制約）
 
 **深掘り対応**:
 - 「rate limit と N+1 の関係は？」→ OEM の 300 req/sec を守っても、worker が N+1 で詰まれば rate limiter 以前の問題
 - 「callback で副作用がある時は？」→ 事前に明示呼び出しするか、DB 制約に寄せる
-- 「`import` と `upsert_all` の使い分けは？」→ validation 効かせたいなら import、純粋に高速 upsert なら upsert_all
 
 ---
 
@@ -240,48 +235,7 @@ updated: 2026-05-11
 
 ---
 
-### Q11. starvation / sleep / deadlock は？
-
-**Key**: 当時の構成では完全防止できていない。設計と運用で吸収
-
-**starvation（一方が後回しになり続ける）**:
-- 当時の 2 worker 方式では完全防止できない
-- 大量 bulk が流れ続けると管理者操作が遅れる可能性あり
-- 当時はまず rate limit 超過と二重同期を止める方が優先
-- 今なら queue 分離 + bulk soft cap + queue latency 監視 + 閾値超えで alert
-
-**sleep で worker 塞ぐ問題**:
-- 長時間 sleep で worker を塞ぐのは良くない
-- 当時の実装詳細は盛らない
-- 今なら acquire 失敗時に scheduled retry / reenqueue で worker 解放
-- 429 は指数バックオフ + jitter、limiter で事前ブロックなら短い delayed job
-
-**deadlock**:
-- 1 ジョブが同時保持するロックは原則 1 つ（per-company mutex か rate limiter token）
-- **同時保持しない設計**なので deadlock は構造的に起きない
-- DB トランザクション内で複数行 SELECT FOR UPDATE する場合は**主キー昇順で取る**（lock ordering）
-- 最後の安全網: InnoDB が deadlock を検知して片方 rollback → retry で吸収
-- リスクとして残るのは livelock（両方 retry し続けて進まない）→ jitter と queue latency で気づく
-
----
-
-### Q12. X-lock / S-lock の使い分け
-
-**Key**: 状態遷移は X-lock、企業跨ぎの排他は DynamoDB conditional write
-
-- **共有ロック (S-lock)**: 読み込み専用。他の読み手と共存、書き込みは弾く
-- **排他ロック (X-lock)**: 書き込み用。他のロックを一切弾く
-- DB レベル: 状態遷移（pending → invited 等）を守るなら `SELECT ... FOR UPDATE` で行に X-lock を取るのが定石（当時の具体的な使用箇所の記憶は曖昧）
-- アプリレベル（DynamoDB mutex）: `attribute_not_exists` 条件で「ロックが空 or 期限切れ」のときだけ取得 → 実質 X-lock 相当
-- Redis rate limiter は counter なのでこの議論とは別文脈
-
-**深掘り対応**:
-- 「S-lock 使う場面は？」→ 整合性チェックなど、自分は書かないが他からの更新を防ぎたい時に `SELECT ... LOCK IN SHARE MODE` 相当
-- 「S/X 混在のリスクは？」→ 意図しない待ちが起きやすい。書き込み前提なら最初から FOR UPDATE で X を取る方針
-
----
-
-### Q13. どこまで実装で、どこから改善案？
+### Q11. どこまで実装で、どこから改善案？
 
 **Key**: 当時 = 事故を止める最小構成。今なら = 優先度制御 + UX + 監視を足す
 
@@ -308,7 +262,7 @@ updated: 2026-05-11
 
 ---
 
-### Q14. シニアとしての設計判断は？
+### Q12. シニアとしての設計判断は？
 
 **Key**: 最初から理想構成にしない。事故を止める → 観測 → 改善 の順
 
@@ -347,6 +301,14 @@ updated: 2026-05-11
 | 一括招待 | 時間がかかってもよい | バッチ寄り |
 
 組織同期は dual-trigger（管理者ボタン = urgent、招待前処理 = bulk）。当時は queue で綺麗に分けず、worker 2 つで詰まりを減らす形だった。
+
+### 深掘り耐性メモ（聞かれる確率は低いが、聞かれたら）
+
+- **starvation**: 当時の 2 worker では完全防止できない。今なら queue 分離 + bulk soft cap + queue latency 監視で吸収
+- **sleep で worker 塞がない？**: 今なら acquire 失敗で reenqueue（当時の実装詳細は盛らない）
+- **deadlock**: 1 ジョブ 1 ロック設計で構造的に回避。複数必要なら主キー昇順（lock ordering）、最後は InnoDB が検知して rollback → retry
+- **X-lock / S-lock**: 状態遷移を守るなら `SELECT FOR UPDATE` で X-lock が定石（具体的使用箇所の記憶は曖昧）。S-lock は整合性チェック用途、混在は避ける
+- **`activerecord-import` vs `upsert_all`**: 前者は validation 効かせられる、後者は validation/callback も飛ばす純粋 upsert
 
 ### 自己評価
 

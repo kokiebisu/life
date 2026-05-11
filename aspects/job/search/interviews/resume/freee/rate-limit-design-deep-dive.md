@@ -15,12 +15,7 @@ updated: 2026-05-11
 
 ### 30 秒 pitch（最初に話す）
 
-- freee Eラーニングで OEM の Eラーニング基盤と API 連携していた
-- OEM 側に **1 IP あたり 300 req/sec** の rate limit があった
-- freee 側は全顧客のリクエストが同じ出口 IP から出る構造で、全社で 300 req/sec を共有する必要があった
-- 一括招待や組織同期で数百 API コールが発生するので、複数社が同時に動くとすぐ上限に当たった
-- 対応: **Sidekiq 非同期化 / N+1 解消 / 2 worker + lock / Redis rate limiter / company 単位 mutex / retry と冪等性**
-- UX は最低限。**今なら** urgent/bulk 分離、進捗表示、合流 UX を足す
+> freee Eラーニングで OEM の Eラーニング基盤と API 連携していたんですが、OEM 側に **1 IP あたり 300 req/sec** の rate limit がありました。freee 側は全顧客のリクエストが同じ出口 IP から出る構造だったので、全社でこの 300 req/sec を共有する必要がありました。一括招待や組織同期では数百 API コールが発生するので、複数社が同時に動くとすぐ上限に当たります。対応としては、**Sidekiq で非同期化**して、**N+1 を解消**し、**worker を 2 本立てて lock 取得型**にし、**Redis で rate limiter** を入れ、**組織同期は company 単位の mutex** で守り、**retry と冪等性も別レイヤーで設計**しました。UX は最低限で、**今やり直すなら** urgent / bulk 分離、進捗表示、合流 UX を足したいです。
 
 ### トリガー索引（質問キーワード → 答え）
 

@@ -13,9 +13,9 @@ updated: 2026-05-11
 
 ## Layer 1: カンペカード（面接中はここだけ見る）
 
-### 30 秒 pitch（最初に話す）
+### 1 分 pitch（最初に話す）
 
-> freee Eラーニングで OEM の Eラーニング基盤と API 連携していたんですが、OEM 側に **1 IP あたり 300 req/sec** の rate limit がありました。freee 側は全顧客のリクエストが同じ出口 IP から出る構造だったので、全社でこの 300 req/sec を共有する必要がありました。一括招待や組織同期では数百 API コールが発生するので、複数社が同時に動くとすぐ上限に当たります。対応としては、**Sidekiq で非同期化**して、**N+1 を解消**し、**worker を 2 本立てて lock 取得型**にし、**Redis で rate limiter** を入れ、**組織同期は company 単位の mutex** で守り、**retry と冪等性も別レイヤーで設計**しました。UX は最低限で、**今やり直すなら** urgent / bulk 分離、進捗表示、合流 UX を足したいです。
+> freee Eラーニングで OEM の Eラーニング基盤と API 連携していたんですが、OEM 側に **1 IP あたり 300 req/sec** の rate limit がありました。freee 側は全顧客のリクエストが同じ出口 IP から出る構造だったので、全社でこの 300 req/sec を共有する必要がありました。一括招待や組織同期では数百 API コールが発生するので、複数社が同時に動くとすぐ上限に当たります。対応としては、**Sidekiq で非同期化**して、**N+1 を解消**し、**worker を 2 本立てて片方が lock 待ちでも止まらない形**にし、**Redis で rate limiter** を入れ、**組織同期は company 単位の mutex** で守り、**retry と冪等性も別レイヤーで設計**しました。UX は最低限で、**今やり直すなら** urgent / bulk 分離、進捗表示、合流 UX を足したいです。
 
 ### トリガー索引（質問キーワード → 答え）
 
@@ -102,8 +102,8 @@ updated: 2026-05-11
 - **N+1（SELECT 側）**: 一括招待は人数分ループ。ループ内 DB クエリが残ると worker CPU と DB が詰まる
 - 招待対象のユーザー・所属・権限を**事前にまとめて preload / eager load** してから job に入る
 - **bulk insert（INSERT 側）**: `create!` を人数分回すと round-trip も人数分
-- activerecord-import の `import` / `import!`、または Rails 6+ の `upsert_all` で 1 SQL にまとめた
-- callback / validation は基本飛ぶので、**冪等性・必須項目は DB 制約に寄せた**（`(company_id, employee_external_id)` の unique 制約）
+- 対策は activerecord-import の `import` / `import!`、または Rails 6+ の `upsert_all` で 1 SQL にまとめる（当時実際に使ったかは記憶曖昧、今ならこれを使う）
+- callback / validation は基本飛ぶので、**冪等性・必須項目は DB 制約に寄せる**（`(company_id, employee_external_id)` の unique 制約）
 
 **深掘り対応**:
 - 「rate limit と N+1 の関係は？」→ OEM の 300 req/sec を守っても、worker が N+1 で詰まれば rate limiter 以前の問題
@@ -136,7 +136,7 @@ updated: 2026-05-11
 
 - 秒単位のカウンタを Redis に置く
 - OEM API を呼ぶ前に `acquire`
-- 取れなければ少し待って再試行
+- 取れなければ Sidekiq retry に乗せて worker を解放する形が望ましい（当時の実装詳細は曖昧、今なら scheduled retry / reenqueue）
 - 429 を受けたら例外にして Sidekiq retry に乗せる
 - 顧客単位ではなく、OEM API 全体で共有する limiter
 
@@ -153,12 +153,11 @@ updated: 2026-05-11
 
 **30 秒**:
 - 当時の実装は urgent / bulk の綺麗な分け方ではなかった
-- 今なら class を分ける: urgent = 管理者操作、bulk = 一括招待
-- bulk に soft cap を置いて、urgent の余地を残す
-- 「urgent が必ず即時通る」とは言わない。「bulk が全枠食わない設計」と言う
+- 今なら 2 層で分ける: **Sidekiq queue で urgent を優先 pop**（スケジューラ層） + **rate limit で bulk に soft cap**（quota 層）
+- 「urgent の throughput 下限を保証する設計」と言う。latency までは担保しない（urgent 自身がバーストすれば待つ）
 
 **1 分で話す**:
-> 振り返ると、管理者操作と一括処理を同じ rate limit 枠で扱ったのは弱点でした。bulk が詰まっている時に管理者のロール変更や削除も巻き込まれて遅れます。なので今なら、urgent と bulk で class を分けて、bulk に soft cap を置きます。OEM の全体上限は 300 req/sec のままで、bulk が例えば 200 までしか使えないようにすれば、urgent に 100 の余地が残る。ただし「urgent が必ず即時通る」保証ではなく、混雑時の優先度制御です。
+> 振り返ると、管理者操作と一括処理を同じ rate limit 枠で扱ったのは弱点でした。bulk が詰まっている時に管理者のロール変更や削除も巻き込まれて遅れます。なので今なら 2 層で分けます。スケジューラ層では Sidekiq queue を urgent / bulk に分けて urgent を優先 pop、rate limit 層では class 別カウンタを持って bulk に soft cap を置く。OEM の全体上限は 300 req/sec のままで、bulk を例えば 200 までに抑えれば、urgent には最低 100 の throughput 下限が残ります。保証するのはこの下限であって、urgent 自身が 100/sec を超えてバーストすれば順番待ちは発生します。
 
 **深掘り対応**:
 - 「strict partition じゃダメ？」→ ダメ。bulk が idle でも urgent が 100 までしか使えず、OEM の 300 に余裕があるのに詰まる。soft cap の方が現実的
@@ -272,7 +271,7 @@ updated: 2026-05-11
 
 - **共有ロック (S-lock)**: 読み込み専用。他の読み手と共存、書き込みは弾く
 - **排他ロック (X-lock)**: 書き込み用。他のロックを一切弾く
-- DB レベル: `SELECT ... FOR UPDATE` で行に X-lock、トランザクション内の状態遷移（pending → invited 等）を守る
+- DB レベル: 状態遷移（pending → invited 等）を守るなら `SELECT ... FOR UPDATE` で行に X-lock を取るのが定石（当時の具体的な使用箇所の記憶は曖昧）
 - アプリレベル（DynamoDB mutex）: `attribute_not_exists` 条件で「ロックが空 or 期限切れ」のときだけ取得 → 実質 X-lock 相当
 - Redis rate limiter は counter なのでこの議論とは別文脈
 

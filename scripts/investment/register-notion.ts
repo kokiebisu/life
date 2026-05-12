@@ -62,12 +62,21 @@ function buildPickBlocks(pick: ValuePick): Block[] {
     `ROE: ${fmtNum(f.returnOnEquity, "pct")}  |  配当利回り: ${fmtNum(f.dividendYield, "pct")}  |  D/E: ${fmtNum(f.debtToEquity)}\n` +
     `FCF: ${fmtNum(f.freeCashFlow, "money")}  |  52週レンジ: ${fmtNum(f.fiftyTwoWeekLow)} - ${fmtNum(f.fiftyTwoWeekHigh)}`;
 
+  const flagged = pick.sanity && pick.sanity.warnings.length > 0;
+  const titleSuffix = flagged ? " 🚨" : "";
   const blocks: Block[] = [
-    h3(`${pick.ticker} — ${pick.name}`),
-    meta ? callout(meta, "🏢") : p(),
-    code(metrics, "plain text"),
-    p(pick.thesis),
+    h3(`${pick.ticker} — ${pick.name}${titleSuffix}`),
   ];
+
+  if (flagged && pick.sanity) {
+    const summary = `5日: ${pick.sanity.pct5d.toFixed(1)}%  ·  30日: ${pick.sanity.pct30d.toFixed(1)}%  ·  180日高値からの drawdown: ${pick.sanity.drawdownPct.toFixed(1)}%`;
+    const detail = pick.sanity.warnings.map((w) => `・${w}`).join("\n");
+    blocks.push(callout(`直近の値動きに警告。Claude の thesis はこのドローダウン直前のスナップショットに基づきます。最新の earnings / ニュースで根拠が崩れている可能性があるため、採用前に必ず原因を確認してください。\n\n${summary}\n\n${detail}`, "🚨"));
+  }
+
+  blocks.push(meta ? callout(meta, "🏢") : p());
+  blocks.push(code(metrics, "plain text"));
+  blocks.push(p(pick.thesis));
 
   if (pick.catalysts.length > 0) {
     blocks.push(p("**カタリスト**"));
@@ -86,6 +95,15 @@ export function buildPageBlocks(analysis: Analysis): Block[] {
       `教育目的の連想練習。投資助言ではありません。バリュー指標は yahoo-finance2 の遅延データに基づきます。最終判断はご自身で公式 IR 等で確認の上行ってください。`,
       "⚠️",
     ),
+  ];
+
+  const flaggedPicks = analysis.picks.filter((p) => p.sanity && p.sanity.warnings.length > 0);
+  if (flaggedPicks.length > 0) {
+    const tickers = flaggedPicks.map((p) => p.ticker).join(", ");
+    blocks.push(callout(`直近の値動きに異常がある銘柄が ${flaggedPicks.length} 件あります: ${tickers}。各銘柄の警告ブロックを必ず確認してください。`, "🚨"));
+  }
+
+  blocks.push(
     h2("ニュース要約"),
     p(analysis.newsSummary),
     h2("テーマ"),
@@ -93,7 +111,7 @@ export function buildPageBlocks(analysis: Analysis): Block[] {
     p(analysis.theme.reasoning),
     divider(),
     h2("注目銘柄"),
-  ];
+  );
 
   for (const pick of analysis.picks) {
     blocks.push(...buildPickBlocks(pick));

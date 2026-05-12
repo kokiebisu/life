@@ -52,6 +52,17 @@ export interface Fundamentals {
   fetchError?: string;
 }
 
+export interface SanityFlag {
+  ticker: string;
+  drawdownPct: number;     // 180d 高値からの下落率（負値）
+  pct5d: number;           // 直近 5 営業日の変化率
+  pct30d: number;          // 直近 22 営業日（約 30 日）の変化率
+  maxVolumeRatio: number;  // 直近 30 日内の最大出来高 / 30 日平均
+  high180: number;
+  currentPrice: number;
+  warnings: string[];      // 閾値超えの警告メッセージ。空なら問題なし
+}
+
 export interface ValuePick {
   ticker: string;
   name: string;
@@ -59,6 +70,7 @@ export interface ValuePick {
   catalysts: string[];
   risks: string[];
   fundamentals: Fundamentals;
+  sanity?: SanityFlag;
 }
 
 export interface Analysis {

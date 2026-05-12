@@ -70,7 +70,7 @@ export function getDbIdOptional(envKey: string): string | null {
 
 // --- Schedule DB Config (calendar-based DBs) ---
 
-export type ScheduleDbName = "devotion" | "events" | "meals" | "groceries" | "todo" | "other" | "study" | "topic" | "interview";
+export type ScheduleDbName = "devotion" | "events" | "meals" | "groceries" | "todo" | "other" | "study" | "topic" | "interview" | "investment";
 
 export interface ScheduleDbConfig {
   envKey: string;
@@ -93,6 +93,7 @@ export const SCHEDULE_DB_CONFIGS: Record<ScheduleDbName, ScheduleDbConfig> = {
   study:     { envKey: "NOTION_STUDY_DB", titleProp: "名前", dateProp: "日付", descProp: "" },
   topic:     { envKey: "NOTION_STUDY_TOPIC_DB", titleProp: "名前", dateProp: "日付", descProp: "" },
   interview: { envKey: "NOTION_INTERVIEW_PREP_DB", titleProp: "名前", dateProp: "日付", descProp: "" },
+  investment: { envKey: "NOTION_INVESTMENT_DB", titleProp: "名前", dateProp: "日付", descProp: "", defaultIcon: "📈" },
 };
 
 export function getScheduleDbConfig(name: ScheduleDbName): { apiKey: string; dbId: string; config: ScheduleDbConfig } {

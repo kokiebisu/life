@@ -1,0 +1,40 @@
+{
+  "feeds": [
+    {
+      "name": "Reuters Business",
+      "url": "https://feeds.reuters.com/reuters/businessNews",
+      "category": "株",
+      "lang": "en"
+    },
+    {
+      "name": "Bloomberg Markets",
+      "url": "https://feeds.bloomberg.com/markets/news.rss",
+      "category": "株",
+      "lang": "en"
+    },
+    {
+      "name": "Yahoo Finance Top Stories",
+      "url": "https://finance.yahoo.com/news/rssindex",
+      "category": "株",
+      "lang": "en"
+    },
+    {
+      "name": "MarketWatch Top Stories",
+      "url": "https://feeds.marketwatch.com/marketwatch/topstories/",
+      "category": "株",
+      "lang": "en"
+    },
+    {
+      "name": "日経 マーケット",
+      "url": "https://www.nikkei.com/markets/rss/feed.xml",
+      "category": "株",
+      "lang": "ja"
+    },
+    {
+      "name": "ITmedia ビジネス",
+      "url": "https://rss.itmedia.co.jp/rss/2.0/business.xml",
+      "category": "株",
+      "lang": "ja"
+    }
+  ]
+}

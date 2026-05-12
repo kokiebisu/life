@@ -19,7 +19,7 @@
 import YahooFinance from "yahoo-finance2";
 import type { SanityFlag } from "./types";
 
-const yahooFinance = new YahooFinance();
+const yahooFinance = new YahooFinance({ suppressNotices: ["yahooSurvey"] });
 
 const DRAWDOWN_THRESHOLD = -25;
 const PCT5D_THRESHOLD = -15;

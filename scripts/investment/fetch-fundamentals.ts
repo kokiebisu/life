@@ -5,7 +5,7 @@
 import YahooFinance from "yahoo-finance2";
 import type { Candidate, Fundamentals } from "./types";
 
-const yahooFinance = new YahooFinance();
+const yahooFinance = new YahooFinance({ suppressNotices: ["yahooSurvey"] });
 
 function num(v: unknown): number | null {
   if (typeof v === "number" && Number.isFinite(v)) return v;

@@ -13,6 +13,7 @@ import { selectTheme } from "./select-theme";
 import { pickCandidates } from "./pick-candidates";
 import { fetchFundamentals } from "./fetch-fundamentals";
 import { evaluateValue } from "./evaluate-value";
+import { sanityCheck } from "./sanity-check";
 import { registerNotion, todayJSTDate } from "./register-notion";
 import type { Analysis, ValuePick } from "./types";
 
@@ -31,6 +32,13 @@ function renderMarkdown(analysis: Analysis): string {
   lines.push("");
   lines.push("> ⚠️ 教育目的の連想練習。投資助言ではありません。");
   lines.push("");
+
+  const flagged = analysis.picks.filter((p) => p.sanity && p.sanity.warnings.length > 0);
+  if (flagged.length > 0) {
+    lines.push(`> 🚨 **直近の値動きに異常がある銘柄が ${flagged.length} 件あります**: ${flagged.map((p) => p.ticker).join(", ")}。各銘柄の警告ブロックを必ず確認してください。`);
+    lines.push("");
+  }
+
   lines.push("## ニュース要約");
   lines.push(analysis.newsSummary);
   lines.push("");
@@ -41,7 +49,17 @@ function renderMarkdown(analysis: Analysis): string {
   lines.push("");
   lines.push("## 注目銘柄");
   for (const pick of analysis.picks) {
-    lines.push(`### ${pick.ticker} — ${pick.name}`);
+    const flagged = pick.sanity && pick.sanity.warnings.length > 0;
+    const titleSuffix = flagged ? " 🚨" : "";
+    lines.push(`### ${pick.ticker} — ${pick.name}${titleSuffix}`);
+    if (flagged && pick.sanity) {
+      lines.push("");
+      lines.push(`> 🚨 **直近の値動きに警告**`);
+      lines.push(`> - 5日: ${pick.sanity.pct5d.toFixed(1)}%  ·  30日: ${pick.sanity.pct30d.toFixed(1)}%  ·  180日高値からの drawdown: ${pick.sanity.drawdownPct.toFixed(1)}%`);
+      for (const w of pick.sanity.warnings) lines.push(`> - ${w}`);
+      lines.push(`> Claude の thesis はこのドローダウン直前のスナップショットに基づくため、最新の earnings / ニュースで根拠が崩れている可能性があります。採用前に必ず原因を確認してください。`);
+      lines.push("");
+    }
     const f = pick.fundamentals;
     lines.push(`- セクター: ${f.sector ?? "—"} · 業種: ${f.industry ?? "—"}`);
     lines.push(`- PER(trail/fwd): ${fmt(f.trailingPE)} / ${fmt(f.forwardPE)}  ·  PBR: ${fmt(f.priceToBook)}  ·  ROE: ${pct(f.returnOnEquity)}`);
@@ -112,6 +130,21 @@ async function main() {
   console.error(`💎 バリュー評価中...`);
   const { picks, overallRisks } = await evaluateValue(theme, candidates, fundamentals);
   console.error(`  → ${picks.length} 銘柄に絞り込み: ${picks.map((p: ValuePick) => p.ticker).join(", ")}`);
+
+  console.error(`🚨 サニティチェック中（直近の値動き異常を検出）...`);
+  const sanityFlags = await sanityCheck(picks.map((p) => p.ticker));
+  let warningCount = 0;
+  for (const p of picks) {
+    const flag = sanityFlags.get(p.ticker.toUpperCase());
+    if (flag) {
+      p.sanity = flag;
+      if (flag.warnings.length > 0) {
+        warningCount++;
+        console.error(`  🚨 ${p.ticker}: ${flag.warnings.length} 件の警告`);
+      }
+    }
+  }
+  console.error(`  → ${warningCount}/${picks.length} 銘柄に警告あり`);
 
   const newsSummary = topNewsSummary(news);
   const analysis: Analysis = { date, theme, newsSummary, picks, overallRisks };

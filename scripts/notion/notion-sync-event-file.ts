@@ -24,7 +24,7 @@ import {
   normalizeTitle, notionFetch, parseArgs, pickTaskIcon, pickCover, clearNotionCache,
 } from "./lib/notion";
 
-const ROOT = join(import.meta.dir, "..");
+const ROOT = join(import.meta.dir, "..", "..");
 
 // --- Types ---
 

@@ -64,11 +64,20 @@ async function main() {
     const dbConf = getScheduleDbConfigOptional(name);
     if (!dbConf) return;
     const { apiKey, dbId, config } = dbConf;
-    // todo DB: default to status-based query (show all open items)
-    const data = name === "todo" && useTodoStatusQuery
-      ? await queryDbByStatus(apiKey, dbId, config, ["未着手"])
-      : await queryDbByDateCached(apiKey, dbId, config, startDate, endDate);
-    allEntries.push(...normalizePages(data.results, config, name));
+    try {
+      // todo DB: default to status-based query (show all open items)
+      const data = name === "todo" && useTodoStatusQuery
+        ? await queryDbByStatus(apiKey, dbId, config, ["未着手"])
+        : await queryDbByDateCached(apiKey, dbId, config, startDate, endDate);
+      allEntries.push(...normalizePages(data.results, config, name));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("404") || msg.includes("Could not find database")) {
+        console.warn(`  SKIP [${name}] (${dbId}): not shared with integration`);
+        return;
+      }
+      throw err;
+    }
   });
   await Promise.all(queries);
 

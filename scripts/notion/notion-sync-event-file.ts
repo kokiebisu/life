@@ -301,7 +301,14 @@ async function main() {
       const data = await queryDbByDateCached(conf.apiKey, conf.dbId, conf.config, date, date);
       const entries = normalizePages(data.results, conf.config, name);
       for (const e of entries) allExistingTitles.add(normalizeTitle(e.title));
-    } catch { /* DB may not exist */ }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("404") || msg.includes("Could not find database")) {
+        console.warn(`  SKIP [${name}] (${conf.dbId}): not shared with integration`);
+        return;
+      }
+      throw err;
+    }
   }));
 
   let created = 0, updated = 0, skipped = 0;

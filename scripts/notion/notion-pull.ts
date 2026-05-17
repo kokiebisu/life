@@ -938,21 +938,31 @@ async function main() {
 
     for (const [dbId, conf] of enrichMap) {
       let pages: any[];
-      if (conf.dateProp) {
-        // Schedule DBs: past 30 days + future 60 days
-        const data = await notionFetch(getApiKey(), `/databases/${dbId}/query`, {
-          filter: {
-            and: [
-              { property: conf.dateProp, date: { on_or_after: pastStartDate } },
-              { property: conf.dateProp, date: { on_or_before: futureEndDate } },
-            ],
-          },
-        });
-        pages = (data.results || []) as any[];
-      } else {
-        // Non-date DBs: all pages
-        const data = await notionFetch(getApiKey(), `/databases/${dbId}/query`, {});
-        pages = (data.results || []) as any[];
+      try {
+        if (conf.dateProp) {
+          // Schedule DBs: past 30 days + future 60 days
+          const data = await notionFetch(getApiKey(), `/databases/${dbId}/query`, {
+            filter: {
+              and: [
+                { property: conf.dateProp, date: { on_or_after: pastStartDate } },
+                { property: conf.dateProp, date: { on_or_before: futureEndDate } },
+              ],
+            },
+          });
+          pages = (data.results || []) as any[];
+        } else {
+          // Non-date DBs: all pages
+          const data = await notionFetch(getApiKey(), `/databases/${dbId}/query`, {});
+          pages = (data.results || []) as any[];
+        }
+      } catch (err) {
+        // Skip DBs not shared with the integration so a new DB doesn't break the whole pull
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("404") || msg.includes("Could not find database")) {
+          console.warn(`  SKIP enrich for [${conf.label}] (${dbId}): not shared with integration`);
+          continue;
+        }
+        throw err;
       }
 
       for (const page of pages) {

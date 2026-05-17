@@ -15,7 +15,13 @@ updated: 2026-05-11
 
 ### 1 分 pitch（最初に話す）
 
-> freee Eラーニングで OEM の Eラーニング基盤と API 連携していたんですが、OEM 側に **1 IP あたり 300 req/sec** の rate limit がありました。freee 側は全顧客のリクエストが同じ出口 IP から出る構造だったので、全社でこの 300 req/sec を共有する必要がありました。一括招待や組織同期では数百 API コールが発生するので、複数社が同時に動くとすぐ上限に当たります。対応としては、**Sidekiq で非同期化**して、**N+1 を解消**し、**worker を 2 本立てて片方が lock 待ちでも止まらない形**にし、**Redis で rate limiter** を入れ、**組織同期は company 単位の mutex** で守り、**retry と冪等性も別レイヤーで設計**しました。UX は最低限で、**今やり直すなら** urgent / bulk 分離、進捗表示、合流 UX を足したいです。
+freee Eラーニングの開発において、外部APIの物理制約を、自社システムの設計でいかに隠蔽するかという課題に取り組みました。
+
+OEM先のAPIには1IPあたり300req/minという制限がありましたが、freeeは全顧客が同じ出口IPを共有する構造だったため、特定企業の大量処理が他社の操作を止めてしまう『共倒れ』のリスクがありました。
+
+この制約を、システムが自律的にリクエストの量をコントロールして、制限を越えないようにする仕組みを構築しました。具体的には、Sidekiqによる非同期化とRedisでのグローバルなRate Limiterを実装し、さらにDynamoDBを用いた企業単位のMutexで排他制御を徹底しました。
+
+負荷試験では自社WorkerがSIGKILLされる多重ボトルネックも見つかりましたが、処理のchunk分割とリソース最適化により、リリース後は大規模な一括処理も事故なく安定稼働させています。技術的な制約をビジネスの継続性に繋げたプロジェクトです。
 
 ### トリガー索引（質問キーワード → 答え）
 
@@ -24,7 +30,7 @@ updated: 2026-05-11
 | なぜ非同期？ | [Q1](#q1-なぜ非同期にした) | UI/OEM 詰まり回避、retry が HTTP では扱いづらい |
 | 2 worker は何のため？ | [Q2](#q2-2-worker-は何のため) | 詰まりを減らす最小構成。優先度保証ではない |
 | N+1 は？ / bulk insert は？ | [Q3](#q3-n1-と-bulk-insert-は) | SELECT/INSERT 両方の round-trip 削減 |
-| 負荷試験で何がわかった？ | [Q4](#q4-負荷試験で何がわかった) | 1,000 名超で worker CPU 不足、SIGKILL |
+| 負荷試験で何がわかった？ | [Q4](#q4-負荷試験で何がわかった) | 1,000 名超で メモリ不足、SIGKILL |
 | Redis rate limiter の中身は？ | [Q5](#q5-redis-rate-limiter-の中身は) | 秒単位 counter、全社共通 |
 | urgent / bulk 分離は？ / soft cap は？ | [Q6](#q6-urgent--bulk-分離--soft-cap-は) | 当時は分けてない、今なら soft cap |
 | 組織同期の mutex は？ | [Q7](#q7-組織同期の-per-company-mutex-は) | per-company、DynamoDB conditional write |
@@ -95,32 +101,32 @@ updated: 2026-05-11
 
 **Key**: SELECT 側の往復と INSERT 側の往復、別問題として両方見た
 
-- **N+1（SELECT 側）**: 一括招待は人数分ループ。ループ内 DB クエリが残ると worker CPU と DB が詰まる
+- **N+1（SELECT 側）**: 一括招待は人数分ループ。ループ内DBクエリが残ると, worker のメモリが足りず、OOM Killer に SIGKILL された
 - 招待対象のユーザー・所属・権限を**事前にまとめて preload / eager load** してから job に入る
 - **bulk insert（INSERT 側）**: `create!` を人数分回すと round-trip も人数分
 - 対策は bulk insert（`activerecord-import` / `upsert_all`）で 1 SQL にまとめる（当時実際に使ったかは記憶曖昧、今ならこれを使う）
 - callback / validation は基本飛ぶので、**冪等性・必須項目は DB 制約に寄せる**（`(company_id, employee_external_id)` の unique 制約）
 
 **深掘り対応**:
-- 「rate limit と N+1 の関係は？」→ OEM の 300 req/sec を守っても、worker が N+1 で詰まれば rate limiter 以前の問題
+- 「rate limit と N+1 の関係は？」→ OEM の 300 req/min を守っても、worker が N+1 で詰まれば rate limiter 以前の問題
 - 「callback で副作用がある時は？」→ 事前に明示呼び出しするか、DB 制約に寄せる
 
 ---
 
 ### Q4. 負荷試験で何がわかった？
 
-**Key**: 1,000 名超の一括招待で worker CPU が不足、SIGKILL で落ちる
+**Key**: 1,000 名超の一括招待でワーカーのメモリが不足、SIGKILL で落ちる
 
 - ボトルネックは **OEM rate limit だけではなかった**
-- worker CPU、DB 読み込み、job 処理時間の複合
+- ワーカーのメモリ、DB 読み込み、job 処理時間の複合
 - `SIGKILL` / exit 9 でプロセスが落ちるケースがあった
 - 一括処理は chunking、worker sizing、分割 まで含めて設計する必要があると分かった
 
 **1 分で話す**:
-> rate limit 対策をやり切っても worker 側が落ちたら意味がないので、負荷試験で限界を見ました。結果として 1,000 名以上の一括招待は worker CPU が足りず、プロセスが SIGKILL で落ちることが分かりました。これは外部 API の制約ではなく自社側の capacity 問題です。なので今なら、招待対象を 100〜200 名単位の child job に分割して、parent job は進捗管理だけを持つ形にします。worker が kill されても途中から再開できるように checkpoint も入れます。
+> rate limit 対策をやり切っても worker 側が落ちたら意味がないので、負荷試験で限界を見ました。結果として 1,000 名以上の一括招待は ワーカーのメモリが足りず、プロセスが SIGKILL で落ちることが分かりました。これは外部 API の制約ではなく自社側の capacity 問題です。なので今なら、招待対象を 100〜200 名単位の child job に分割して、parent job は進捗管理だけを持つ形にします。worker が kill されても途中から再開できるように checkpoint も入れます。
 
 **深掘り対応**:
-- 「chunking のサイズはどう決める？」→ 負荷試験で worker CPU が持つ範囲。100〜200 名はその文脈
+- 「chunking のサイズはどう決める？」→ 負荷試験で ワーカーのメモリが持つ範囲。100〜200 名はその文脈
 - 「途中失敗の再開は？」→ 当時は雑だった。今なら checkpoint で「どこまで処理済み」を持つ
 
 ---
@@ -152,7 +158,7 @@ updated: 2026-05-11
 - 「urgent の throughput 下限を保証する設計」と言う。latency までは担保しない（urgent 自身がバーストすれば待つ）
 
 **1 分で話す**:
-> 振り返ると、管理者操作と一括処理を同じ rate limit 枠で扱ったのは弱点でした。bulk が詰まっている時に管理者のロール変更や削除も巻き込まれて遅れます。なので今なら 2 層で分けます。スケジューラ層では Sidekiq queue を urgent / bulk に分けて urgent を優先 pop、rate limit 層では class 別カウンタを持って bulk に soft cap を置く。OEM の全体上限は 300 req/sec のままで、bulk を例えば 200 までに抑えれば、urgent には最低 100 の throughput 下限が残ります。保証するのはこの下限であって、urgent 自身が 100/sec を超えてバーストすれば順番待ちは発生します。
+> 振り返ると、管理者操作と一括処理を同じ rate limit 枠で扱ったのは弱点でした。bulk が詰まっている時に管理者のロール変更や削除も巻き込まれて遅れます。なので今なら 2 層で分けます。スケジューラ層では Sidekiq queue を urgent / bulk に分けて urgent を優先 pop、rate limit 層では class 別カウンタを持って bulk に soft cap を置く。OEM の全体上限は 300 req/min のままで、bulk を例えば 200 までに抑えれば、urgent には最低 100 の throughput 下限が残ります。保証するのはこの下限であって、urgent 自身が 100/min を超えてバーストすれば順番待ちは発生します。
 
 **深掘り対応**:
 - 「strict partition じゃダメ？」→ ダメ。bulk が idle でも urgent が 100 までしか使えず、OEM の 300 に余裕があるのに詰まる。soft cap の方が現実的
@@ -168,7 +174,7 @@ updated: 2026-05-11
 - 問題: 同一企業で組織同期が同時起動する可能性（管理者ボタン + 招待前処理）
 - OEM 側の race condition、rate limit 枠の無駄
 - 対応: **企業単位で mutex**、同じ company の組織同期は同時 1 本、後発はブロック
-- DynamoDB を選んだ理由: conditional write で atomic、既存 AWS スタック、TTL で掃除しやすい
+- DynamoDB を選んだ理由: Redis は再起動時にロック状態が消えるリスクがある。組織同期のような重い処理の二重実行をより確実に防ぐため、永続化が保証されている DynamoDB をロックストアに選んだ
 
 **深掘り対応（TTL 関連）**:
 - 「TTL で正しさ担保？」→ NO。**TTL は掃除用**。正しさは condition expression と `expires_at < now` 判定
@@ -285,8 +291,8 @@ updated: 2026-05-11
 
 ### 制約まとめ
 
-- OEM 側: **1 IP あたり 300 req/sec**（交渉済みでこれ以上は無理）
-- freee 側: 全顧客が同一出口 IP → 全社で 300 req/sec を共有
+- OEM 側: **1 IP あたり 300 req/min**（交渉済みでこれ以上は無理）
+- freee 側: 全顧客が同一出口 IP → 全社で 300 req/min を共有
 - 操作の重さ: 1 名招待 = 数コール、100 名招待 = 数百コール、1,000 名以上は worker 側もボトルネック
 - 環境: Rails + Sidekiq + Redis + AWS。WebSocket は人事労務で前例なし
 
@@ -316,7 +322,7 @@ updated: 2026-05-11
 - OEM の全体 rate limit を顧客横断の共有リソースとして扱えた
 - 2 worker で lock 待ちの全体停止を回避
 - N+1 解消で worker 内の DB アクセスを軽くした
-- 負荷試験で 1,000 名超の一括招待が worker CPU 的に厳しいことを把握
+- 負荷試験で 1,000 名超の一括招待がワーカーのメモリ的に厳しいことを把握
 - 組織同期の並列実行を company 単位で止めた
 - retry と冪等性を別レイヤーで設計
 

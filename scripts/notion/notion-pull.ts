@@ -31,7 +31,7 @@ import {
 } from "./lib/notion";
 import { analyzeRange } from "./notion-meal-analyze";
 
-const ROOT = join(import.meta.dir, "..");
+const ROOT = join(import.meta.dir, "..", "..");
 
 // --- DB → file path mapping ---
 

@@ -892,6 +892,7 @@ cwd が `.worktrees/<prefix>/...` のセッションは、起動直後に **cwd 
 | `study/` | `/study` |
 | `interview-prep/` | `/interview-prep` |
 | `devotion/` | `/devotion` |
+| `pray/` | `/pray` |
 | `meal/` | `/meal` |
 | `event/` | `/event` |
 | `calendar/` | `/calendar` |
@@ -1030,6 +1031,7 @@ bun run scripts/notion/notion-sync-tasks.ts             # 実行
 - **`/learn`** — Claude のミスを指摘して再発防止策を適用するとき。「また同じミスをした」「ルールに追加して」「再発防止して」などに使う。 → `skills/learn/SKILL.md`
 - **`/meal`** — 食事を記録するとき。「〇〇食べた」「朝食記録したい」「ご飯ログ」など食事トラッキングに使う。daily ファイル・Notion meals DB・fridge.md を一括更新する。 → `skills/meal/SKILL.md`
 - **`/pr`** — プルリクエストを作成するとき。変更をグループ化して PR を作成する。コミット後に自動で呼ばれることもある。 → `skills/pr/SKILL.md`
+- **`/pray`** — 祈りを捧げるとき。「祈りたい」「祈ろう」「Closing Prayer したい」などに使う。Prayer Requests の Active リスト全員のために祈る。 → `skills/pray/SKILL.md`
 - **`/resume`** — defer したタスクを再開するとき。「resume」「さっきの続き」「defer した何かやろう」などに使う。bd ready -l defer から選んで実行する。 → `skills/resume/SKILL.md`
 - **`/study`** — 学習セッションの開始・ノート記録・Notion登録。引数: $ARGUMENTS → `skills/study/SKILL.md`
 - **`/tidy`** — 指示ファイル（CLAUDE.md・rules・commands・memory）の重複・配置ミスを整理するとき。「ルールが散らかってきた」「指示ファイル整理したい」などに使う。 → `skills/tidy/SKILL.md`

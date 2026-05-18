@@ -20,11 +20,11 @@ export interface LintResult {
 
 /**
  * Pure devotion-lint logic. Validates a devotion markdown body against the
- * canonical structure (frontmatter, section headings, SOAP parts, Closing
- * Prayer for entries from 2026-04-25 on).
+ * canonical structure (frontmatter, section headings, SOAP parts).
+ * Prayer is handled separately by the /pray skill, so devotion files no longer
+ * contain a Closing Prayer section.
  *
- * @param filename Used for reporting and the date-based Closing Prayer rule;
- *   should be a basename like "2026-04-25.md".
+ * @param filename Used for reporting; should be a basename like "2026-04-25.md".
  * @param content Full markdown content of the devotion file.
  */
 export function lintContent(filename: string, content: string): LintResult {
@@ -95,9 +95,6 @@ export function lintContent(filename: string, content: string): LintResult {
   if (!/^## 持ち帰り/m.test(content)) {
     issues.push('Missing: ## 持ち帰り');
   }
-
-  // 8. ## Closing Prayer は /pray スキル分離 (life-5d4) で別管理になるため、
-  // devotion-lint からは必須チェックを外した（2026-05-18〜）
 
   return { file: filename, issues };
 }

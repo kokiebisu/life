@@ -63,6 +63,7 @@ cwd が `.worktrees/<prefix>/...` のセッションは、起動直後に **cwd 
 | `study/` | `/study` |
 | `interview-prep/` | `/interview-prep` |
 | `devotion/` | `/devotion` |
+| `pray/` | `/pray` |
 | `meal/` | `/meal` |
 | `event/` | `/event` |
 | `calendar/` | `/calendar` |

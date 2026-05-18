@@ -96,14 +96,8 @@ export function lintContent(filename: string, content: string): LintResult {
     issues.push('Missing: ## 持ち帰り');
   }
 
-  // 8. ## Closing Prayer — required for entries from 2026-04-25 onwards
-  // (Earlier entries pre-date the rule; don't retroactively flag them.)
-  const dateMatch = filename.match(/^(\d{4}-\d{2}-\d{2})\.md$/);
-  if (dateMatch && dateMatch[1] >= "2026-04-25") {
-    if (!/^## Closing Prayer\s*$/m.test(content)) {
-      issues.push("Missing: ## Closing Prayer");
-    }
-  }
+  // 8. ## Closing Prayer は /pray スキル分離 (life-5d4) で別管理になるため、
+  // devotion-lint からは必須チェックを外した（2026-05-18〜）
 
   return { file: filename, issues };
 }

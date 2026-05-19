@@ -17,4 +17,4 @@ ln -s ../../.ai/rules/<new>.md <new>.md
 - `.ai/rules/<old>.md` を `<new>.md` にリネームしたら、`.claude/rules/` 側の symlink も張り直す
 - 動作確認: 次のセッション開始時に system-reminder のロード一覧に新ルールが含まれるか確認
 
-**過去の漏れ:** Phase 1 (PR #614) で `session-spawn.md` を追加したが symlink を忘れ、ルールが認識されないまま「復習したい」発言で spawn せず /fukushuu 起動した（2026-04-29）
+**過去の漏れ:** 新ルールを追加したのに `.claude/rules/` 側に symlink を張り忘れ、次セッションでルールが認識されないまま動いた事例あり（2026-04-29）

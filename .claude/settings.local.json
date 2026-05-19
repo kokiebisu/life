@@ -22,7 +22,13 @@
       "Bash(git branch *)",
       "Bash(git pull *)",
       "Bash(rm -rf .git/modules/projects .git/modules/sumitsugi)",
-      "Skill(trading-ideas:research)"
+      "Skill(trading-ideas:research)",
+      "Skill(interview-prep)",
+      "Skill(interview-prep:*)",
+      "Skill(humanize-ja)",
+      "Skill(humanize-ja:*)",
+      "Skill(devotion)",
+      "Skill(devotion:*)"
     ]
   },
   "hooks": {

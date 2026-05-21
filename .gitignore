@@ -26,5 +26,9 @@ docs/automate/
 
 # Investment portfolio holdings — 資産情報のためコミットしない
 aspects/investment/portfolio.csv
+aspects/investment/cash.csv
+aspects/investment/candidates/*
+!aspects/investment/candidates/.gitkeep
+aspects/investment/reports/*-rebalance.md
 
 # *.go

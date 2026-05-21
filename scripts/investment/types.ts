@@ -80,3 +80,93 @@ export interface Analysis {
   picks: ValuePick[];
   overallRisks: string[];
 }
+
+// ============================================================
+// Rebalance domain types
+// ============================================================
+
+export interface CashRow {
+  currency: "USD" | "CAD";
+  amount: number;
+  updatedOn: string; // YYYY-MM-DD
+}
+
+export interface PortfolioRow {
+  ticker: string;
+  quantity: number;
+  avgCost: number;
+  currency: "USD" | "CAD";
+  account: "TFSA" | "RRSP" | "Non-Registered" | "FHSA";
+  acquiredOn: string;
+  note: string;
+}
+
+export interface DiscoveryCandidate {
+  ticker: string;
+  thesis: string;
+  confidence: "High" | "Med" | "Low";
+  recentNews: { date: string; headline: string; url: string }[];
+  sources: string[];
+  strategy: string; // file name without date/ext, e.g. "growth"
+  generatedAt: string; // ISO
+}
+
+export interface TickerNews {
+  ticker: string;
+  items: NewsItem[]; // filtered by ticker keyword
+}
+
+export type RebalanceAction = "BUY" | "ADD" | "HOLD" | "TRIM" | "SELL" | "SKIP";
+
+export interface HoldingDecision {
+  ticker: string;
+  account: PortfolioRow["account"];
+  quantity: number;
+  avgCost: number;
+  currency: PortfolioRow["currency"];
+  action: RebalanceAction;
+  confidence: "High" | "Med" | "Low";
+  thesis: string;
+  recentNews: NewsItem[]; // top 1-3, kept for report rendering
+  sources: string[]; // at least 1 URL
+  technicals: {
+    return3m: number | null;
+    return6m: number | null;
+    return12m: number | null;
+    drawdownPct: number | null;
+  };
+  fundamentals: Fundamentals;
+  sanity?: SanityFlag;
+}
+
+export interface BuyDecision {
+  ticker: string;
+  source: "existing-holding" | string; // "existing-holding" for ADD, strategy name for BUY
+  action: "BUY" | "ADD";
+  amount: number;
+  currency: "USD" | "CAD";
+  confidence: "High" | "Med" | "Low";
+  thesis: string;
+  recentNews: NewsItem[] | { date: string; headline: string; url: string }[];
+  sources: string[];
+}
+
+export interface PortfolioHealth {
+  totalValueUSD: number;
+  totalValueCAD: number;
+  sectorBreakdown: { sector: string; pct: number }[];
+  currencyBreakdown: { currency: string; pct: number }[];
+  accountBreakdown: { account: string; pct: number }[];
+}
+
+export interface RebalanceReport {
+  date: string;
+  cash: CashRow[];
+  cashStale: boolean; // updated_on > 30 days ago
+  holdings: PortfolioRow[];
+  portfolioHealth: PortfolioHealth;
+  holdingDecisions: HoldingDecision[];
+  buyDecisions: BuyDecision[];
+  candidatesUsed: DiscoveryCandidate[];
+  cashRemainder: { currency: "USD" | "CAD"; amount: number }[];
+}

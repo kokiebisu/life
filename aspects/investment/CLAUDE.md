@@ -90,6 +90,55 @@ scripts/investment/
 - ティッカー・企業名に誤りがある可能性があるので登録後の目視確認推奨
 - 「買え」「売れ」のような断定的トーンは出力に含めない方針（プロンプトで禁止）
 
+## /rebalance — Portfolio Rebalance（中長期レビュー）
+
+> 仕様: [docs/superpowers/specs/2026-05-21-portfolio-rebalance-command-design.md](../../docs/superpowers/specs/2026-05-21-portfolio-rebalance-command-design.md)
+
+3 ヶ月おきの中長期レビューコマンド。保有銘柄 + cash を踏まえて Hold/Trim/Sell/Add と新規 Buy を提案する。
+
+### 必要ファイル（すべて gitignored）
+
+- `aspects/investment/portfolio.csv` — 保有銘柄（既存 spec）
+- `aspects/investment/cash.csv` — 現金残高
+  ```
+  currency,amount,updated_on
+  USD,5000,2026-05-21
+  CAD,2000,2026-05-21
+  ```
+- `aspects/investment/candidates/*.json` — discovery skill 出力（任意、無くても可）
+
+### Investor Profile
+
+スクリプトは **30 歳・中長期・aggressive growth tilt** 前提でチューニング済み:
+
+- Position sizing: 1 銘柄 ≤ 15% / セクター ≤ 40% / cash の 1 銘柄 ≤ 60%
+- 直近ニュース最優先（PRIM 反省）
+- 配当より成長率重視
+
+### Notion DB（手作成必須）
+
+- DB 名: **Portfolio Rebalance**
+- env var: `NOTION_REBALANCE_DB`（`.env.local`）
+- プロパティ:
+  - 名前 (title)
+  - 日付 (date)
+  - 保有銘柄数 (number)
+  - Cash USD (number)
+  - Cash CAD (number)
+  - 警告銘柄 (multi_select)
+  - ステータス (select: 新規 / 実行済み / スキップ)
+
+### 起動
+
+```bash
+bun run scripts/investment/rebalance.ts            # 本番
+bun run scripts/investment/rebalance.ts --dry-run  # Notion 登録なし
+bun run scripts/investment/rebalance.ts --only-sanity   # 暴落検出のみ
+bun run scripts/investment/rebalance.ts --only-holdings # 保有判定のみ
+```
+
+Skill 経由: `/rebalance`
+
 ## Phase 2 アイデア（MVP 外）
 
 - GitHub Actions cron 化（毎朝 JST 06:00）

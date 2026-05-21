@@ -61,7 +61,8 @@ function renderHoldingBlock(d: HoldingDecision): string {
     lines.push(`- **直近ニュース（30日）:**`);
     newsLinks(d.recentNews).forEach((l) => lines.push(`  - ${l}`));
   }
-  lines.push(`- **テクニカル:** 3m=${fmtPct(d.technicals.return3m)} / 6m=${fmtPct(d.technicals.return6m)} / 12m=${fmtPct(d.technicals.return12m)} / drawdown=${fmtPct(d.technicals.drawdownPct)}`);
+  const techFlag = (d.technicals.return1w ?? 0) <= -10 ? " ⚠️ 1w 急落" : (d.technicals.return1m ?? 0) <= -15 ? " ⚠️ 1m 軟調" : "";
+  lines.push(`- **テクニカル:** 1w=${fmtPct(d.technicals.return1w)} / 1m=${fmtPct(d.technicals.return1m)} / 3m=${fmtPct(d.technicals.return3m)} / 6m=${fmtPct(d.technicals.return6m)} / 12m=${fmtPct(d.technicals.return12m)} / drawdown=${fmtPct(d.technicals.drawdownPct)}${techFlag}`);
   lines.push(`- **ファンダ:** PER(trail/fwd)=${fmtNum(d.fundamentals.trailingPE)}/${fmtNum(d.fundamentals.forwardPE)}, ROE=${fmtPctRaw(d.fundamentals.returnOnEquity)}, FCF=${fmtNum(d.fundamentals.freeCashFlow, "money")}`);
   lines.push(`- **Thesis:** ${d.thesis}`);
   lines.push(`- **Sources:** ${d.sources.map((s, i) => `[${i + 1}](${s})`).join(" ")}`);
@@ -70,8 +71,19 @@ function renderHoldingBlock(d: HoldingDecision): string {
 
 function renderBuyBlock(b: BuyDecision): string {
   const lines: string[] = [];
-  lines.push(`### ${b.ticker} — ${b.action} ${fmtMoney(b.amount)} ${b.currency}（Confidence: ${b.confidence}）`);
+  const trancheFlag = b.trancheRecommended ? " ⚠️ tranche entry 推奨" : "";
+  lines.push(`### ${b.ticker} — ${b.action} ${fmtMoney(b.amount)} ${b.currency}（Confidence: ${b.confidence}）${trancheFlag}`);
   lines.push(`- **Source:** ${b.source}`);
+  if (b.currentPrice != null) {
+    lines.push(`- **現在価格:** $${fmtNum(b.currentPrice)} ${b.currency}`);
+  }
+  if (b.technicals) {
+    const techFlag = (b.technicals.return1w ?? 0) <= -10 ? " ⚠️ 1w 急落" : (b.technicals.return1m ?? 0) <= -15 ? " ⚠️ 1m 軟調" : "";
+    lines.push(`- **テクニカル:** 1w=${fmtPct(b.technicals.return1w)} / 1m=${fmtPct(b.technicals.return1m)} / 3m=${fmtPct(b.technicals.return3m)} / 6m=${fmtPct(b.technicals.return6m)} / 12m=${fmtPct(b.technicals.return12m)} / drawdown=${fmtPct(b.technicals.drawdownPct)}${techFlag}`);
+  }
+  if (b.trancheRecommended) {
+    lines.push(`- **⚠️ Tranche entry:** 短期急落により分割エントリ推奨。今回 $${fmtNum(b.amount)} は通常配分の半分以下に縮小済み。残り cash は底打ち確認後または更なる押し目で。`);
+  }
   if (b.recentNews.length === 0) {
     lines.push(`- **直近ニュース:** —`);
   } else {

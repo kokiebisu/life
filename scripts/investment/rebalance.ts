@@ -177,7 +177,7 @@ async function main() {
       row,
       fundamentals: fund,
       news: newsMap.get(upper) ?? [],
-      technicals: priceMetrics.get(upper) ?? { ticker: row.ticker, return3m: null, return6m: null, return12m: null, drawdownPct: null, currentPrice: null },
+      technicals: priceMetrics.get(upper) ?? { ticker: row.ticker, return1w: null, return1m: null, return3m: null, return6m: null, return12m: null, drawdownPct: null, currentPrice: null },
       sanity: sanityFlags.get(upper),
       currentPrice,
       positionValue,
@@ -217,6 +217,7 @@ async function main() {
     portfolioTotalCAD: portfolioHealth.totalValueCAD,
     adds,
     buys: ctx.candidates,
+    priceMetrics,
   });
   console.error(`  → ${buyDecisions.length} 件配分`);
 

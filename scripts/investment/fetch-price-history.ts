@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * fetch-price-history — 各 ticker の 12 ヶ月価格履歴を取得し、3/6/12 ヶ月リターン + drawdown を返す。
+ * fetch-price-history — 各 ticker の 12 ヶ月価格履歴を取得し、1w/1m/3m/6m/12m リターン + drawdown を返す。
  */
 
 import YahooFinance from "yahoo-finance2";
@@ -9,6 +9,8 @@ const yahooFinance = new YahooFinance({ suppressNotices: ["yahooSurvey"] });
 
 export interface PriceMetrics {
   ticker: string;
+  return1w: number | null;   // ~5 営業日
+  return1m: number | null;   // ~21 営業日
   return3m: number | null;
   return6m: number | null;
   return12m: number | null;
@@ -32,6 +34,8 @@ export async function fetchPriceHistory(tickers: string[]): Promise<Map<string, 
         if (quotes.length < 30) {
           out.set(ticker.toUpperCase(), {
             ticker,
+            return1w: null,
+            return1m: null,
             return3m: null,
             return6m: null,
             return12m: null,
@@ -56,6 +60,8 @@ export async function fetchPriceHistory(tickers: string[]): Promise<Map<string, 
 
         out.set(ticker.toUpperCase(), {
           ticker,
+          return1w: pickReturn(5),
+          return1m: pickReturn(21),
           return3m: pickReturn(63),
           return6m: pickReturn(126),
           return12m: pickReturn(252),
@@ -67,6 +73,8 @@ export async function fetchPriceHistory(tickers: string[]): Promise<Map<string, 
         console.warn(`[price-history] ${ticker} failed: ${msg}`);
         out.set(ticker.toUpperCase(), {
           ticker,
+          return1w: null,
+          return1m: null,
           return3m: null,
           return6m: null,
           return12m: null,
@@ -92,7 +100,7 @@ if (import.meta.main) {
     if (m.fetchError) {
       console.log(`${t}: ERROR ${m.fetchError}`);
     } else {
-      console.log(`${t}: price=${m.currentPrice?.toFixed(2)} 3m=${m.return3m?.toFixed(1)}% 6m=${m.return6m?.toFixed(1)}% 12m=${m.return12m?.toFixed(1)}% drawdown=${m.drawdownPct?.toFixed(1)}%`);
+      console.log(`${t}: price=${m.currentPrice?.toFixed(2)} 1w=${m.return1w?.toFixed(1)}% 1m=${m.return1m?.toFixed(1)}% 3m=${m.return3m?.toFixed(1)}% 6m=${m.return6m?.toFixed(1)}% 12m=${m.return12m?.toFixed(1)}% drawdown=${m.drawdownPct?.toFixed(1)}%`);
     }
   }
 }

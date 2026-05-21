@@ -137,15 +137,52 @@ async function main() {
   console.error(`🚨 sanity-check 中...`);
   const sanityFlags = await sanityCheck(allTickers);
 
+  // Compute portfolio totals BEFORE evaluate-holdings so Claude sees position %
+  // FX: CAD → USD at fixed ~0.73 (simplification; for sizing purposes only)
+  const CAD_TO_USD = 0.73;
+  const priceMap = new Map<string, number | null>();
+  for (const [t, m] of priceMetrics) priceMap.set(t, m.currentPrice);
+  for (const [t, f] of fundMap) {
+    if (!priceMap.has(t) || priceMap.get(t) === null) priceMap.set(t, f.price);
+  }
+
+  const positionValueUSDEquivByTicker = new Map<string, number>();
+  let totalHoldingsUSDEquiv = 0;
+  for (const row of ctx.portfolio) {
+    const upper = row.ticker.toUpperCase();
+    const price = priceMap.get(upper) ?? row.avgCost;
+    const valueInCcy = row.quantity * (price ?? row.avgCost);
+    const valueUSDEquiv = row.currency === "CAD" ? valueInCcy * CAD_TO_USD : valueInCcy;
+    positionValueUSDEquivByTicker.set(upper, valueUSDEquiv);
+    totalHoldingsUSDEquiv += valueUSDEquiv;
+  }
+  const totalCashUSDEquiv = ctx.cash.reduce(
+    (sum, c) => sum + (c.currency === "CAD" ? c.amount * CAD_TO_USD : c.amount),
+    0,
+  );
+  const totalPortfolioUSDEquiv = totalHoldingsUSDEquiv + totalCashUSDEquiv;
+
   const holdingInputs = ctx.portfolio.map((row) => {
-    const fund = fundMap.get(row.ticker.toUpperCase());
+    const upper = row.ticker.toUpperCase();
+    const fund = fundMap.get(upper);
     if (!fund) throw new Error(`fundamentals missing for ${row.ticker}`);
+    const currentPrice = priceMap.get(upper) ?? fund.price ?? row.avgCost;
+    const positionValue = row.quantity * currentPrice;
+    const positionValueUSDEquiv = positionValueUSDEquivByTicker.get(upper) ?? 0;
+    const positionPct = totalPortfolioUSDEquiv > 0
+      ? (positionValueUSDEquiv / totalPortfolioUSDEquiv) * 100
+      : 0;
+    const pnlPct = row.avgCost > 0 ? ((currentPrice - row.avgCost) / row.avgCost) * 100 : 0;
     return {
       row,
       fundamentals: fund,
-      news: newsMap.get(row.ticker.toUpperCase()) ?? [],
-      technicals: priceMetrics.get(row.ticker.toUpperCase()) ?? { ticker: row.ticker, return3m: null, return6m: null, return12m: null, drawdownPct: null, currentPrice: null },
-      sanity: sanityFlags.get(row.ticker.toUpperCase()),
+      news: newsMap.get(upper) ?? [],
+      technicals: priceMetrics.get(upper) ?? { ticker: row.ticker, return3m: null, return6m: null, return12m: null, drawdownPct: null, currentPrice: null },
+      sanity: sanityFlags.get(upper),
+      currentPrice,
+      positionValue,
+      positionPct,
+      pnlPct,
     };
   });
 
@@ -155,13 +192,12 @@ async function main() {
 
   if (args.only === "holdings") {
     for (const d of holdingDecisions) {
-      console.log(`${d.ticker} (${d.account}): ${d.action} [${d.confidence}] — ${d.thesis.slice(0, 80)}...`);
+      const trimStr = d.trimPct ? ` trim ${d.trimPct}% (~${d.trimShares} 株, ~$${d.trimAmount?.toFixed(0)})` : "";
+      console.log(`${d.ticker} (${d.account}, ${d.positionPct.toFixed(1)}%): ${d.action} [${d.confidence}]${trimStr} — ${d.thesis.slice(0, 80)}...`);
     }
     return;
   }
 
-  const priceMap = new Map<string, number | null>();
-  for (const [t, m] of priceMetrics) priceMap.set(t, m.currentPrice);
   const fundSectorMap = new Map<string, { sector: string | null; currency: string }>();
   for (const [t, f] of fundMap) fundSectorMap.set(t, { sector: f.sector, currency: f.currency });
   const portfolioHealth = computePortfolioHealth(ctx.portfolio, fundSectorMap, priceMap);

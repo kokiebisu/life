@@ -24,4 +24,7 @@ docs/automate/
 # beads (bd) defer queue — local Dolt DB, not committed
 .beads/
 
+# Investment portfolio holdings — 資産情報のためコミットしない
+aspects/investment/portfolio.csv
+
 # *.go

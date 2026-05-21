@@ -1,0 +1,172 @@
+/**
+ * evaluate-holdings — 各保有銘柄について Hold / Trim / Sell / Add を判定する。
+ *
+ * 直近ニュースを最優先軸とし、Investor Profile (30 / 中長期 / aggressive growth) を
+ * プロンプトで明示。Sources URL 必須。
+ */
+
+import { callClaude } from "../lib/claude";
+import { extractJson } from "./util-json";
+import type {
+  PortfolioRow,
+  Fundamentals,
+  NewsItem,
+  SanityFlag,
+  HoldingDecision,
+  RebalanceAction,
+} from "./types";
+import type { PriceMetrics } from "./fetch-price-history";
+
+const SYSTEM = `あなたは 30 歳・中長期投資・aggressive growth tilt の投資家のためのポートフォリオ・アドバイザーです。
+
+**Investor Profile（必ず遵守）:**
+- リスク許容度: 高い。横ばい配当株より成長株を優先する
+- 時間軸: 3 ヶ月〜数年の中長期。日次トレードではない
+- バイアス: 売上成長率・カタリスト・テーマ性を重視。バリュー指標は下値リスクのスクリーニング用
+- 集中度: やや集中許容（1 銘柄 max 15% portfolio、確信があれば厚く張ってよい）
+- 配当志向: 弱い
+
+**評価軸の優先順位:**
+1. **直近のニュース・sentiment（最優先）** — 過去 30 日の earnings、ガイダンス、規制、訴訟、insider 取引、アナリスト評価変更。カタリストの有無が判定の主軸
+2. テクニカル / 価格モメンタム — 3/6/12 ヶ月リターン、drawdown
+3. ファンダメンタル — 売上成長率を最重視（低 PER ≠ 買い）
+4. portfolio 全体の健全性 — aggressive profile 前提で多少の偏りは許容
+
+**重要ルール:**
+- 直近 30 日にネガティブなニュース（earnings miss + ガイダンス下方修正、訴訟、規制ショック等）がある銘柄は、ファンダが割安でも SELL / TRIM を優先する
+- 直近に強いカタリストが出た銘柄は、高 PER でも HOLD / ADD を許容する
+- **すべての thesis に少なくとも 1 つの URL ソースを付ける。** ソース無しの判定は不可
+- ニュースが取得できなかった銘柄は Action=HOLD、Confidence=Low とし、thesis に「ニュース取得失敗、判定保留」と書く
+- sanity-check 警告がある銘柄は、その警告内容を thesis の最上位根拠として引用する（無視しない）`;
+
+interface HoldingInput {
+  row: PortfolioRow;
+  fundamentals: Fundamentals;
+  news: NewsItem[];
+  technicals: PriceMetrics;
+  sanity?: SanityFlag;
+}
+
+function fmt(v: number | null, mode: "raw" | "pct" | "money" = "raw"): string {
+  if (v === null) return "—";
+  if (mode === "pct") return `${(v * 100).toFixed(1)}%`;
+  if (mode === "money") {
+    if (Math.abs(v) >= 1e12) return `${(v / 1e12).toFixed(2)}T`;
+    if (Math.abs(v) >= 1e9) return `${(v / 1e9).toFixed(2)}B`;
+    if (Math.abs(v) >= 1e6) return `${(v / 1e6).toFixed(2)}M`;
+    return v.toFixed(0);
+  }
+  return Number.isInteger(v) ? v.toString() : v.toFixed(2);
+}
+
+function formatHolding(h: HoldingInput): string {
+  const lines: string[] = [];
+  lines.push(`## ${h.row.ticker} (${h.row.account})`);
+  lines.push(`- 保有: ${h.row.quantity} 株 @ avg ${fmt(h.row.avgCost)} ${h.row.currency}`);
+  lines.push(`- 現在価格: ${fmt(h.technicals.currentPrice)} ${h.fundamentals.currency}`);
+  lines.push(`- セクター: ${h.fundamentals.sector ?? "—"} / 業種: ${h.fundamentals.industry ?? "—"}`);
+  lines.push(`- ファンダ: PER(trail/fwd)=${fmt(h.fundamentals.trailingPE)}/${fmt(h.fundamentals.forwardPE)}, PBR=${fmt(h.fundamentals.priceToBook)}, ROE=${fmt(h.fundamentals.returnOnEquity, "pct")}, 配当=${fmt(h.fundamentals.dividendYield, "pct")}, D/E=${fmt(h.fundamentals.debtToEquity)}, FCF=${fmt(h.fundamentals.freeCashFlow, "money")}`);
+  lines.push(`- テクニカル: 3m=${fmt(h.technicals.return3m)}%, 6m=${fmt(h.technicals.return6m)}%, 12m=${fmt(h.technicals.return12m)}%, drawdown(12m高値)=${fmt(h.technicals.drawdownPct)}%`);
+  if (h.sanity && h.sanity.warnings.length > 0) {
+    lines.push(`- 🚨 sanity-check 警告:`);
+    h.sanity.warnings.forEach((w) => lines.push(`    - ${w}`));
+  }
+  if (h.news.length === 0) {
+    lines.push(`- 直近ニュース: 取得できず`);
+  } else {
+    lines.push(`- 直近ニュース（${h.news.length} 件）:`);
+    h.news.slice(0, 5).forEach((n) => {
+      lines.push(`    - [${n.pubDate}] ${n.title} — ${n.link}`);
+    });
+  }
+  return lines.join("\n");
+}
+
+export async function evaluateHoldings(inputs: HoldingInput[]): Promise<HoldingDecision[]> {
+  if (inputs.length === 0) return [];
+
+  const portfolioSection = inputs.map(formatHolding).join("\n\n");
+
+  const userPrompt = `以下は現在の保有銘柄リストです。各銘柄について Hold / Trim / Sell / Add のいずれかを判定してください。
+
+${portfolioSection}
+
+**各銘柄について以下を判定:**
+
+- \`action\`: "HOLD" | "TRIM" | "SELL" | "ADD"
+- \`confidence\`: "High" | "Med" | "Low"
+- \`thesis\`: なぜその action か。**直近ニュースを最上位根拠として引用**。2-4 文
+- \`sources\`: thesis の根拠となる URL を 1 つ以上（ニュース項目の link を使用、空配列は不可）
+
+**判定の優先順位（最優先 → 補助）:**
+1. 直近 30 日のニュース・カタリスト
+2. テクニカル / 価格モメンタム
+3. ファンダメンタル（成長率重視、PER は割高警告として）
+4. sanity-check 警告（あれば必ず最上位根拠として参照）
+
+ニュースが 0 件の銘柄は action=HOLD, confidence=Low、thesis に「ニュース取得失敗、判定保留」と明記し、sources はファンダの参照として yahoo finance URL "https://finance.yahoo.com/quote/<ticker>" を使ってよい。
+
+**出力は以下の JSON のみ**（コードフェンス・前置きなし）:
+{
+  "decisions": [
+    {
+      "ticker": "AAPL",
+      "action": "HOLD",
+      "confidence": "High",
+      "thesis": "...",
+      "sources": ["https://...", "https://..."]
+    }
+  ]
+}`;
+
+  const raw = await callClaude(
+    [{ role: "user", content: userPrompt }],
+    { system: SYSTEM, maxTurns: 1, model: "claude-opus-4-7", maxTokens: 8192 },
+  );
+
+  const parsed = extractJson(raw) as {
+    decisions: Array<{
+      ticker: string;
+      action: RebalanceAction;
+      confidence: "High" | "Med" | "Low";
+      thesis: string;
+      sources: string[];
+    }>;
+  };
+
+  if (!parsed.decisions || !Array.isArray(parsed.decisions)) {
+    throw new Error(`evaluate-holdings: invalid JSON from Claude:\n${raw}`);
+  }
+
+  const inputMap = new Map(inputs.map((h) => [h.row.ticker.toUpperCase(), h]));
+  return parsed.decisions
+    .map((d): HoldingDecision | null => {
+      const h = inputMap.get(d.ticker.toUpperCase());
+      if (!h) return null;
+      if (!d.sources || d.sources.length === 0) {
+        console.warn(`[evaluate-holdings] ${d.ticker}: no sources, marking confidence Low`);
+        d.sources = [`https://finance.yahoo.com/quote/${d.ticker}`];
+      }
+      return {
+        ticker: h.row.ticker,
+        account: h.row.account,
+        quantity: h.row.quantity,
+        avgCost: h.row.avgCost,
+        currency: h.row.currency,
+        action: d.action,
+        confidence: d.confidence,
+        thesis: d.thesis,
+        recentNews: h.news.slice(0, 3),
+        sources: d.sources,
+        technicals: {
+          return3m: h.technicals.return3m,
+          return6m: h.technicals.return6m,
+          return12m: h.technicals.return12m,
+          drawdownPct: h.technicals.drawdownPct,
+        },
+        fundamentals: h.fundamentals,
+        sanity: h.sanity,
+      };
+    })
+    .filter((d): d is HoldingDecision => d !== null);
+}

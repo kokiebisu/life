@@ -1,13 +1,21 @@
 #!/usr/bin/env bun
 /**
- * fetch-ticker-news — 既存の fetch-news.ts を呼び、各 ticker / company name を含む
- * news items を ticker ごとに分類して返す。
+ * fetch-ticker-news — 既存の fetch-news.ts と yahoo-finance2 の per-ticker search を組み合わせて
+ * 各 ticker のニュースを返す。
  *
- * MVP: RSS フィルタのみ。Phase 2 で WebSearch 連携を追加予定。
+ * 1. 既存の RSS feed を ticker キーワードでフィルタ
+ * 2. RSS マッチが 3 件未満の ticker に対しては yahoo-finance2.search() で補完（per-ticker news）
  */
 
+import YahooFinance from "yahoo-finance2";
 import { fetchNews } from "./fetch-news";
 import type { NewsItem, TickerNews } from "./types";
+
+const yahooFinance = new YahooFinance({ suppressNotices: ["yahooSurvey"] });
+
+const PER_TICKER_FALLBACK_THRESHOLD = 3; // RSS マッチがこれ未満なら Yahoo per-ticker を追加取得
+const PER_TICKER_NEWS_LIMIT = 5;
+const NEWS_FRESHNESS_DAYS = 30;
 
 export interface TickerKey {
   ticker: string;
@@ -20,7 +28,49 @@ export interface TickerKey {
 
 export async function fetchTickerNews(keys: TickerKey[]): Promise<Map<string, NewsItem[]>> {
   const allNews = await fetchNews();
-  return filterByTicker(allNews, keys);
+  const rssMap = filterByTicker(allNews, keys);
+
+  // For tickers with low RSS match, fetch per-ticker news via yahoo-finance2.search
+  const cutoff = Date.now() - NEWS_FRESHNESS_DAYS * 24 * 3600 * 1000;
+  await Promise.all(
+    keys.map(async (key) => {
+      const upper = key.ticker.toUpperCase();
+      const existing = rssMap.get(upper) ?? [];
+      if (existing.length >= PER_TICKER_FALLBACK_THRESHOLD) return;
+      try {
+        const result = await yahooFinance.search(key.ticker, { newsCount: PER_TICKER_NEWS_LIMIT });
+        const yahooNews: NewsItem[] = (result.news ?? [])
+          .filter((n: any) => {
+            const ts = n.providerPublishTime ? new Date(n.providerPublishTime).getTime() : 0;
+            return ts >= cutoff;
+          })
+          .map((n: any): NewsItem => ({
+            source: n.publisher ?? "Yahoo Finance",
+            category: "株",
+            lang: "en",
+            title: n.title ?? "",
+            link: n.link ?? "",
+            pubDate: n.providerPublishTime ? new Date(n.providerPublishTime).toISOString() : "",
+            summary: "",
+          }));
+        // Dedupe by link
+        const seen = new Set(existing.map((i) => i.link));
+        const merged = [...existing];
+        for (const n of yahooNews) {
+          if (!seen.has(n.link)) {
+            merged.push(n);
+            seen.add(n.link);
+          }
+        }
+        rssMap.set(upper, merged.slice(0, PER_TICKER_NEWS_LIMIT));
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn(`[ticker-news] ${key.ticker} yahoo search failed: ${msg}`);
+      }
+    }),
+  );
+
+  return rssMap;
 }
 
 export function filterByTicker(news: NewsItem[], keys: TickerKey[]): Map<string, NewsItem[]> {

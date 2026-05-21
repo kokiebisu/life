@@ -137,6 +137,15 @@ export interface HoldingDecision {
   };
   fundamentals: Fundamentals;
   sanity?: SanityFlag;
+  // Position context (filled by orchestrator before evaluate-holdings)
+  currentPrice: number | null;
+  positionValue: number; // qty * price (or qty * avgCost as fallback)
+  positionPct: number; // % of total portfolio (holdings + cash USD-equiv)
+  pnlPct: number; // (price - avgCost) / avgCost * 100
+  // TRIM / SELL only: how much to reduce (null otherwise)
+  trimPct?: number | null;       // 0-100, what % of current position to sell
+  trimShares?: number | null;    // suggested share count to sell
+  trimAmount?: number | null;    // suggested $ amount to sell
 }
 
 export interface BuyDecision {

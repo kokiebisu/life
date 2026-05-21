@@ -50,6 +50,11 @@ function renderHoldingBlock(d: HoldingDecision): string {
   if (d.sanity && d.sanity.warnings.length > 0) {
     lines.push(`- **🚨 sanity-check:** ${d.sanity.warnings.join(" / ")}`);
   }
+  const pnlSign = d.pnlPct >= 0 ? "+" : "";
+  lines.push(`- **Position:** $${fmtNum(d.positionValue)} (${d.positionPct.toFixed(1)}% of portfolio) / **P&L:** ${pnlSign}${d.pnlPct.toFixed(1)}% / 現在価格 $${fmtNum(d.currentPrice)}`);
+  if (d.trimPct && d.trimShares !== null && d.trimAmount !== null) {
+    lines.push(`- **🔻 売却推奨:** ${d.trimPct}% (~${d.trimShares} 株, ~$${fmtNum(d.trimAmount)} ${d.currency})`);
+  }
   if (d.recentNews.length === 0) {
     lines.push(`- **直近ニュース:** 取得できず`);
   } else {
@@ -100,7 +105,37 @@ export function renderRebalanceMarkdown(report: RebalanceReport): string {
   const cashDate = report.cash.length > 0 ? report.cash[0].updatedOn : "—";
   lines.push(`- Cash: ${cashStr}（cash.csv: ${cashDate} 更新${report.cashStale ? " ⚠️ stale" : ""}）`);
   lines.push(`- 推奨 actions: BUY ${counts.BUY} / ADD ${counts.ADD} / HOLD ${counts.HOLD} / TRIM ${counts.TRIM} / SELL ${counts.SELL}`);
+
+  // Cash drag warning — aggressive growth profile では cash 比率が高すぎると機会損失
+  const CAD_TO_USD = 0.73;
+  const totalCashUSDEquiv = report.cash.reduce(
+    (sum, c) => sum + (c.currency === "CAD" ? c.amount * CAD_TO_USD : c.amount),
+    0,
+  );
+  const totalHoldingsUSDEquiv = report.holdingDecisions.reduce((sum, d) => {
+    const usdEquiv = d.currency === "CAD" ? d.positionValue * CAD_TO_USD : d.positionValue;
+    return sum + usdEquiv;
+  }, 0);
+  const totalPortfolioUSDEquiv = totalHoldingsUSDEquiv + totalCashUSDEquiv;
+  if (totalPortfolioUSDEquiv > 0) {
+    const cashPct = (totalCashUSDEquiv / totalPortfolioUSDEquiv) * 100;
+    if (cashPct >= 15) {
+      lines.push(`- **⚠️ Cash drag:** ${cashPct.toFixed(1)}% in cash. aggressive growth profile では 15% 超は機会損失。discovery skill で BUY 候補を出すか、ADD 推奨銘柄に振り向けることを検討。`);
+    }
+  }
   lines.push("");
+
+  // TRIM/SELL の合計金額（cash 化される予定額）
+  const totalTrimUSDEquiv = report.holdingDecisions
+    .filter((d) => d.trimAmount)
+    .reduce((sum, d) => {
+      const usdEquiv = d.currency === "CAD" ? (d.trimAmount ?? 0) * CAD_TO_USD : (d.trimAmount ?? 0);
+      return sum + usdEquiv;
+    }, 0);
+  if (totalTrimUSDEquiv > 0) {
+    lines.push(`> 💵 **TRIM/SELL 合計**: ~$${fmtNum(totalTrimUSDEquiv)} USD-equiv が cash 化される予定`);
+    lines.push("");
+  }
 
   if (flagged.length > 0) {
     lines.push(`> 🚨 **sanity-check 警告銘柄**: ${flagged.map((d) => d.ticker).join(", ")}。直近の値動き異常を確認してください。`);

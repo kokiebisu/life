@@ -139,6 +139,37 @@ bun run scripts/investment/rebalance.ts --only-holdings # 保有判定のみ
 
 Skill 経由: `/rebalance`
 
+## /discover-growth — Growth 候補発掘（pluggable discovery skill）
+
+> 仕様: [scripts/investment/discover-growth.ts](../../scripts/investment/discover-growth.ts) / [skills/discover-growth/SKILL.md](../../skills/discover-growth/SKILL.md)
+
+ニュース起点で新規 growth 銘柄候補を発掘し、`/rebalance` の次回実行で取り込まれる JSON を生成する。
+
+### パイプライン
+
+1. `portfolio.csv` を読んで保有銘柄を除外リストにセット
+2. RSS ニュース取得（既存 fetch-news 再利用）
+3. **Claude pick**: news から growth 候補を 12 個ピック（保有除外、テーマ性 + カタリスト基準）
+4. yahoo-finance2 でファンダ + 価格履歴 + per-ticker ニュース取得
+5. sanity-check で暴落銘柄を picked から除外
+6. **Claude evaluate**: 5 銘柄に絞り込み、confidence High/Med のみ採用
+7. `aspects/investment/candidates/<YYYY-MM-DD>-growth.json` に出力
+
+### 起動
+
+```bash
+bun run scripts/investment/discover-growth.ts            # 本番（JSON 出力）
+bun run scripts/investment/discover-growth.ts --dry-run  # stdout のみ
+bun run scripts/investment/discover-growth.ts --n 8      # 採用数指定（default 5）
+```
+
+Skill 経由: `/discover-growth`
+
+### 連携
+
+- 出力 JSON は 14 日以内のものを `/rebalance` の `loadCandidates()` が自動取り込み
+- 古い JSON はゴミなので手動削除推奨（または GitHub Actions で定期掃除）
+
 ## Phase 2 アイデア（MVP 外）
 
 - GitHub Actions cron 化（毎朝 JST 06:00）

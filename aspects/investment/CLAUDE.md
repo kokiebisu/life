@@ -170,6 +170,34 @@ Skill 経由: `/discover-growth`
 - 出力 JSON は 14 日以内のものを `/rebalance` の `loadCandidates()` が自動取り込み
 - 古い JSON はゴミなので手動削除推奨（または GitHub Actions で定期掃除）
 
+## /discover-value — Value 候補発掘（pluggable discovery skill）
+
+> 仕様: [scripts/investment/discover-value.ts](../../scripts/investment/discover-value.ts) / [skills/discover-value/SKILL.md](../../skills/discover-value/SKILL.md)
+
+discover-growth の value 版。割安かつクオリティのある銘柄を発掘し、`/rebalance` の次回実行で取り込まれる JSON を生成する。
+
+### discover-growth との使い分け
+
+| | discover-growth | discover-value |
+|---|---|---|
+| 主軸 | カタリスト・モメンタム・売上成長率 | 割安性 (PER/PBR/FCF yield/配当) |
+| Tech | 主戦場 | 避けるか少数 |
+| セクター傾向 | AI/semis/宇宙等 | 消費財・金融・ヘルスケア・産業財・公益等 |
+
+### 起動
+
+```bash
+bun run scripts/investment/discover-value.ts            # 本番（JSON 出力）
+bun run scripts/investment/discover-value.ts --dry-run  # stdout のみ
+bun run scripts/investment/discover-value.ts --n 8      # 採用数指定（default 5）
+```
+
+Skill 経由: `/discover-value`
+
+### バリュートラップ対策
+
+FCF マイナス・売上縮小・D/E 400 超・配当カット・earnings miss・drawdown -25% 超 などを自動除外。
+
 ## Phase 2 アイデア（MVP 外）
 
 - GitHub Actions cron 化（毎朝 JST 06:00）

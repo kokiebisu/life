@@ -940,6 +940,7 @@ bun run scripts/notion/notion-sync-tasks.ts             # 実行
 - **`/defer`** — 重そうなタスクをトークンリセット後に回したいとき。「これ defer」「あとで」「これ重そう」などに使う。直前または引数のタスクを beads キュー（label=defer）に保存する。 → `skills/defer/SKILL.md`
 - **`/devotion`** — デボーション（聖書の学び）を始めるとき。「デボーションしたい」「デボーションやろう」「聖書読もう」などに使う。章は自動検出する。 → `skills/devotion/SKILL.md`
 - **`/discover-growth`** — 新規の growth 候補銘柄をニュース起点で発掘するとき。「新しい買い候補ない？」「グロース株探して」「次のリバランスの弾」などに使う。出力は /rebalance が次回自動取り込みする。 → `skills/discover-growth/SKILL.md`
+- **`/discover-value`** — 新規の value (割安) 候補銘柄をニュース起点で発掘するとき。「割安株探して」「value 候補出して」「次のリバランスのバリュー枠」などに使う。出力は /rebalance が次回自動取り込みする。 → `skills/discover-value/SKILL.md`
 - **`/event`** — イベント・予定を Notion カレンダーに登録するとき。飲み会・会議・外出など日時が決まっている予定の登録に使う。移動時間・重複チェックも自動処理する。 → `skills/event/SKILL.md`
 - **`/fridge-sync`** — fridge.md（冷蔵庫在庫）を Notion の「冷蔵庫の在庫」ページに同期するとき。「冷蔵庫同期して」「fridge 更新して」に使う。 → `skills/fridge-sync/SKILL.md`
 - **`/from-notion`** — Notion の変更をリポジトリの md ファイルに逆同期するとき。Notion 上で時間変更・完了マーク・フィードバックをした後に使う。 → `skills/from-notion/SKILL.md`

@@ -130,6 +130,8 @@ export interface HoldingDecision {
   recentNews: NewsItem[]; // top 1-3, kept for report rendering
   sources: string[]; // at least 1 URL
   technicals: {
+    return1w: number | null;
+    return1m: number | null;
     return3m: number | null;
     return6m: number | null;
     return12m: number | null;
@@ -158,6 +160,17 @@ export interface BuyDecision {
   thesis: string;
   recentNews: NewsItem[] | { date: string; headline: string; url: string }[];
   sources: string[];
+  // Optional context filled by allocate-cash
+  currentPrice?: number | null;
+  technicals?: {
+    return1w: number | null;
+    return1m: number | null;
+    return3m: number | null;
+    return6m: number | null;
+    return12m: number | null;
+    drawdownPct: number | null;
+  };
+  trancheRecommended?: boolean; // true when recent 1w sharp drop suggests split entry
 }
 
 export interface PortfolioHealth {

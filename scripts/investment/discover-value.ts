@@ -179,7 +179,8 @@ async function evaluateValueCandidates(
       lines.push(`- ファンダ: 取得失敗`);
     }
     if (p) {
-      lines.push(`- 価格推移: 3m=${fmtNum(p.return3m)}%, 6m=${fmtNum(p.return6m)}%, 12m=${fmtNum(p.return12m)}%, drawdown(12m高値)=${fmtNum(p.drawdownPct)}%`);
+      const dropFlag = (p.return1w ?? 0) <= -10 ? " ⚠️ 1w 急落" : "";
+      lines.push(`- 価格推移: 1w=${fmtNum(p.return1w)}%, 1m=${fmtNum(p.return1m)}%, 3m=${fmtNum(p.return3m)}%, 6m=${fmtNum(p.return6m)}%, 12m=${fmtNum(p.return12m)}%, drawdown(12m高値)=${fmtNum(p.drawdownPct)}%${dropFlag}`);
     }
     if (news.length === 0) {
       lines.push(`- 直近ニュース: 取得できず`);

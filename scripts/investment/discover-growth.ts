@@ -80,25 +80,34 @@ ${newsSummary}
 
 これらから **growth テーマで 3 ヶ月〜数年スパンで爆発的に伸びる可能性がある銘柄** を ${pickCount} 個ピックアップしてください。
 
-**ピック基準:**
-- 売上成長率が高い（or 高くなる見込み）企業
-- 強いカタリスト（AI 採用、新製品、巨大契約、規制緩和、IPO 等）
-- テーマ性（AI / 半導体 / 宇宙 / バイオテック / クリーンエネルギー / サイバー / 量子 / 核融合 / 防衛 / フィンテック等）
-- **市場規模: $1B-$20B mid/small-cap growth を sweet spot とする** (「次の主役」「これからの芽」候補)
-  - 既に $50B+ のメガキャップ (NVDA, LLY, TSM 規模) は **採用 0-1 銘柄まで** (大半は機関ホルダー満杯で爆発余地小)
-  - $5B-$20B レンジが特に好み (流動性十分 + 機関買い余地大 + 業績急加速段階)
-  - 例えるなら RKLB ($1B 時) / CRWD ($10B 時) / VRT ($5B 時) のような pre-breakout 銘柄
+**ユーザーの edge: AI / Software / Tech ecosystem (software engineer の視点で評価可能)。Edge Lottery 候補として「化ける」狙い。**
+
+**ピック基準（厳守）:**
+- **テーマ: AI/Software ecosystem 内に絞る (優先順)**
+  1. **AI infrastructure / dev tools / cloud** (engineer が使う SaaS、AI 開発ツール、observability)
+  2. **AI security / cyber** (engineer が評価しやすい領域)
+  3. **AI applications / vertical SaaS** (specific industry に AI を載せた SaaS)
+  4. **Adjacent: AI 電力 / semi 周辺 / 量子 / 核融合** (AI の supply chain 周辺)
+  5. (低優先) 非 AI/Tech (Healthcare biotech, 宇宙, 防衛) — 1-2 銘柄まで、diversifier 用
+- **市場規模: $1B-$20B mid/small-cap が sweet spot** (Edge Lottery = 化ける狙い)
+  - **$5B-$15B が最も好み** (pre-breakout: 機関ホルダー余地大 + 業績急加速段階)
+  - $50B+ のメガキャップ (NVDA, MSFT, AMZN, GOOG, AVGO, ASML, TSM 規模) は **採用 0 銘柄** (Edge Core 担当、Lottery じゃない)
+  - $20B-$50B は **採用 0-1 銘柄まで** (もう走った後の可能性大)
+  - 例えるなら RKLB ($1B 時) / CRWD ($10B 時) / SNOW IPO 直後 のような pre-breakout 銘柄
 - 直近で **earnings 急加速 / 巨大契約 / アナリスト upgrade ラッシュ / sector momentum** がある銘柄を優先
+- **First-hand evaluable products を優先**: engineer として試せる/使える、AWS/Azure 競合で adoption 見える、面接先 SaaS choice で見える
 - **既存保有銘柄は除外**: ${excludeList || "（保有なし）"}
 
 **避ける:**
 - $500M 以下のペニーストック領域 (流動性・破綻リスク)
-- $100B+ のメガキャップを 2 銘柄以上ピック (既に走り終わってる)
+- $50B+ のメガキャップ全て (Edge Core 担当、Lottery じゃない)
 - 上場直後 IPO（>6 ヶ月実績を見たい）
 - 配当株（growth より income 向き）
 - 既に -50% drawdown 等で構造的悪化している銘柄
+- **非 AI/Tech (Materials, Restaurants, Mining, Banks, Consumer Brands 等) を主力に持つ銘柄** ← edge 外、value/defensive 層担当
+  - 例外: AI 周辺 (AI 電力 utility, AI 量子) は OK
 
-セクター偏りを避け、できるだけ複数テーマから選んでください。
+複数テーマから分散して選んでください (例: dev tools + AI security + AI infra + 量子)。同じテーマで 3 銘柄以上は禁止。
 
 **出力は以下の JSON のみ**（コードフェンス・前置きなし）:
 {

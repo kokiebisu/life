@@ -85,13 +85,40 @@ ${addLines}
 **BUY 候補（discovery skill 出力、新規銘柄、各銘柄に直近の価格推移付き）:**
 ${buyLines}
 
-**Position Sizing ルール（必ず遵守。30 歳 / aggressive growth 向けに緩め）:**
-- 1 銘柄あたり portfolio 占有率 ≤ 15%（既存保有分も含めて）
-- 1 セクター ≤ 40%
-- 1 銘柄あたり cash の配分 ≤ 60%
+**Position Sizing ルール（3 層 Portfolio フレームワーク、厳守）:**
+
+ユーザーは AI/Software edge の aggressive growth 投資家。以下の 3 層構造で配分:
+
+| 層 | 目標 % | 1 銘柄サイズ |
+|---|---|---|
+| Edge Core (NVDA/MSFT/AMZN/GOOG 等 mega-cap edge plays) | 35-40% | 5-10% each |
+| **Edge Lottery (mid/small-cap AI/Software pre-breakout)** | **10-15%** | **max 3% each (厳守)** |
+| Diversifier Growth (Healthcare/Industrials growth) | 15-20% | 3-5% each |
+| Defensive Value (Banks, Staples) | 10-15% | 3-5% each |
+| Cash | 5-10% | — |
+
+**配分時の判断ルール:**
+
+- **BUY 候補 (discovery 出力) のサイジング:**
+  - mid/small-cap ($1B-$20B): **Edge Lottery 扱い、max 3% portfolio (= $1,500-$2,000 程度)**
+  - 5-7 銘柄に分散して "lottery ticket basket" を構築
+  - mega-cap ($50B+, 稀): Edge Core 扱い 5-10% portfolio
+- **ADD 候補 (existing holding) のサイジング:**
+  - 現サイズ < 5% かつ確信あり → 5% 目標まで増額
+  - 現サイズ 5-10% → maintained (Edge Core 確立済み)
+  - 現サイズ > 10% → ADD しない (むしろ TRIM 候補)
+- 1 銘柄あたり portfolio 占有率 **≤ 15%**（既存保有分も含めて、絶対上限）
+- **GICS Tech ≤ 40% は廃止**。代わりに **AI/Software ecosystem (Tech + AI 関連 Comm Services + AMZN 等) ≤ 60%**
 - confidence Low の銘柄には配分しない
 - currency マッチ厳守: USD cash → USD 銘柄、CAD cash → CAD 銘柄
-- cash 残し率 0% でも OK。ただし confidence High の候補が無い currency は残してよい
+- cash 残し率 5-10% を保つ (Edge Lottery basket の追加買い増し余地として)
+
+**Edge Lottery の数学 (理解しておくこと):**
+- 10x になる: 5-10%
+- 2-5x になる: 15-20%
+- 横ばい〜微増: 20-30%
+- -50%+ 失敗: 40-50%
+- → high variance、small × many bets が正しい戦略。大きく賭けると基準分布通り 40-50% 失敗で portfolio 重大棄損
 
 **短期モメンタム反転ルール（厳守、上記の上書き）:**
 - **1w return が -10% 以下** の銘柄に配分する場合は、**通常の半分以下**にサイズ縮小し、必ず \`trancheRecommended: true\` を設定する

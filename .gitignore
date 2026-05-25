@@ -32,3 +32,8 @@ aspects/investment/candidates/*
 aspects/investment/reports/*-rebalance.md
 
 # *.go
+
+# AI
+.agents
+
+skills

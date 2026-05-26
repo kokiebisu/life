@@ -153,17 +153,17 @@ describe("lintContent — SOAP", () => {
   });
 });
 
-describe("lintContent — Closing Prayer date rule", () => {
-  test("entry on 2026-04-25 without Closing Prayer is flagged", () => {
+describe("lintContent — Closing Prayer optional after /pray split", () => {
+  test("entry on 2026-04-25 without Closing Prayer is OK", () => {
     const content = VALID_OLD.replace("2026-04-20", "2026-04-25");
     const result = lintContent("2026-04-25.md", content);
-    expect(result.issues).toContain("Missing: ## Closing Prayer");
+    expect(result.issues).not.toContain("Missing: ## Closing Prayer");
   });
 
-  test("entry on 2026-04-26 without Closing Prayer is flagged", () => {
+  test("entry on 2026-04-26 without Closing Prayer is OK", () => {
     const content = VALID_OLD.replace("2026-04-20", "2026-04-26");
     const result = lintContent("2026-04-26.md", content);
-    expect(result.issues).toContain("Missing: ## Closing Prayer");
+    expect(result.issues).not.toContain("Missing: ## Closing Prayer");
   });
 
   test("entry on 2026-04-24 without Closing Prayer is NOT flagged", () => {

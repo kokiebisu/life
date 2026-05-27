@@ -71,6 +71,40 @@ function buildPrompt(input: AllocateInput): string {
         return `- ${b.ticker} (strategy=${b.strategy}) confidence=${b.confidence}\n    価格: ${technicalLine(p)}\n    Thesis: ${b.thesis}\n    Sources: ${b.sources.slice(0, 2).join(", ")}`;
       }).join("\n");
 
+  // バケット分類（ticker → bucket）
+  const EDGE_CORE = new Set(["NVDA","MSFT","AMZN","GOOG","AAPL","CRWD","AVGO","META","PANW","ASML","ORCL","TSM","AMD","INTC"]);
+  const DEFENSIVE = new Set(["SGOV","AXP","WFC","JPM","UL","KO","JNJ","VZ","T","BRK-B"]);
+  // それ以外は Edge Lottery または Diversifier Growth として扱う
+
+  const bucketTotals: Record<string, number> = {
+    "Edge Core": 0,
+    "Edge Lottery / Diversifier": 0,
+    "Defensive Value": 0,
+    "Cash": input.cash.reduce((s, c) => s + c.amount, 0),
+  };
+  for (const t of input.portfolioTotals) {
+    const upper = t.ticker.toUpperCase();
+    if (EDGE_CORE.has(upper)) bucketTotals["Edge Core"] += t.valueInCurrency;
+    else if (DEFENSIVE.has(upper)) bucketTotals["Defensive Value"] += t.valueInCurrency;
+    else bucketTotals["Edge Lottery / Diversifier"] += t.valueInCurrency;
+  }
+  const bucketPct = Object.entries(bucketTotals)
+    .map(([b, v]) => `  - ${b}: ${((v / totalAll) * 100).toFixed(1)}% (目標: ${
+      b === "Edge Core" ? "35-40%" : b === "Edge Lottery / Diversifier" ? "20-30% (Lottery 10-15% + Diversifier 15-20%)" : b === "Defensive Value" ? "10-15%" : "5-10%"
+    })`)
+    .join("\n");
+
+  // 過熱判定（3m +80% 超の保有が何銘柄あるか）
+  const overheatCount = input.portfolioTotals.filter((t) => {
+    const p = input.priceMetrics.get(t.ticker.toUpperCase());
+    return p && (p.return3m ?? 0) >= 80;
+  }).length;
+  const macroWarning = overheatCount >= 3
+    ? `⚠️ 保有銘柄 ${overheatCount} 銘柄が 3m +80% 超。市場過熱の可能性。Cash 20-30% 維持を強く推奨。BUY 総額を縮小すること。`
+    : overheatCount >= 2
+    ? `注意: 保有銘柄 ${overheatCount} 銘柄が 3m +80% 超。BUY は厳選し、Cash は 15% 以上残すこと。`
+    : "（過熱シグナルなし）";
+
   return `**現在の cash:**
 ${cashLines}
 
@@ -79,11 +113,24 @@ ${cashLines}
 - セクター分布:
 ${sectorPct}
 
+**バケット別配分（最優先で確認すること）:**
+${bucketPct}
+
+**マクロ過熱チェック:** ${macroWarning}
+
+**🚨 Cash 配分の優先順位（この順番で考えること）:**
+1. Defensive Value が目標（10-15%）を下回っているなら、まずそこを補填する
+2. Diversifier Growth（Edge Lottery/Diversifier の非-AI/非-Tech 部分）が薄ければ補填する
+3. 過熱シグナルがある場合は Cash を 20-30% 残す
+4. 上記を満たした後の残余 Cash のみで ADD/BUY を実行する
+
 **ADD 推奨銘柄（保有銘柄の買い増し候補、各銘柄に直近の価格推移付き）:**
 ${addLines}
 
 **BUY 候補（discovery skill 出力、新規銘柄、各銘柄に直近の価格推移付き）:**
 ${buyLines}
+
+**新規 BUY 件数制限（厳守）:** 新規 BUY（新規銘柄）は最大 3 件。confidence が高い順に選び、残りは「次回候補」として buyDecisions から除外する。
 
 **Position Sizing ルール（3 層 Portfolio フレームワーク、厳守）:**
 

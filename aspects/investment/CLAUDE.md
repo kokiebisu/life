@@ -113,7 +113,22 @@ VRT BUY $3,800 — 1w=-14% / 1m=-12% / 3m=+33% / 6m=+89% / 12m=+196% / drawdown=
 - **tranche entry（分割エントリ）を推奨**するか **size 縮小**を提案する
 - 「Wall Street がカバーしてるから大丈夫」と思考停止しない
 
-### 3. アナリスト PT 引上げは大幅下落の直後なら「擁護反応」を疑う（厳守）
+### 3. 株価を確認するときは WebSearch を使わず yahoo-finance2 を使う（厳守）
+
+**WebSearch の株価は1-2日前のキャッシュデータが混在する。** リアルタイム価格として断定してはいけない。
+
+```bash
+# 正しい株価確認コマンド（yahoo-finance2 でリアルタイム取得）
+bun -e "
+const yf = require('yahoo-finance2');
+yf.default.quote(['MOD','ENTG','ACLS']).then(r =>
+  r.forEach(q => console.log(q.symbol, '\$' + q.regularMarketPrice?.toFixed(2), '1w%:', ((q.regularMarketChangePercent ?? 0)*100).toFixed(1)+'%'))
+).catch(console.error)"
+```
+
+**過去のインシデント（2026-05-27）:** ACLS の価格を WebSearch で調べて「$155（pullback中）」と報告したが、実際はユーザーの画面で $167 と表示されていた。WebSearch が1-2日前のデータを返していた。
+
+### 4. アナリスト PT 引上げは大幅下落の直後なら「擁護反応」を疑う（厳守）
 
 PT 引上げが価格モメンタムと逆方向（下落 + PT 上げ）の場合、analyst が holdings を守るための擁護的反応の可能性がある。単独シグナルとして扱わず、**何が起きた直後かを文脈化**する。
 

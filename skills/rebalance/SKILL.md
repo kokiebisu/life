@@ -51,8 +51,12 @@ bun run scripts/investment/rebalance.ts
 
 1. sanity-check 警告銘柄があれば、最初に伝える（🚨 ticker）
 2. 推奨 actions の Summary（BUY n / ADD n / HOLD n / TRIM n / SELL n）
-3. Cash Allocation の最終形
-4. 「実際に発注しますか？」とは聞かない（ユーザーが Wealthsimple で手動発注する）
+3. **各 BUY/ADD に「未来予想図」を必ず添える（厳守）**
+   - 「なぜこれから上がるか」を 2-3 文で語る（シナリオ・トリガーを明示）
+   - 数字の羅列だけで終わらない。「いつ・何が起きたとき・どう再評価されるか」まで語る
+   - 例: 「2027年にTSMCのN2量産が本格化した瞬間、工程数増加 → RF電源需要増 → AEISへの連想が広がる」
+4. Cash Allocation の最終形（金額を明記）
+5. 「実際に発注しますか？」とは聞かない（ユーザーが Wealthsimple で手動発注する）
 
 ### ⚠️ BUY/ADD をユーザーに提示する前に必ず通すフィルタ（厳守）
 

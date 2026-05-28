@@ -68,7 +68,9 @@ function buildPrompt(input: AllocateInput): string {
     ? "（BUY 候補なし）"
     : input.buys.map((b) => {
         const p = input.priceMetrics.get(b.ticker.toUpperCase());
-        return `- ${b.ticker} (strategy=${b.strategy}) confidence=${b.confidence}\n    価格: ${technicalLine(p)}\n    Thesis: ${b.thesis}\n    Sources: ${b.sources.slice(0, 2).join(", ")}`;
+        const entryNote = (b as any).entryNote ? `\n    EntryNote: ${(b as any).entryNote}` : "";
+        const bucket = (b as any).bucket ? `\n    Bucket: ${(b as any).bucket}` : "";
+        return `- ${b.ticker} (strategy=${b.strategy}) confidence=${b.confidence}${bucket}\n    価格: ${technicalLine(p)}\n    Thesis: ${b.thesis}${entryNote}\n    Sources: ${b.sources.slice(0, 2).join(", ")}`;
       }).join("\n");
 
   // バケット分類（ticker → bucket）

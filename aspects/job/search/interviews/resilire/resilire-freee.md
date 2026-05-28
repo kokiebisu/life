@@ -1,26 +1,25 @@
 ## ⚡ Rate Limit 深掘り Q&A（メイントピック）
 
 **Q: 一括招待の rate limiting 設計は？**
-→ OEM のユーザー作成 API に rate limit がある。worker を urgent と bulk に分け、bulk 側に Redis rate limiter を用意した（soft cap 設計）。
+→ OEM のユーザー作成 API に rate limit がある。worker を urgent と bulk に分け、それぞれに Redis rate limiter を用意した（hard partition 設計）。
 
-- **bulk worker**: 一括招待と組織同期を担当。保守的な閾値でスロットリング
-- **urgent worker**: ロール変更・従業員削除など即時性が必要な操作を担当。rate limiter を通らないので bulk の状態に関わらず常に進める
+- **bulk worker**: 一括招待と組織同期を担当。cap: 175 req/min
+- **urgent worker**: ロール変更・従業員削除など即時性が必要な操作を担当。cap: 100 req/min
 
-soft cap 設計で、rate limiter を叩くのは bulk worker だけ。Redis に `rate_limit:bulk:{timestamp}` のカウンタを立てて 250〜275 req/min に制限する。urgent worker は rate limiter を通らず直接 OEM API を呼ぶ。OEM 全体の上限 300 に対して余白を設けているのは、自前カウンタ（fixed window）と OEM 側（rolling window）の窓ずれ対策。窓の境界付近で自前カウンタが「まだ余裕あり」と判断しても OEM 側では前の窓のリクエストが残っていて 429 が返ることがある。レスポンスヘッダーの `X-RateLimit-Remaining` で実際の残量を事後モニタリングしてバッファが適切かを確認する運用も入れた。閾値は環境変数で管理して本番とステージングで変えられる設計にした。bulk の rate limiter で枠が取れなければ Sidekiq の retry セットに job を再スケジュールして worker を即解放する。retry セットは urgent/bulk queue とは別の Sidekiq 内部の仕組みで、一定時間後に元の bulk queue に job が戻ってくる。
+hard partition 設計で、bulk: 175 + urgent: 100 = 275 を割り当て、OEM 上限 300 に対して 25 のバッファを確保。バッファは自前カウンタ（fixed window）と OEM 側（rolling window）の窓ずれ対策。窓の境界付近で自前カウンタが「まだ余裕あり」と判断しても OEM 側では前の窓のリクエストが残っていて 429 が返ることがある。
+
+Redis キーは `rate_limit:{worker_type}:{timestamp_minute}` の形式で、TTL は 60 秒（1分のウィンドウに合わせる）。Lua スクリプトで「残り確認 → インクリメント → 0/1 を返す」をアトミックに実行。1 を返せば実行許可、0 を返せば Sidekiq の retry セットに再スケジュールして worker を即解放する。
+
+レスポンスヘッダーの `X-RateLimit-Remaining` で実際の残量を事後モニタリングしてバッファが適切かを確認する運用も入れた。閾値は環境変数で管理して本番とステージングで変えられる設計にした。retry セットは urgent/bulk queue とは別の Sidekiq 内部の仕組みで、一定時間後に元のキューに job が戻ってくる。
 
 sleep との比較：
 - **sleep で待つ**: worker がその場で固まって次の job を取れない。concurrent worker 数が少ない環境ではスループットが詰まる
 - **retry にスケジュール**: worker は即解放されて次の job を処理できる。rate limit がリセットされるまでの間も他の job が進む
 
 **Q: urgent が複数事業所から同時に飛んできて burst するリスクは？**
-→ 確かに「1人の管理者」ではなく「全社の管理者が同時操作」する可能性はある。設計の選択肢は2つあった。
+→ hard partition にしているので urgent にも 100 req/min の cap がある。複数事業所が同時に操作しても合計 100 を超えた分は retry セットに戻るだけで、データ整合性は壊れない。exponential backoff + jitter で再試行するので、thundering herd（一斉に retry が飛んでまた 429 になるループ）も防げる。本番では backoff が一度も発火しなかった。
 
-- **hard partition**（urgent: 75 / bulk: 200 で合計 275）: 合計が絶対に上限を超えない。ただ urgent にも rate limiter を実装する必要があり複雑さが増す
-- **soft cap**（bulk: 275 のみ制限、urgent は無制限）: 実装がシンプル。urgent が burst して 429 が返っても exponential backoff で自動リトライされるので、管理者操作が数秒〜数十秒遅れる程度のリスク
-
-複数事業所が同じ瞬間に urgent 操作を大量に送る確率は低く、仮に起きても「管理者操作が少し遅れる」だけでデータ整合性は壊れない。その程度のリスクに対して hard partition の実装複雑さを追加するのは割に合わないと判断して soft cap を選んだ。顧客規模が拡大して burst が常態化するなら urgent にも cap を追加する方向に移行する。
-
-Lua スクリプトで「残り確認→インクリメント」をアトミックに実行。2コマンドに分けると複数ジョブが同時に「残り1」を読む race condition が起きる。OEM のレスポンスヘッダー（`X-RateLimit-Remaining`系）は制御には使わず、アラート指標として使用。exponential backoff をリトライに組んだが本番では一度も発火しなかった。
+Lua スクリプトで「残り確認 → インクリメント → 0/1 を返す」をアトミックに実行。2コマンドに分けると複数ジョブが同時に「残り1」を読む race condition が起きる。
 
 **Q: なぜ OEM ヘッダーを制御に使わなかったか？**
 → OEM ヘッダーはリクエストを送った後にしか読めない。「送る前の判断（制御）」には使えない。事前にスロットリングするには自前カウンタが必要で、ヘッダーは事後モニタリングにしか使えない。

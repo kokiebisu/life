@@ -128,6 +128,8 @@ export function loadCandidates(dir = CANDIDATES_DIR): DiscoveryCandidate[] {
           sources: c.sources ?? [],
           strategy: data.strategy,
           generatedAt: data.generated_at,
+          bucket: (c as any).bucket ?? undefined,
+          entryNote: (c as any).entry_note ?? undefined,
         });
       }
     } catch (err) {

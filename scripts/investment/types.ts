@@ -109,6 +109,9 @@ export interface DiscoveryCandidate {
   sources: string[];
   strategy: string; // file name without date/ext, e.g. "growth"
   generatedAt: string; // ISO
+  // Optional fields from investor-drill
+  bucket?: "Edge Core" | "Edge Lottery" | "Diversifier Growth" | "Defensive Value";
+  entryNote?: string; // e.g. "調整待ち。$60以下で買い" or "今すぐエントリー可能"
 }
 
 export interface TickerNews {

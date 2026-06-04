@@ -24,7 +24,16 @@ docs/automate/
 # beads (bd) defer queue — local Dolt DB, not committed
 .beads/
 
-# Auto session spawn pending-context（.ai/rules/session-spawn.md 参照）— 一回読みで消える
-.claude/pending-context/
+# Investment portfolio holdings — 資産情報のためコミットしない
+aspects/investment/portfolio.csv
+aspects/investment/cash.csv
+aspects/investment/candidates/*
+!aspects/investment/candidates/.gitkeep
+aspects/investment/reports/*-rebalance.md
 
 # *.go
+
+# AI
+.agents
+
+skills

@@ -22,7 +22,17 @@
       "Bash(git branch *)",
       "Bash(git pull *)",
       "Bash(rm -rf .git/modules/projects .git/modules/sumitsugi)",
-      "Skill(trading-ideas:research)"
+      "Skill(trading-ideas:research)",
+      "Skill(interview-prep)",
+      "Skill(interview-prep:*)",
+      "Skill(humanize-ja)",
+      "Skill(humanize-ja:*)",
+      "Skill(devotion)",
+      "Skill(devotion:*)",
+      "Bash(rm -v .worktrees/chore/remove-session-spawn-c199/.ai/rules/session-spawn.md .worktrees/chore/remove-session-spawn-c199/.claude/rules/session-spawn.md .worktrees/chore/remove-session-spawn-c199/.claude/hooks/session-start-pending-context.sh)",
+      "Bash(rm -rfv .worktrees/chore/remove-session-spawn-c199/.claude/pending-context)",
+      "Bash(rm -rfv .claude/pending-context)",
+      "Bash(git stash *)"
     ]
   },
   "hooks": {
@@ -31,6 +41,9 @@
     "PostToolUse": []
   },
   "enabledPlugins": {
-    "ralph-loop@claude-plugins-official": false
+    "ralph-loop@claude-plugins-official": false,
+    "frontend-design@claude-plugins-official": false,
+    "skill-creator@claude-plugins-official": false,
+    "trading-ideas@claude-equity-research-marketplace": false
   }
 }

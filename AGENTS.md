@@ -211,9 +211,25 @@ events > todo > routine > meals > groceries
 - ユーザーに丸投げすること
 - 一般論だけ述べて具体的な提案をしないこと
 
+## 答えが明確なら選択肢を出さない（厳守）
+
+自分の中で**推奨アクションが 1 つに絞れる場合、選択肢を並べず「これ」と提示する。**
+
+- ❌ 悪い例: 「3 つあります。1.../2.../3...。推奨は 1」
+- ✅ 良い例: 「**アクション: <X>**。理由は <Y>」
+
+選択肢を出すのは:
+
+- 真にユーザーの好み・状況で分岐する場合（例: 「serif vs sans-serif どっち？」）
+- 推奨を 1 つに絞れない**本質的な不確実性**がある場合（情報不足、トレードオフが拮抗等）
+
+「念のため他の案も」と添えるのは禁止。それは決断の薄め化。
+
+**過去のミス（2026-05-22）:** AMZN ADD の質問に対し、答えが明確（ADD $2,400 そのまま実行 OK）だったのに 3 つの選択肢を並べて推奨マークだけ付けた。ユーザーから「選択肢ではなく『これ』を示せ」と指摘された。
+
 ## 選択肢の提示（厳守）
 
-選択肢を出すときは**必ずどれが推奨かを明記する。** 推奨なしで並べるだけは禁止。
+上記の「明確なら選択肢を出さない」ルールを満たしてもなお**選択肢を出す場合は、必ずどれが推奨かを明記する。** 推奨なしで並べるだけは禁止。
 
 - AskUserQuestion の場合: 推奨オプションを先頭に置き `(Recommended)` を付ける
 - テキストで列挙する場合: `← おすすめ` や `**推奨**` 等で明示する
@@ -295,6 +311,10 @@ events > todo > routine > meals > groceries
 
 ## bd 操作テンプレ（defer / resume スキル両方が参照する）
 
+**前提: defer は無人 resume を想定**
+
+`/resume` は AskUserQuestion を出さず自動 claim・実行する設計（cron 想定）。そのため defer 登録時点で「resume が判断に詰まらない状態」まで要件を固める。曖昧さがあれば bd create する前に必ずユーザーに聞く。
+
 ### defer 登録
 
 ```bash
@@ -303,9 +323,19 @@ RECIPE=$(cat <<'EOF'
 
 > ユーザーの元発言（一字一句コピペ）
 
-## 想定出力
+## 想定出力 (DoD)
 
-- 何を作る/返すのか（コード変更、レポート、PR 等）
+- 成果物の具体形（コード変更 / レポート / PR / 一連の操作の完了）
+- 「完了した」と判断する条件（テストが通る、ファイルが更新されている等）
+
+## 事前確認済み判断事項
+
+defer 時に Claude が確認・確定済みの判断ポイント。resume はこれを参照すれば質問不要で進める。
+
+- 判断A: <内容> → <ユーザー確定結果 or Claude が事前判断したデフォルト>
+- 判断B: ...
+
+該当なしなら「特になし」と明記。
 
 ## 実行レシピ
 
@@ -378,6 +408,7 @@ bd close <id> --reason "<完了メッセージ>" --json  # 完了
 - defer 提案後に**勝手に実行を始め**ない（ユーザー承諺なしに動かない）
 - 提案を**選択肢として並べ**ない（推奨 = defer を明示する）
 - 元プロンプトを**要約**しない（将来の自分が読むので一字一句コピペ）
+- **要件が固まっていないまま defer 登録しない** — 「想定出力」「成功条件」「判断分岐」のいずれかが曖昧なら、defer 受付時に AskUserQuestion で全部潰してから bd create する（resume が無人 cron 実行される前提のため、resume 時に質問が出てはいけない）
 
 ---
 
@@ -792,7 +823,7 @@ ln -s ../../.ai/rules/<new>.md <new>.md
 - `.ai/rules/<old>.md` を `<new>.md` にリネームしたら、`.claude/rules/` 側の symlink も張り直す
 - 動作確認: 次のセッション開始時に system-reminder のロード一覧に新ルールが含まれるか確認
 
-**過去の漏れ:** Phase 1 (PR #614) で `session-spawn.md` を追加したが symlink を忘れ、ルールが認識されないまま「復習したい」発言で spawn せず /fukushuu 起動した（2026-04-29）
+**過去の漏れ:** 新ルールを追加したのに `.claude/rules/` 側に symlink を張り忘れ、次セッションでルールが認識されないまま動いた事例あり（2026-04-29）
 
 ---
 
@@ -824,102 +855,6 @@ If security issue found:
 2. Fix CRITICAL issues before continuing
 3. Rotate any exposed secrets
 4. Review related files for similar issues
-
----
-
-# 自動セッション spawn ルール（厳守）
-
-## トリガー
-
-ユーザーの発言に**新トピック宣言キーワード**が含まれていたら、即 `./dev <branch>` を Bash で実行して新ウィンドウを開く。
-
-キーワード例:
-
-- 「〇〇やりたい」「〇〇始めたい」「〇〇に集中したい」「〇〇やろう」
-- 「〇〇に取りかかる」「〇〇をやる」
-
-## 自己ガード（重要）
-
-**現セッションの cwd が `.worktrees/` 配下なら spawn しない。** 普通に応答する。
-
-理由: spawn 先の worktree セッションでさらに spawn が起きると無限ループになる。
-
-判定方法:
-
-- `Bash` で `pwd` を確認 → 結果に `.worktrees/` が含まれるなら spawn off
-- spawn が動作するのは main worktree (`/workspaces/life`) のみ
-
-## 動作（spawn 元 = main worktree）
-
-main worktree の場合のみ:
-
-1. branch 名を生成
-   - 命名規則: `<prefix>/<short-kebab>-<hash>`
-   - **prefix 部分は spawn 先で起動したい skill 名と一致させる**（下の「Spawn 先での挙動」参照）
-   - **末尾の hash**: 4–5 文字のランダム hash（同名衝突回避、再 spawn しても別 worktree になる）
-     - 生成例: `bash -c "openssl rand -hex 2"` → `a3f7`
-     - または: `head -c 4 /dev/urandom | base32 | tr '[:upper:]' '[:lower:]' | tr -d '=' | head -c 5`
-   - 例: `kondate/week-plan-a3f7`、`fukushuu/review-x9k2`、`gym/morning-7q4d`、`feat/notion-sync-b2e1`
-2. **コンテキスト保存**: ユーザー発言の意図を `.claude/pending-context/<branch>.md` に markdown で書き出す
-   - branch 名（prefix）だけでは「どの skill を起動するか」しか伝わらない。**ニュアンス・前提・条件**は明示的に書かないと新セッションには届かない（main セッションの会話履歴は新セッションに引き継がれない）
-   - 例: 「明日の朝食、卵使い切りたい」 → branch 名 `kondate/eggs-leftover-a3f7` だけだと「献立を考える」しか伝わらない。pending-context に「卵使い切り方針、明日の朝食限定」を書く
-   - 新ウィンドウのセッションが起動時に SessionStart hook（[.claude/hooks/session-start-pending-context.sh](../../.claude/hooks/session-start-pending-context.sh)）でこのファイルを systemMessage として読み込む
-   - 読まれたファイルは hook 側で削除される（一回読み）
-   - **省略してよいケース**: ユーザー発言が aspect 名だけ（「fukushuu やろう」「ジムログしたい」）で追加のニュアンス・前提・条件が無い場合
-3. `Bash` で `./dev <branch>` を実行（既存の worktree mode を呼ぶ）
-4. ユーザーに1行で「新ウィンドウで `<branch>` セッション開いた。続きはそっちで」と返す
-
-それ以上の応答は不要。spawn 後の続きの作業は新ウィンドウのセッションで行う。
-
-## Spawn 先での挙動（worktree 内のセッション）
-
-cwd が `.worktrees/<prefix>/...` のセッションは、起動直後に **cwd の branch prefix から対応 skill を自動起動**する。ユーザーの指示を待たない。
-
-### 判定手順
-
-1. `pwd` で cwd を確認
-2. `.worktrees/<prefix>/...` の `<prefix>` 部分を抽出
-3. `<prefix>` が下記マッピングにあれば、対応 skill を即起動
-4. それ以外（`feat/`、`fix/`、`chore/`、`docs/`、`refactor/`）は通常の開発モード（skill 起動不要、ユーザー指示を待つ）
-
-### Prefix → skill マッピング
-
-| prefix | skill |
-|--------|-------|
-| `fukushuu/` | `/fukushuu` |
-| `kondate/` | `/kondate` |
-| `gym/` | `/gym` |
-| `study/` | `/study` |
-| `interview-prep/` | `/interview-prep` |
-| `devotion/` | `/devotion` |
-| `pray/` | `/pray` |
-| `meal/` | `/meal` |
-| `event/` | `/event` |
-| `calendar/` | `/calendar` |
-| `humanize-ja/` | `/humanize-ja` |
-| `defer/` | `/defer` |
-| `resume/` | `/resume` |
-
-新しい skill を追加したらこのテーブルにも追加する。
-
-### Why
-
-- `./dev <branch>` で起動したセッションは「何の aspect の作業か」を branch 名で表明している
-- prefix を見れば「どの skill を起動するか」は決まる
-- ただし、ニュアンス・前提・条件は branch 名では表現できない → pending-context（spawn 元 step 2）と組み合わせて初めて意図が完全に伝わる
-
-## 判断しないケース（= spawn しない）
-
-- 既存セッションで進行中の作業の続き発言
-- 軽い質問・雑談・確認
-- 1ターンで完結するもの（「〇〇覚えて」「〇〇直して」等）
-- spawn 先（`.worktrees/` 配下）のセッション
-
-→ ユーザーが **明示的に新トピックを宣言**した時のみ spawn する。
-
-## Out of scope（今後の検討）
-
-- **完全自動進行**: skill 起動後にユーザー指示を待たず Claude が走り続ける挙動は、各 skill 側の責務（skill 内で進めるかユーザー確認を挟むかを判断する）。新セッション起動時に最初の prompt を自動投入する仕組みは VS Code 拡張仕様の調査後に検討
 
 ---
 
@@ -1020,6 +955,9 @@ bun run scripts/notion/notion-sync-tasks.ts             # 実行
 - **`/calendar`** — Notion カレンダーの予定を確認・追加・変更するとき。デイリープラン作成・スケジュール調整・既存予定の確認などに使う。 → `skills/calendar/SKILL.md`
 - **`/defer`** — 重そうなタスクをトークンリセット後に回したいとき。「これ defer」「あとで」「これ重そう」などに使う。直前または引数のタスクを beads キュー（label=defer）に保存する。 → `skills/defer/SKILL.md`
 - **`/devotion`** — デボーション（聖書の学び）を始めるとき。「デボーションしたい」「デボーションやろう」「聖書読もう」などに使う。章は自動検出する。 → `skills/devotion/SKILL.md`
+- **`/discover-growth`** — 新規の growth 候補銘柄をニュース起点で発掘するとき。「新しい買い候補ない？」「グロース株探して」「次のリバランスの弾」などに使う。出力は /rebalance が次回自動取り込みする。 → `skills/discover-growth/SKILL.md`
+- **`/discover-supply-chain`** — バリューチェーン起点で「キオクシア型」の川上未発見株を発掘するとき。「割安な部品メーカー探して」「供給チェーンから掘り起こして」「ハードウェア系の穴場探して」などに使う。出力は /rebalance が次回自動取り込みする。 → `skills/discover-supply-chain/SKILL.md`
+- **`/discover-value`** — 新規の value (割安) 候補銘柄をニュース起点で発掘するとき。「割安株探して」「value 候補出して」「次のリバランスのバリュー枠」などに使う。出力は /rebalance が次回自動取り込みする。 → `skills/discover-value/SKILL.md`
 - **`/event`** — イベント・予定を Notion カレンダーに登録するとき。飲み会・会議・外出など日時が決まっている予定の登録に使う。移動時間・重複チェックも自動処理する。 → `skills/event/SKILL.md`
 - **`/fridge-sync`** — fridge.md（冷蔵庫在庫）を Notion の「冷蔵庫の在庫」ページに同期するとき。「冷蔵庫同期して」「fridge 更新して」に使う。 → `skills/fridge-sync/SKILL.md`
 - **`/from-notion`** — Notion の変更をリポジトリの md ファイルに逆同期するとき。Notion 上で時間変更・完了マーク・フィードバックをした後に使う。 → `skills/from-notion/SKILL.md`
@@ -1032,6 +970,7 @@ bun run scripts/notion/notion-sync-tasks.ts             # 実行
 - **`/meal`** — 食事を記録するとき。「〇〇食べた」「朝食記録したい」「ご飯ログ」など食事トラッキングに使う。daily ファイル・Notion meals DB・fridge.md を一括更新する。 → `skills/meal/SKILL.md`
 - **`/pr`** — プルリクエストを作成するとき。変更をグループ化して PR を作成する。コミット後に自動で呼ばれることもある。 → `skills/pr/SKILL.md`
 - **`/pray`** — 祈りを捧げるとき。「祈りたい」「祈ろう」「Closing Prayer したい」などに使う。Prayer Requests の Active リスト全員のために祈る。 → `skills/pray/SKILL.md`
+- **`/rebalance`** — 保有 portfolio + cash を踏まえて Hold/Trim/Sell/Add と新規 Buy を提案するとき。3 ヶ月おきの中長期レビューに使う。「rebalance したい」「ポートフォリオ見直したい」「cash どう使う」などに使う。 → `skills/rebalance/SKILL.md`
 - **`/resume`** — defer したタスクを再開するとき。「resume」「さっきの続き」「defer した何かやろう」などに使う。bd ready -l defer から選んで実行する。 → `skills/resume/SKILL.md`
 - **`/study`** — 学習セッションの開始・ノート記録・Notion登録。引数: $ARGUMENTS → `skills/study/SKILL.md`
 - **`/tidy`** — 指示ファイル（CLAUDE.md・rules・commands・memory）の重複・配置ミスを整理するとき。「ルールが散らかってきた」「指示ファイル整理したい」などに使う。 → `skills/tidy/SKILL.md`

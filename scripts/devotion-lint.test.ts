@@ -142,4 +142,3 @@ describe("lintContent — SOAP", () => {
     expect(soapMissing).toHaveLength(4);
   });
 });
-

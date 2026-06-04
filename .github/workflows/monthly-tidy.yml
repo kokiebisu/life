@@ -4,9 +4,10 @@ name: monthly-tidy
 # scan し、Safe な findings を自動適用 + Risky を含めた report を PR で提出する。
 
 on:
-  schedule:
-    # 毎月1日 JST 03:00 = UTC 18:00（前月末）
-    - cron: "0 18 1 * *"
+  # schedule disabled (2026-06-04) — manual dispatch only
+  # schedule:
+  #   # 毎月1日 JST 03:00 = UTC 18:00（前月末）
+  #   - cron: "0 18 1 * *"
   workflow_dispatch:
     inputs:
       dry_run:

@@ -12,7 +12,7 @@
  */
 
 import { loadContext } from "./load-context";
-import { fetchTickerNews } from "./fetch-ticker-news";
+import { fetchTickerNews, deriveAliases } from "./fetch-ticker-news";
 import { fetchFundamentals } from "./fetch-fundamentals";
 import { fetchPriceHistory } from "./fetch-price-history";
 import { sanityCheck, formatSanityLine } from "./sanity-check";
@@ -119,17 +119,32 @@ async function main() {
     return;
   }
 
-  console.error(`📰 ticker 別ニュース取得中...`);
-  const tickerKeys = ctx.portfolio.map((p) => ({ ticker: p.ticker, aliases: [] as string[] }));
-  tickerKeys.push(...ctx.candidates.map((c) => ({ ticker: c.ticker, aliases: [] as string[] })));
-  const newsMap = await fetchTickerNews(tickerKeys);
-  const totalNewsItems = [...newsMap.values()].reduce((sum, items) => sum + items.length, 0);
-  console.error(`  → ${totalNewsItems} 件マッチ`);
-
   console.error(`📊 yahoo-finance2 で財務指標取得中...`);
   const candidatesForFundamentals: Candidate[] = allTickers.map((t) => ({ ticker: t, name: t, rationale: "" }));
   const fundamentals = await fetchFundamentals(candidatesForFundamentals);
   const fundMap = new Map(fundamentals.map((f) => [f.ticker.toUpperCase(), f]));
+
+  // Build per-ticker aliases from fundamentals (company names) plus candidate names,
+  // so RSS-feed matching works even when yahoo's per-ticker news search is flaky.
+  console.error(`📰 ticker 別ニュース取得中...`);
+  const candidateNameMap = new Map(ctx.candidates.map((c) => [c.ticker.toUpperCase(), c.name]));
+  const tickerKeys = ctx.portfolio.map((p) => {
+    const upper = p.ticker.toUpperCase();
+    const name = fundMap.get(upper)?.name ?? null;
+    return { ticker: p.ticker, aliases: deriveAliases(name) };
+  });
+  tickerKeys.push(
+    ...ctx.candidates.map((c) => {
+      const upper = c.ticker.toUpperCase();
+      const fundName = fundMap.get(upper)?.name ?? null;
+      const candName = candidateNameMap.get(upper) ?? null;
+      const aliasSet = new Set<string>([...deriveAliases(fundName), ...deriveAliases(candName)]);
+      return { ticker: c.ticker, aliases: [...aliasSet] };
+    }),
+  );
+  const newsMap = await fetchTickerNews(tickerKeys);
+  const totalNewsItems = [...newsMap.values()].reduce((sum, items) => sum + items.length, 0);
+  console.error(`  → ${totalNewsItems} 件マッチ`);
 
   console.error(`📈 価格履歴取得中...`);
   const priceMetrics = await fetchPriceHistory(allTickers);

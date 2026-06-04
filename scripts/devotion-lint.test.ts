@@ -37,20 +37,10 @@ guide
 takeaway
 `;
 
-const VALID_NEW = VALID_OLD.replace(
-  "## 持ち帰り\n\ntakeaway\n",
-  "## 持ち帰り\n\ntakeaway\n\n## Closing Prayer\n\namen\n",
-).replace("2026-04-20", "2026-04-25");
-
 describe("lintContent — happy path", () => {
-  test("pre-2026-04-25 entry without Closing Prayer is OK", () => {
+  test("entry with all required sections is OK", () => {
     const result = lintContent("2026-04-20.md", VALID_OLD);
     expect(result.file).toBe("2026-04-20.md");
-    expect(result.issues).toEqual([]);
-  });
-
-  test("post-2026-04-25 entry with Closing Prayer is OK", () => {
-    const result = lintContent("2026-04-25.md", VALID_NEW);
     expect(result.issues).toEqual([]);
   });
 });
@@ -150,30 +140,5 @@ describe("lintContent — SOAP", () => {
     const result = lintContent("2026-04-20.md", content);
     const soapMissing = result.issues.filter((i) => i.startsWith("SOAP missing:"));
     expect(soapMissing).toHaveLength(4);
-  });
-});
-
-describe("lintContent — Closing Prayer optional after /pray split", () => {
-  test("entry on 2026-04-25 without Closing Prayer is OK", () => {
-    const content = VALID_OLD.replace("2026-04-20", "2026-04-25");
-    const result = lintContent("2026-04-25.md", content);
-    expect(result.issues).not.toContain("Missing: ## Closing Prayer");
-  });
-
-  test("entry on 2026-04-26 without Closing Prayer is OK", () => {
-    const content = VALID_OLD.replace("2026-04-20", "2026-04-26");
-    const result = lintContent("2026-04-26.md", content);
-    expect(result.issues).not.toContain("Missing: ## Closing Prayer");
-  });
-
-  test("entry on 2026-04-24 without Closing Prayer is NOT flagged", () => {
-    const content = VALID_OLD.replace("2026-04-20", "2026-04-24");
-    const result = lintContent("2026-04-24.md", content);
-    expect(result.issues).not.toContain("Missing: ## Closing Prayer");
-  });
-
-  test("non-date filename does not trigger Closing Prayer rule", () => {
-    const result = lintContent("README.md", VALID_OLD);
-    expect(result.issues).not.toContain("Missing: ## Closing Prayer");
   });
 });

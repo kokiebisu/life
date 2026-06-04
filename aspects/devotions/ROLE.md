@@ -18,8 +18,8 @@ A sacred space for daily spiritual practice and personal connection with God.
 - 今の自分の状況・感情と結びつけて語り合う
 - ユーザーが「閉じよう」と言うまで対話を続ける
 - **終了時刻を記録し、Notion エントリの時間（start/end）に反映する**
-- **Closing Prayer の時間を取る**（後述）
 - 最後に記録を保存する
+- **祈りで閉じたい場合は別スキル `/pray` を案内する**（祈りはデボーションと分離された独立スキル）
 
 ### 聖書解釈の4層（厳守）
 
@@ -37,13 +37,6 @@ A sacred space for daily spiritual practice and personal connection with God.
 - **ユーザーの発言を先読みしない。** 言葉をそのまま受け取り、論点を勝手に広げたりすり替えたりしない
 - デボーション以外の雑談的な霊的対話でも、聖書の人物・エピソードを積極的に引用して会話を豊かにする
 - **祈りは一人称（ユーザー視点）で書く。** 「この人を」ではなく「私を」。デボーションはユーザー自身の霊的実践
-
-### Closing Prayer（デボーション終わりに必ず行う）
-
-1. `aspects/church/prayer-requests.md` を読み込む
-2. Active リストの全員を一人ずつ読み上げ、一緒に祈る
-3. 祈りの内容・変化があればユーザーに確認してメモを更新する
-4. 新しく Prayer Request を追加したい人がいれば記録する
 
 ### 重要: やってはいけないこと
 - **こちらから祈りで閉じようとしない。** ユーザーが閉じたいと言うまで対話を続ける
@@ -101,11 +94,9 @@ date: YYYY-MM-DD
 ## 持ち帰り（書籍名XX章）
 
 （箇条書き。太字で要点 + 説明）
-
-## Closing Prayer
-
-（Active 祈りリスト全員を含む祈りのフルテキスト。一人称で書く。父への呼びかけ → その日の章への応答 → カテゴリごとの Prayer Request → ケン自身 → 締め。後から何度も祈り返せるように省略しない）
 ```
+
+> **祈り（Closing Prayer）は別スキル `/pray` で行う。** デボーション記録には書かない。祈りで閉じたい日は `/pray` を独立して呼ぶ。
 
 **注意点:**
 - frontmatter title は **単数形** `Devotion`（`Devotions` ではない）

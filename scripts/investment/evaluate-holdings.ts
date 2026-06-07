@@ -229,6 +229,8 @@ ${portfolioSection}
         recentNews: h.news.slice(0, 3),
         sources: d.sources,
         technicals: {
+          dayChange: h.technicals.dayChange,
+          peakToNow5d: h.technicals.peakToNow5d,
           return1w: h.technicals.return1w,
           return1m: h.technicals.return1m,
           return3m: h.technicals.return3m,

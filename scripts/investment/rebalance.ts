@@ -192,7 +192,7 @@ async function main() {
       row,
       fundamentals: fund,
       news: newsMap.get(upper) ?? [],
-      technicals: priceMetrics.get(upper) ?? { ticker: row.ticker, return1w: null, return1m: null, return3m: null, return6m: null, return12m: null, drawdownPct: null, currentPrice: null },
+      technicals: priceMetrics.get(upper) ?? { ticker: row.ticker, dayChange: null, peakToNow5d: null, return1w: null, return1m: null, return3m: null, return6m: null, return12m: null, drawdownPct: null, currentPrice: null },
       sanity: sanityFlags.get(upper),
       currentPrice,
       positionValue,
@@ -219,6 +219,14 @@ async function main() {
 
   console.error(`💰 cash 配分中（Claude）...`);
   const adds = holdingDecisions.filter((d) => d.action === "ADD");
+
+  const trimProceedsUSD = holdingDecisions
+    .filter((d) => d.action === "TRIM" || d.action === "SELL")
+    .reduce((sum, d) => sum + (d.trimAmount ?? 0), 0);
+  const augmentedCash = ctx.cash.map((c) =>
+    c.currency === "USD" ? { ...c, amount: c.amount + trimProceedsUSD } : c,
+  );
+
   const portfolioTotals = ctx.portfolio.map((row) => ({
     ticker: row.ticker,
     currency: row.currency,
@@ -226,7 +234,8 @@ async function main() {
     sector: fundMap.get(row.ticker.toUpperCase())?.sector ?? null,
   }));
   const { buyDecisions, remainder } = await allocateCash({
-    cash: ctx.cash,
+    cash: augmentedCash,
+    trimProceedsUSD,
     portfolioTotals,
     portfolioTotalUSD: portfolioHealth.totalValueUSD,
     portfolioTotalCAD: portfolioHealth.totalValueCAD,

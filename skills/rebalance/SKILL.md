@@ -39,6 +39,42 @@ bun run scripts/investment/import-monthly-statement.ts --monthly <path>
 
 ユーザーが「複数の monthly を持ってる」と言ったら、古い順に 1 ファイルずつ実行する。
 
+### ユーザーが Activities Export + Holdings Report をアップロードした場合
+
+Wealthsimple の **Activities Export CSV**（`activities-export-YYYY-MM-DD.csv`）と **Holdings Report CSV**（`holdings-report-YYYY-MM-DD.csv`）を両方渡してもらえれば、portfolio.csv を同期できる。
+
+```bash
+# dry-run でまず確認（必須）
+bun run scripts/investment/import-wealthsimple-export.ts \
+  --activities <activities.csv> --holdings <holdings.csv> --dry-run
+
+# cash 増分を計上する場合
+bun run scripts/investment/import-wealthsimple-export.ts \
+  --activities <activities.csv> --holdings <holdings.csv>
+
+# cash は触らず portfolio だけ更新する場合（売却分は別用途）
+bun run scripts/investment/import-wealthsimple-export.ts \
+  --activities <activities.csv> --holdings <holdings.csv> --skip-cash
+```
+
+同期内容:
+
+- **portfolio.csv**: holdings-report を source of truth として全置換。quantity = Quantity、avg_cost = Book Value (Market) / Quantity。holdings に無い ticker は除外
+- **cash.csv**: 既存 cash.csv の `updated_on` 以降の `net_cash_amount` 合計を delta として加算
+
+#### cash 増分の確認は必須（厳守）
+
+**activities-export の SELL proceeds 合算を「cash が増えた」と自動的に仮定してはいけない。** ユーザーは売却金を別用途（出金・別口座移動）に使うことがあるため、cash 残高は確認なしには増加させない。
+
+手順:
+
+1. `--dry-run` を実行して USD/CAD の cash delta を表示する
+2. delta が +0 でない場合、**必ずユーザーに「この cash 増分は計上していい？」と確認する**
+3. ユーザーが「cash 入ってない」「売却分は使わない」「別用途」などと答えたら `--skip-cash` で再実行する
+4. 「合ってる」と答えたら通常実行する
+
+**過去のミス（2026-06-04）:** activities-export の SELL proceeds +$2,886.43 を確認せずに cash.csv に書き込もうとした。ユーザーは売却分を別用途に使う前提だったため指摘された。
+
 ### Monthly Statement をアップロードしない場合
 
 1. `aspects/investment/portfolio.csv` が存在するか確認
@@ -47,6 +83,13 @@ bun run scripts/investment/import-monthly-statement.ts --monthly <path>
    - 無ければサンプル schema を出して作成を促す
 3. `cash.csv` の `updated_on` を確認
    - 30 日以上前なら「Wealthsimple を見て cash 残高を更新しますか？」と聞く
+
+## BUY/ADD は cash 前提にしない（厳守）
+
+**cash.csv の残高が $0 でも BUY/ADD 候補を評価する。** TRIM/SELL で生まれる proceeds が可処分資金になる。
+
+- `rebalance.ts` が TRIM 合計を自動計算して `allocate-cash.ts` に渡す
+- 「cash $0 だから BUY/ADD なし」とショートカットしない
 
 ## メタトレンド判断軸
 

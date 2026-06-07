@@ -9,6 +9,8 @@ const yahooFinance = new YahooFinance({ suppressNotices: ["yahooSurvey"] });
 
 export interface PriceMetrics {
   ticker: string;
+  dayChange: number | null;  // 直近 1 日（前営業日 close → 今日 close）
+  peakToNow5d: number | null; // 直近 5 営業日の最高値 → 今日 close（intra-window crash 検出）
   return1w: number | null;   // ~5 営業日
   return1m: number | null;   // ~21 営業日
   return3m: number | null;
@@ -34,6 +36,8 @@ export async function fetchPriceHistory(tickers: string[]): Promise<Map<string, 
         if (quotes.length < 30) {
           out.set(ticker.toUpperCase(), {
             ticker,
+            dayChange: null,
+            peakToNow5d: null,
             return1w: null,
             return1m: null,
             return3m: null,
@@ -58,8 +62,18 @@ export async function fetchPriceHistory(tickers: string[]): Promise<Map<string, 
           return ((lastClose - prev) / prev) * 100;
         };
 
+        const dayChange = closes.length >= 2
+          ? ((lastClose - closes[closes.length - 2]) / closes[closes.length - 2]) * 100
+          : null;
+
+        const recent5 = closes.slice(Math.max(0, closes.length - 5));
+        const peak5 = Math.max(...recent5);
+        const peakToNow5d = peak5 > 0 ? ((lastClose - peak5) / peak5) * 100 : null;
+
         out.set(ticker.toUpperCase(), {
           ticker,
+          dayChange,
+          peakToNow5d,
           return1w: pickReturn(5),
           return1m: pickReturn(21),
           return3m: pickReturn(63),
@@ -73,6 +87,8 @@ export async function fetchPriceHistory(tickers: string[]): Promise<Map<string, 
         console.warn(`[price-history] ${ticker} failed: ${msg}`);
         out.set(ticker.toUpperCase(), {
           ticker,
+          dayChange: null,
+          peakToNow5d: null,
           return1w: null,
           return1m: null,
           return3m: null,
@@ -100,7 +116,7 @@ if (import.meta.main) {
     if (m.fetchError) {
       console.log(`${t}: ERROR ${m.fetchError}`);
     } else {
-      console.log(`${t}: price=${m.currentPrice?.toFixed(2)} 1w=${m.return1w?.toFixed(1)}% 1m=${m.return1m?.toFixed(1)}% 3m=${m.return3m?.toFixed(1)}% 6m=${m.return6m?.toFixed(1)}% 12m=${m.return12m?.toFixed(1)}% drawdown=${m.drawdownPct?.toFixed(1)}%`);
+      console.log(`${t}: price=${m.currentPrice?.toFixed(2)} day=${m.dayChange?.toFixed(1)}% peak→now=${m.peakToNow5d?.toFixed(1)}% 1w=${m.return1w?.toFixed(1)}% 1m=${m.return1m?.toFixed(1)}% 3m=${m.return3m?.toFixed(1)}% 6m=${m.return6m?.toFixed(1)}% 12m=${m.return12m?.toFixed(1)}% drawdown=${m.drawdownPct?.toFixed(1)}%`);
     }
   }
 }

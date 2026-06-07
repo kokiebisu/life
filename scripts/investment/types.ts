@@ -133,6 +133,8 @@ export interface HoldingDecision {
   recentNews: NewsItem[]; // top 1-3, kept for report rendering
   sources: string[]; // at least 1 URL
   technicals: {
+    dayChange: number | null;
+    peakToNow5d: number | null;
     return1w: number | null;
     return1m: number | null;
     return3m: number | null;

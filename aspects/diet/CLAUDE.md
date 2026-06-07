@@ -38,7 +38,18 @@
 | `weekly/YYYY-MM-DD.md` | 週次の振り返り・在庫メモ（献立は daily/ を参照） |
 | `pantry.md` | 常備調味料リスト（買い出し時に参照） |
 | `fridge.md` | 冷蔵庫の在庫（生鮮食品・消耗品。買い出し後に更新） |
+| `weight-log.md` | 体重計測ログ（計測報告のたびに追記） |
 | `expenses.md` | 月次食費記録（前月比の節約額を追跡） |
+
+### 体重ログ（厳守）
+
+ユーザーが「体重◯kgだった」「◯kg測った」と報告したら、**必ず `weight-log.md` の履歴テーブル先頭に追記する。** 同時に以下も更新:
+
+- `aspects/people/me.md`（2箇所: 基本情報・健康セクション）
+- `aspects/diet/nutrition-targets.md`（最終更新日・体重・BMR/TDEE 再計算）
+- `aspects/goal.md`（現状セクション）
+
+「reference field を直すだけ」で済ませない。履歴を残すのが目的。BMI = 体重 / (1.67)² で計算する。
 
 ### 冷蔵庫の在庫管理（fridge.md）
 

@@ -94,5 +94,65 @@
     "review_count": 1,
     "interval_days": 1,
     "next_review": "2026-06-10"
+  },
+  "クーポン / スプレッド内の usedCount 加算（++ 禁止）": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
+  },
+  "クーポン / 仕様矛盾の検出（副作用禁止 vs カウント増加）": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
+  },
+  "クーポン / throw vs createError（監視対象かどうか）": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
+  },
+  "クーポン / Math.max(0, ...) で負値防止": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
+  },
+  "定期積立 / new Date(year, m, 0) で翌月末日は +2": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
+  },
+  "定期積立 / getMonth() は0始まり・getDate() は1始まり": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
+  },
+  "定期積立 / throw は関数の一番上に置く": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
+  },
+  "JS落とし穴 / 浮動小数点（0.1+0.2 !== 0.3）": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
+  },
+  "JS落とし穴 / Date は破壊的変更（setMonth等）": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
+  },
+  "JS落とし穴 / ?? vs || でゼロを潰さない": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
   }
 }

@@ -70,3 +70,14 @@
 - タイムアタック（AIなし・メモなしで制限時間内に書ききる）
 - 声に出しながら解く練習
 チェックできた項目数: 5 / 8
+
+#### 続き（午前）
+追加でやったこと:
+- sumTree（再帰 + reduce 別解）一発正解
+- Stock getTotalValue / filterByValue（`>=` の修正のみ）
+- getTopHoldings（`[...arr].sort()` + `slice(0, n)` の修正）
+- groupByProduct（`?? 0` パターン）一発正解
+詰まったところ:
+- `getTopHoldings` で `slice(0, 2)` とハードコード（n を使い忘れ）
+- `sort()` が元配列を破壊することへの意識
+チェックできた項目数: 9 / 12

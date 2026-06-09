@@ -40,5 +40,29 @@
     "review_count": 1,
     "interval_days": 1,
     "next_review": "2026-06-10"
+  },
+  "集計 / reduce で合計を求める": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
+  },
+  "集計 / sort() は元配列を破壊する": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
+  },
+  "集計 / Record に ?? 0 で加算": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
+  },
+  "集計 / >= と > の使い分け": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
   }
 }

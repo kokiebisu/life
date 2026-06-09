@@ -71,3 +71,34 @@
 
 ❓ early return でバリデーションを先に書く利点は
 → 正常系のネストが深くならない・エラーの原因が上から読める・処理の前提条件が明確になる
+
+## サービス実装 / クーポン適用
+
+❓ スプレッド内で `coupon.usedCount++` と書いたらどうなるか
+→ `++` は副作用で元オブジェクトを変更する。スプレッドが返す値は更新前の値。`usedCount: coupon.usedCount + 1` が正しい
+
+❓ 仕様書に「副作用を持たない」と「カウントを増やして返す」が両方あるとき矛盾するか
+→ 矛盾しない。引数オブジェクトを変更せず、新しいオブジェクトを返すのが正しい（immutable update pattern）
+
+❓ `throw` と `createError` はどう使い分けるか（金融ドメイン）
+→ `throw` はあってはならないシステム異常（不正な discountType 等）。`createError` はユーザー起因のビジネスエラー（残高不足・期限切れ等）。前者は監視アラートの対象
+
+❓ 割引後の金額が負にならないようにするには
+→ `Math.max(0, cartTotal - discountAmount)` で下限を0に固定する。割引額がカート合計を超えるケースは特に `percentage` 型では起きないが `fixed` 型では起き得る
+
+## JavaScript 落とし穴 / 金融ドメイン
+
+❓ 金額計算で `0.1 + 0.2 === 0.3` が false になるのはなぜか
+→ 浮動小数点の精度問題。金融では整数（円・銭）で持つか `Math.round` を使う
+
+❓ `Date` オブジェクトは不変か
+→ 不変ではない。`setMonth()` / `setDate()` は元オブジェクトを変更する。`new Date(year, month, day)` で新規作成するのが安全
+
+❓ `isNaN` と `Number.isNaN` の違いは
+→ `isNaN('hello')` は true（文字列を数値変換してからチェック）。`Number.isNaN('hello')` は false（型チェックが先）。数値チェックには `Number.isNaN` が正確
+
+❓ デフォルト値に `||` を使うと金額 `0` が潰れるのはなぜか
+→ `amount || 100` は `amount` が `0` のとき `100` になる（`0` は falsy）。`amount ?? 100` なら `null` / `undefined` のみ `100` になる
+
+❓ `throw` と `createError` の使い分けは（ミドルウェア視点）
+→ `throw` はミドルウェアが一括処理するシステム異常。`createError` return は呼び出し元が個別処理するビジネスエラー。`throw` を一番上に置くと制御フローが明確になる

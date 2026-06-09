@@ -94,3 +94,27 @@
 - shallow copy（`holdings` / `transactions` の参照が残る問題）
 - 出金上限チェックに当日 amount を含め忘れ
 チェックできた項目数: 13 / 16
+
+#### 続き（夕方）
+追加でやったこと:
+- applyCoupon 仕様書形式（副作用禁止 vs カウント増加の矛盾検出 ✅・`usedCount + 1` vs `usedCount++` の違い・`throw` vs `createError` の使い分け・`Math.max(0, ...)` で負値防止）
+- シニアエンジニアバーの再確認（コードを書いた後に自分でリスク・トレードオフを口に出す練習）
+詰まったところ:
+- `prev += curr.price * curr.quantity` の `+=` を `+` に直す（reduce の戻り値）
+- `throw new Error` のままにして `createError` を使い忘れ（ユーザーエラーなのに throw）
+- `finalAmount = cartTotalAmount - discountAmount` で負値対策なし（`Math.max(0,...)` 忘れ）
+チェックできた項目数: 17 / 20
+
+#### 続き（夜）
+追加でやったこと:
+- 定期積立サービス 仕様書形式（new Date UTC問題・年またぎ・翌月末日 +2 オフセット・getMonth() 0始まり・throw の位置・toLocaleString vs テンプレートリテラル）
+- JavaScript落とし穴まとめ（浮動小数点・Date破壊的変更・Number.isNaN vs isNaN・`??` vs `||`）
+- ミドルウェアと throw vs createError の設計説明練習
+詰まったところ:
+- `Math.min` の lastDay 計算で `+1` と `+2` を逆の行に当ててしまった
+- `throw` の位置が複数回指摘が必要だった（一番上に書く習慣が必要）
+- `toLocaleString('YYYY-MM-DD')` はロケールコードではないことを見落とした
+明日やること:
+- 面接本番（2026-06-10）
+- 書き終えたら「気になっているのは〇〇」を口に出す
+チェックできた項目数: 20 / 25

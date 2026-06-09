@@ -1,1 +1,44 @@
-{}
+{
+  "アルゴリズム / Selection Sort の考え方": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
+  },
+  "アルゴリズム / 内側ループは i+1 から": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
+  },
+  "TODO CRUD / 後置インクリメントで自動採番": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
+  },
+  "TODO CRUD / deleteTodo の返り値ロジック": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
+  },
+  "ページネーション / 開始インデックスの計算式": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
+  },
+  "ページネーション / slice は Math.min 不要": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
+  },
+  "ツリー再帰 / DFS フラット化パターン": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
+  }
+}

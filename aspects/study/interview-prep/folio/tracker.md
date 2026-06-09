@@ -81,3 +81,16 @@
 - `getTopHoldings` で `slice(0, 2)` とハードコード（n を使い忘れ）
 - `sort()` が元配列を破壊することへの意識
 チェックできた項目数: 9 / 12
+
+#### 続き（午後）
+追加でやったこと:
+- findDuplicates（hashmap カウントパターン、Set 2つ別解も確認）
+- executeOrder 仕様書形式（shallow copy・存在しない銘柄・`>=` vs `>` の3バグ修正）
+- processTransaction 仕様書形式（日付比較・取引件数境界値・出金上限累計チェック）
+- VIP仕様変更対応（`isWithinWithdrawalLimit` 関数抽出・`Account.isVip` 追加）
+- コードレビュー形式の説明練習（early return・DDD設計・throw vs return・金融境界値リスク）
+詰まったところ:
+- `getDay()` vs `getDate()` の混同（曜日 vs 日）
+- shallow copy（`holdings` / `transactions` の参照が残る問題）
+- 出金上限チェックに当日 amount を含め忘れ
+チェックできた項目数: 13 / 16

@@ -64,5 +64,35 @@
     "review_count": 1,
     "interval_days": 1,
     "next_review": "2026-06-10"
+  },
+  "金融 / 入れ子オブジェクトの2段コピー": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
+  },
+  "金融 / getDay vs getDate": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
+  },
+  "金融 / 日次上限の境界値 >= 20": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
+  },
+  "金融 / 出金上限チェックに当日分を含める": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
+  },
+  "金融 / early return の利点": {
+    "last_reviewed": "2026-06-09",
+    "review_count": 1,
+    "interval_days": 1,
+    "next_review": "2026-06-10"
   }
 }

@@ -28,7 +28,7 @@
 | factorial | FOLIO本番 (2026-06-10) |
 | join（アプリケーションコード） | FOLIO本番 (2026-06-10) |
 
-### CS 概念
+### CS 概念・設計パターン
 | 概念 | 内容 |
 |---|---|
 | SRP | 単一責任の原則。flush() の責務分離 |
@@ -43,16 +43,59 @@
 | 4xx vs 5xx | 4xx=クライアントエラー（リトライ不要）/ 5xx=サーバーエラー（リトライ可） |
 | clearInterval | setInterval の戻り値を保存して stop 時に clearInterval |
 | OOM / unbounded growth | 配列が無制限に増え続けるリスク。GCリークとは別 |
-| Math.ceil vs floor | 手数料=ceil（銀行有利）。按分=floor+最大剰余方式 |
 | throw vs createError | throw=システム異常（middleware へ）/ createError=業務エラー（ユーザーへ） |
+| throw は関数の一番上 | 他のバリデーションより先に置かないと dead code になる。middleware パターンの前提 |
 | Zod | z.infer で型と schema を1ソース化。unknown + type guard |
-| 最大剰余方式 | floor 後の端数を小数部が大きい順に+1円ずつ配る |
 | Value Object (DDD) | Fee・Amount・YearMonth をクラス化してバリデーションを内包 |
 | immutable update | `{...obj, field: newValue, arr: [...obj.arr, item]}` |
-| ?? vs \|\| | `\|\|` は 0 を falsy 扱い。金額には `??` を使う |
-| 浮動小数点 | `0.1 + 0.2 !== 0.3`。金融計算は整数または Math.round |
-| Date の破壊的変更 | setMonth/setDate は元の Date を変更する |
-| Number.isNaN | isNaN より型安全。`Number.isNaN(NaN)` = true |
+| webhook secret の管理 | per-endpoint なので環境変数ではなく DB で管理して登録時に払い出す |
+
+### 金融計算パターン
+| パターン | 内容 |
+|---|---|
+| Math.ceil vs floor | 手数料=ceil（銀行有利に丸め）。按分=floor+最大剰余方式 |
+| 最大剰余方式 | `floor` 後の端数（小数部）が大きい順に上位 r 個へ +1 円。合計が必ず total に一致する |
+| 手数料クランプ | `Math.min(5000, Math.max(200, fee))` で下限・上限を設ける |
+| 月次上限チェック | 既存履歴の `amount + fee` の合計 + 今回の `amount + fee` で判定。fee を忘れない |
+| reduce で cur.fee | reduce 内では履歴レコードの `cur.fee` を使う。現在トランザクションの `fee` 変数と混同しない |
+| 負値防止 | `Math.max(0, value)` でクーポン残数など負にならないよう guard |
+
+### JavaScript / TypeScript 落とし穴
+| 落とし穴 | 内容 |
+|---|---|
+| 浮動小数点 | `0.1 + 0.2 !== 0.3`。金融計算は整数演算か `Math.round` |
+| Date の破壊的変更 | `setMonth()` / `setDate()` は元の Date を変更する。新しい Date を作ること |
+| Number.isNaN | グローバル `isNaN` より型安全。`isNaN('abc')` は true だが `Number.isNaN('abc')` は false |
+| ?? vs \|\| | `\|\|` は `0` / `""` を falsy 扱い。金額・数量には `??`（null/undefined のみ） |
+| getMonth() 0始まり | `getMonth()` は 0〜11。`getDate()` は 1〜31（こちらは1始まり） |
+| new Date('YYYY-MM-DD') | UTC midnight として解釈される。日付の等値比較には使えるが時刻を含む場合は注意 |
+| new Date(y, m, d) 月overflow | `month` に 12 を渡すと翌年1月になる。`day` に 0 を渡すと前月末日 |
+| getDate() vs dayOfMonth | 月末クランプ後の日付を次月に引き継ぐとき `getDate()` を使うとドリフトする。元の `dayOfMonth` を渡す |
+| toLocaleString の引数 | `toLocaleString('ja-JP')` はロケールコード。`'YYYY-MM-DD'` はフォーマット文字列ではない |
+| 日付フォーマット | `` `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` `` |
+
+### 正規表現
+| パターン | 内容 |
+|---|---|
+| YYYY-MM-DD | `/^\d{4}-\d{2}-\d{2}$/` — `$` を忘れると末尾の余分な文字を許す |
+| YYYY-MM | `/^\d{4}-\d{2}$/` — `\d{2}?` にすると2桁目が optional になるバグ |
+
+### heap vs sort（top-k 問題）
+- **heap**: 構築 O(n)、k個取り出し O(k log n)。k << n のとき有利
+- **sort**: O(n log n)。TypeScript に標準 heap がないため実務では sort が無難
+- 判断基準: k が n に比べて極端に小さくなければ sort で十分
+
+### コードリーディングの体系的な見る順番
+1. 概要を一言で言う（何をするクラスか）
+2. 良い点を探す（public surface・encapsulation・責務の分離）
+3. 型の問題（any、unknown、型安全性）
+4. エラーハンドリング（silent failure、console.log のみ）
+5. 非同期（await 漏れ、unhandled rejection）
+6. インフラ依存（fetch 直依存 → DI）
+7. 状態管理（インメモリ → 永続化、スケールアウト）
+8. リトライ設計（backoff、4xx/5xx 区別）
+9. セキュリティ（署名、認証）
+10. ライフサイクル（start/stop、clearInterval）
 
 ---
 

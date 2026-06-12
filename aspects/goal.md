@@ -18,7 +18,7 @@
 
 ## 現状
 
-- 現在の体重: 62.3kg（2026-06-11）
+- 現在の体重: 62.05kg（2026-06-12）
 - 目標体重: 58kg
 - 詳細ログ: [aspects/diet/weight-log.md](diet/weight-log.md)
 

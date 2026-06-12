@@ -1,14 +1,4 @@
 {
-  "mcpServers": {
-    "playwright": {
-      "command": "npx",
-      "args": [
-        "@playwright/mcp@latest",
-        "--user-data-dir", "/home/node/.claude/gemini-profile",
-        "--headless"
-      ]
-    }
-  },
   "permissions": {
     "allow": [
       "mcp__*",

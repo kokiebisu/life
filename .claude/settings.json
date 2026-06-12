@@ -4,7 +4,8 @@
       "command": "npx",
       "args": [
         "@playwright/mcp@latest",
-        "--user-data-dir", "/home/node/.gemini-profile"
+        "--user-data-dir", "/home/node/.claude/gemini-profile",
+        "--headless"
       ]
     }
   },

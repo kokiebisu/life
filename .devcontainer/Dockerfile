@@ -56,6 +56,10 @@ RUN mkdir -p /usr/local/share/npm-global /home/node/go && \
 
 ARG USERNAME=node
 
+# Grant passwordless sudo to node user
+RUN echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USERNAME \
+  && chmod 0440 /etc/sudoers.d/$USERNAME
+
 # Persist bash history
 RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
   && mkdir /commandhistory \

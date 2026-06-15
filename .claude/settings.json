@@ -50,5 +50,8 @@
     "context7@claude-plugins-official": false,
     "skill-creator@claude-plugins-official": true,
     "trading-ideas@claude-equity-research-marketplace": true
+  },
+  "worktree": {
+    "bgIsolation": "none"
   }
 }

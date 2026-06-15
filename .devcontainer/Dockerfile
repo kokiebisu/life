@@ -89,9 +89,6 @@ RUN for i in 1 2 3 4 5; do \
       echo "claude install retry $i/5 in $((i*5))s..."; sleep $((i*5)); \
     done
 
-# Install Codex CLI
-RUN npm install -g @openai/codex
-
 # Install beads (bd) CLI from source
 # npm pre-built binary requires GLIBC 2.32+ which bullseye (2.31) doesn't have,
 # so we build from source via Go (GOPATH=/home/node/go is already in PATH).

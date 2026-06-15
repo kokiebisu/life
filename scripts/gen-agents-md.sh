@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Generates AGENTS.md for Codex CLI from CLAUDE.md + rules + skills summaries
+# Generates AGENTS.md from CLAUDE.md + rules + skills summaries
 # Rules are read from .claude/rules/ when present, falling back to .ai/rules/.
 # Run this after editing .claude/rules/, .ai/rules/, skills/, or CLAUDE.md
 
@@ -57,5 +57,5 @@ fi
 size=$(wc -c < "$OUTPUT")
 echo "Generated $OUTPUT (${size} bytes)"
 if [ "$size" -gt 32768 ]; then
-  echo "WARNING: AGENTS.md exceeds Codex 32KB limit (${size} bytes)."
+  echo "WARNING: AGENTS.md exceeds 32KB (${size} bytes)."
 fi

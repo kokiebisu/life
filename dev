@@ -68,7 +68,7 @@ if ! run_devcontainer up --workspace-folder .; then
 fi
 
 echo "Opening shell with Claude Code..."
-if ! run_devcontainer exec --workspace-folder . bash -c "claude; exec bash"; then
+if ! run_devcontainer exec --workspace-folder . bash -c "claude agents; exec bash"; then
   echo "Error: Failed to open shell in devcontainer." >&2
   exit 1
 fi

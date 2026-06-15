@@ -14,7 +14,6 @@
         "GitHub.vscode-pull-request-github",
         "xshrim.txt-syntax",
         "golang.Go",
-        "openai.chatgpt",
         "Anthropic.claude-code"
       ],
       "settings": {

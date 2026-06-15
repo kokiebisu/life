@@ -1,1 +1,1 @@
-../../.ai/rules/context.md
+../../.agents/rules/context.md

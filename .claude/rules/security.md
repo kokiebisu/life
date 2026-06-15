@@ -1,1 +1,1 @@
-../../.ai/rules/security.md
+../../.agents/rules/security.md

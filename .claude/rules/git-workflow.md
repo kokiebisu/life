@@ -1,1 +1,1 @@
-../../.ai/rules/git-workflow.md
+../../.agents/rules/git-workflow.md

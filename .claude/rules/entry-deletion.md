@@ -1,1 +1,1 @@
-../../.ai/rules/entry-deletion.md
+../../.agents/rules/entry-deletion.md

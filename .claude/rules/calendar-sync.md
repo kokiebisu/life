@@ -1,1 +1,1 @@
-../../.ai/rules/calendar-sync.md
+../../.agents/rules/calendar-sync.md

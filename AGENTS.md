@@ -17,7 +17,7 @@
 ./scripts/life-os-sync.sh status       # life-os との乖離確認
 ./scripts/life-os-sync.sh pull         # life-os/main を life に取り込む
 ./scripts/life-os-sync.sh contrib      # life-os に貢献できるコミットを確認
-./scripts/gen-agents-md.sh             # .agents/skills/ + .ai/rules/ から AGENTS.md を再生成
+./scripts/gen-agents-md.sh             # .agents/skills/ + .agents/rules/ から AGENTS.md を再生成
 bd ready -l defer --json               # defer キューの ready タスクを確認（→ /resume で再開）
 ```
 
@@ -45,9 +45,9 @@ aspects/                 # 生活の各側面（各ディレクトリに CLAUDE.
 
 ## Git & Security
 
-- コミット形式・PR ワークフロー → `.ai/rules/git-workflow.md`
-- セキュリティガイドライン → `.ai/rules/security.md`
-- 認証（OAuth token のみ / API Key 禁止）→ `.ai/rules/auth.md`
+- コミット形式・PR ワークフロー → `.agents/rules/git-workflow.md`
+- セキュリティガイドライン → `.agents/rules/security.md`
+- 認証（OAuth token のみ / API Key 禁止）→ `.agents/rules/auth.md`
 
 ## Fork 管理（life-os との同期）
 
@@ -786,21 +786,21 @@ CLI コマンドの使い方は `/calendar` コマンドを参照。
 
 # ルールファイル管理
 
-## `.ai/rules/` 追加時は `.claude/rules/` に symlink を張る（厳守）
+## `.agents/rules/` 追加時は `.claude/rules/` に symlink を張る（厳守）
 
-`.ai/rules/<new>.md` を新規追加したら、**必ず `.claude/rules/<new>.md` に symlink を張る。**
+`.agents/rules/<new>.md` を新規追加したら、**必ず `.claude/rules/<new>.md` に symlink を張る。**
 
 ```bash
 cd /workspaces/life/.claude/rules
-ln -s ../../.ai/rules/<new>.md <new>.md
+ln -s ../../.agents/rules/<new>.md <new>.md
 ```
 
-**Why:** Claude Code は `.claude/rules/*.md` を auto-load する。`.ai/rules/` 直接ではなく `.claude/rules/` の symlink 経由でロードされるため、symlink が無いとルールが認識されない。
+**Why:** Claude Code は `.claude/rules/*.md` を auto-load する。`.agents/rules/` 直接ではなく `.claude/rules/` の symlink 経由でロードされるため、symlink が無いとルールが認識されない。
 
 **How to apply:**
 
-- `.ai/rules/` に `Write` で新ファイル作成 → 直後に `.claude/rules/` に symlink を張る
-- `.ai/rules/<old>.md` を `<new>.md` にリネームしたら、`.claude/rules/` 側の symlink も張り直す
+- `.agents/rules/` に `Write` で新ファイル作成 → 直後に `.claude/rules/` に symlink を張る
+- `.agents/rules/<old>.md` を `<new>.md` にリネームしたら、`.claude/rules/` 側の symlink も張り直す
 - 動作確認: 次のセッション開始時に system-reminder のロード一覧に新ルールが含まれるか確認
 
 **過去の漏れ:** 新ルールを追加したのに `.claude/rules/` 側に symlink を張り忘れ、次セッションでルールが認識されないまま動いた事例あり（2026-04-29）
@@ -944,10 +944,8 @@ bun run scripts/notion/notion-sync-tasks.ts             # 実行
 - **`/analyze`** — ルールファイル（.ai/rules/・CLAUDE.md・skills/）を分析し、コードに置き換えた方が一貫性のある箇所を検出・レポート・実装する。「分析して」「リファクタして」に使う。 → `.agents/skills/analyze/SKILL.md`
 - **`/automate`** — 成功した手順やセッションの作業内容を仕組み化（skill / script / rule / hook）したいとき。「これ仕組み化したい」「自動化したい」「次回も再現できるようにしたい」などに使う。 → `.agents/skills/automate/SKILL.md`
 - **`/calendar`** — Notion カレンダーの予定を確認・追加・変更するとき。デイリープラン作成・スケジュール調整・既存予定の確認などに使う。 → `.agents/skills/calendar/SKILL.md`
-- **`/caveman`** — > → `.agents/skills/caveman/SKILL.md`
 - **`/defer`** — 重そうなタスクをトークンリセット後に回したいとき。「これ defer」「あとで」「これ重そう」などに使う。直前または引数のタスクを beads キュー（label=defer）に保存する。 → `.agents/skills/defer/SKILL.md`
 - **`/devotion`** — デボーション（聖書の学び）を始めるとき。「デボーションしたい」「デボーションやろう」「聖書読もう」などに使う。章は自動検出する。 → `.agents/skills/devotion/SKILL.md`
-- **`/diagnose`** — Disciplined diagnosis loop for hard bugs and performance regressions. Reproduce → minimise → hypothesise → instrument → fix → regression-test. Use when user says "diagnose this" / "debug this", reports a bug, says something is broken/throwing/failing, or describes a performance regression. → `.agents/skills/diagnose/SKILL.md`
 - **`/discover-growth`** — 新規の growth 候補銘柄をニュース起点で発掘するとき。「新しい買い候補ない？」「グロース株探して」「次のリバランスの弾」などに使う。出力は /rebalance が次回自動取り込みする。 → `.agents/skills/discover-growth/SKILL.md`
 - **`/discover-supply-chain`** — バリューチェーン起点で「キオクシア型」の川上未発見株を発掘するとき。「割安な部品メーカー探して」「供給チェーンから掘り起こして」「ハードウェア系の穴場探して」などに使う。出力は /rebalance が次回自動取り込みする。 → `.agents/skills/discover-supply-chain/SKILL.md`
 - **`/discover-value`** — 新規の value (割安) 候補銘柄をニュース起点で発掘するとき。「割安株探して」「value 候補出して」「次のリバランスのバリュー枠」などに使う。出力は /rebalance が次回自動取り込みする。 → `.agents/skills/discover-value/SKILL.md`
@@ -955,30 +953,17 @@ bun run scripts/notion/notion-sync-tasks.ts             # 実行
 - **`/fridge-sync`** — fridge.md（冷蔵庫在庫）を Notion の「冷蔵庫の在庫」ページに同期するとき。「冷蔵庫同期して」「fridge 更新して」に使う。 → `.agents/skills/fridge-sync/SKILL.md`
 - **`/from-notion`** — Notion の変更をリポジトリの md ファイルに逆同期するとき。Notion 上で時間変更・完了マーク・フィードバックをした後に使う。 → `.agents/skills/from-notion/SKILL.md`
 - **`/fukushuu`** — 学習ノートを復習したいとき。「復習しよう」「スペーシドリピティションやりたい」などに使う。忘却曲線に基づいて期日が来たノートをクイズ形式で復習する。 → `.agents/skills/fukushuu/SKILL.md`
-- **`/grill-me`** — Interview the user relentlessly about a plan or design until reaching shared understanding, resolving each branch of the decision tree. Use when user wants to stress-test a plan, get grilled on their design, or mentions "grill me". → `.agents/skills/grill-me/SKILL.md`
-- **`/grill-with-docs`** — Grilling session that challenges your plan against the existing domain model, sharpens terminology, and updates documentation (CONTEXT.md, ADRs) inline as decisions crystallise. Use when user wants to stress-test a plan against their project's language and documented decisions. → `.agents/skills/grill-with-docs/SKILL.md`
 - **`/gym`** — ジムセッションの予定登録（/gym plan）と実績ログ記録（/gym log）。引数: $ARGUMENTS → `.agents/skills/gym/SKILL.md`
-- **`/handoff`** — Compact the current conversation into a handoff document for another agent to pick up. → `.agents/skills/handoff/SKILL.md`
 - **`/humanize-ja`** — 履歴書・職務経歴書・面接対策・採用担当者向けメッセージなど、外部に出す日本語文章を `aspects/job/` 配下で生成・編集するときに使う。AI 生成っぽい文章（「〜を担当」「〜を実現」「〜という二重の技術的不確実性」など）を回避し、ケン本人の voice に寄せる。`/humanize <file>` で既存ファイルを post-hoc にリライトできる。 → `.agents/skills/humanize-ja/SKILL.md`
-- **`/improve-codebase-architecture`** — Find deepening opportunities in a codebase, informed by the domain language in CONTEXT.md and the decisions in docs/adr/. Use when the user wants to improve architecture, find refactoring opportunities, consolidate tightly-coupled modules, or make a codebase more testable and AI-navigable. → `.agents/skills/improve-codebase-architecture/SKILL.md`
 - **`/interview-prep`** — 技術面接の対話式学習セッション。「面接対策やろう」「Day 1 やろう」「Go goroutine やろう」「DB やろう」「システム設計やろう」など、就職活動の技術面接対策を進めたいときに起動する。引数: $ARGUMENTS → `.agents/skills/interview-prep/SKILL.md`
-- **`/investor-drill`** — 最新ニュースを起点に、投資家として世界の変化を深く理解するための教育記事を生成するとき。「トレンド教えて」「investor drill」「世界はどこへ向かっているか」「新しい産業教えて」などに使う。クイズ形式は使わない。 → `.agents/skills/investor-drill/SKILL.md`
 - **`/kondate`** — 献立を計画したいとき。「献立考えて」「食事プランを立てたい」「何食分か作り置き計画したい」などに使う。在庫ベースで提案し Notion meals DB と daily ファイルに一括登録する。 → `.agents/skills/kondate/SKILL.md`
 - **`/learn`** — Claude のミスを指摘して再発防止策を適用するとき。「また同じミスをした」「ルールに追加して」「再発防止して」などに使う。 → `.agents/skills/learn/SKILL.md`
 - **`/meal`** — 食事を記録するとき。「〇〇食べた」「朝食記録したい」「ご飯ログ」など食事トラッキングに使う。daily ファイル・Notion meals DB・fridge.md を一括更新する。 → `.agents/skills/meal/SKILL.md`
 - **`/pr`** — プルリクエストを作成するとき。変更をグループ化して PR を作成する。コミット後に自動で呼ばれることもある。 → `.agents/skills/pr/SKILL.md`
 - **`/pray`** — 祈りを捧げるとき。「祈りたい」「祈ろう」「Closing Prayer したい」などに使う。Prayer Requests の Active リスト全員のために祈る。 → `.agents/skills/pray/SKILL.md`
-- **`/prototype`** — Build a throwaway prototype to flesh out a design before committing to it. Routes between two branches — a runnable terminal app for state/business-logic questions, or several radically different UI variations toggleable from one route. Use when the user wants to prototype, sanity-check a data model or state machine, mock up a UI, explore design options, or says "prototype this", "let me play with it", "try a few designs". → `.agents/skills/prototype/SKILL.md`
 - **`/rebalance`** — 保有 portfolio + cash を踏まえて Hold/Trim/Sell/Add と新規 Buy を提案するとき。3 ヶ月おきの中長期レビューに使う。「rebalance したい」「ポートフォリオ見直したい」「cash どう使う」などに使う。 → `.agents/skills/rebalance/SKILL.md`
 - **`/resume`** — defer したタスクを再開するとき。「resume」「さっきの続き」「defer した何かやろう」などに使う。bd ready -l defer から選んで実行する。 → `.agents/skills/resume/SKILL.md`
-- **`/setup-matt-pocock-skills`** — Sets up an `## Agent skills` block in AGENTS.md/CLAUDE.md and `docs/agents/` so the engineering skills know this repo's issue tracker (GitHub or local markdown), triage label vocabulary, and domain doc layout. Run before first use of `to-issues`, `to-prd`, `triage`, `diagnose`, `tdd`, `improve-codebase-architecture`, or `zoom-out` — or if those skills appear to be missing context about the issue tracker, triage labels, or domain docs. → `.agents/skills/setup-matt-pocock-skills/SKILL.md`
 - **`/study`** — 学習セッションの開始・ノート記録・Notion登録。引数: $ARGUMENTS → `.agents/skills/study/SKILL.md`
-- **`/tdd`** — Test-driven development with red-green-refactor loop. Use when user wants to build features or fix bugs using TDD, mentions "red-green-refactor", wants integration tests, or asks for test-first development. → `.agents/skills/tdd/SKILL.md`
 - **`/tidy`** — 指示ファイル（CLAUDE.md・rules・commands・memory）の重複・配置ミスを整理するとき。「ルールが散らかってきた」「指示ファイル整理したい」などに使う。 → `.agents/skills/tidy/SKILL.md`
-- **`/to-issues`** — Break a plan, spec, or PRD into independently-grabbable issues on the project issue tracker using tracer-bullet vertical slices. Use when user wants to convert a plan into issues, create implementation tickets, or break down work into issues. → `.agents/skills/to-issues/SKILL.md`
 - **`/to-notion`** — church MDファイル（prayer-requests.md, verses.md, messages/）をNotionに同期するとき。引数: $ARGUMENTS → `.agents/skills/to-notion/SKILL.md`
-- **`/to-prd`** — Turn the current conversation context into a PRD and publish it to the project issue tracker. Use when user wants to create a PRD from the current context. → `.agents/skills/to-prd/SKILL.md`
-- **`/triage`** — Triage issues through a state machine driven by triage roles. Use when user wants to create an issue, triage issues, review incoming bugs or feature requests, prepare issues for an AFK agent, or manage issue workflow. → `.agents/skills/triage/SKILL.md`
-- **`/write-a-skill`** — Create new agent skills with proper structure, progressive disclosure, and bundled resources. Use when user wants to create, write, or build a new skill. → `.agents/skills/write-a-skill/SKILL.md`
-- **`/zoom-out`** — Tell the agent to zoom out and give broader context or a higher-level perspective. Use when you're unfamiliar with a section of code or need to understand how it fits into the bigger picture. → `.agents/skills/zoom-out/SKILL.md`
 

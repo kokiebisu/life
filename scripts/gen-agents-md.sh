@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Generates AGENTS.md from CLAUDE.md + rules + skills summaries
-# Rules are read from .claude/rules/ when present, falling back to .ai/rules/.
-# Run this after editing .claude/rules/, .ai/rules/, .agents/skills/, or CLAUDE.md
+# Rules are read from .claude/rules/ when present, falling back to .agents/rules/.
+# Run this after editing .claude/rules/, .agents/rules/, .agents/skills/, or CLAUDE.md
 
 set -e
 
@@ -9,7 +9,7 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUTPUT="$REPO_ROOT/AGENTS.md"
 RULES_DIR="$REPO_ROOT/.claude/rules"
 if [ ! -d "$RULES_DIR" ]; then
-  RULES_DIR="$REPO_ROOT/.ai/rules"
+  RULES_DIR="$REPO_ROOT/.agents/rules"
 fi
 
 {

@@ -1,1 +1,1 @@
-../../.ai/rules/rule-sync.md
+../../.agents/rules/rule-sync.md

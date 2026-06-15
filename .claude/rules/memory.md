@@ -1,1 +1,1 @@
-../../.ai/rules/memory.md
+../../.agents/rules/memory.md

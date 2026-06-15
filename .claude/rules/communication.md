@@ -1,1 +1,1 @@
-../../.ai/rules/communication.md
+../../.agents/rules/communication.md

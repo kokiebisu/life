@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Generates AGENTS.md from CLAUDE.md + rules + skills summaries
 # Rules are read from .claude/rules/ when present, falling back to .ai/rules/.
-# Run this after editing .claude/rules/, .ai/rules/, skills/, or CLAUDE.md
+# Run this after editing .claude/rules/, .ai/rules/, .agents/skills/, or CLAUDE.md
 
 set -e
 
@@ -25,15 +25,15 @@ fi
     echo ""
   done
 
-  # Commands (summaries only — full definitions in skills/<name>/SKILL.md)
+  # Commands (summaries only — full definitions in .agents/skills/<name>/SKILL.md)
   echo "---"
   echo ""
   echo "## Available Commands"
   echo ""
-  echo "コマンドを呼び出すときは、対応する \`skills/<name>/SKILL.md\` を読んでその指示に従うこと。"
+  echo "コマンドを呼び出すときは、対応する \`.agents/skills/<name>/SKILL.md\` を読んでその指示に従うこと。"
   echo ""
 
-  for skill_dir in "$REPO_ROOT/skills/"/*/; do
+  for skill_dir in "$REPO_ROOT/.agents/skills/"/*/; do
     name="$(basename "$skill_dir")"
     f="$skill_dir/SKILL.md"
     [ -f "$f" ] || continue
@@ -49,7 +49,7 @@ fi
         /^#/ { sub(/^#+ /, ""); print; exit }
       ' "$f")"
     fi
-    echo "- **\`/$name\`** — $desc → \`skills/${name}/SKILL.md\`"
+    echo "- **\`/$name\`** — $desc → \`.agents/skills/${name}/SKILL.md\`"
   done
   echo ""
 } > "$OUTPUT"

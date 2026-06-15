@@ -17,13 +17,13 @@
 ./scripts/life-os-sync.sh status       # life-os との乖離確認
 ./scripts/life-os-sync.sh pull         # life-os/main を life に取り込む
 ./scripts/life-os-sync.sh contrib      # life-os に貢献できるコミットを確認
-./scripts/gen-agents-md.sh             # skills/ + .ai/rules/ から AGENTS.md を再生成
+./scripts/gen-agents-md.sh             # .agents/skills/ + .ai/rules/ から AGENTS.md を再生成
 bd ready -l defer --json               # defer キューの ready タスクを確認（→ /resume で再開）
 ```
 
 ### Claude Code スキル
 
-スキル一覧と説明は `Skill` ツールで自動展開される（`.claude/skills` は `../skills` への symlink）。CLAUDE.md では再列挙しない。
+スキル一覧と説明は `Skill` ツールで自動展開される（`.claude/skills` は `../.agents/skills` への symlink）。CLAUDE.md では再列挙しない。
 
 > **スキル自動起動（厳守）:** 「デボーションしたい」「デボーションやりたい」などの発言は即 `/devotion` スキルを起動する。章や箇所をユーザーに聞かない（スキルが自動検出する）。
 

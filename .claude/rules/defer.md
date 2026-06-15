@@ -1,1 +1,1 @@
-../../.ai/rules/defer.md
+../../.agents/rules/defer.md

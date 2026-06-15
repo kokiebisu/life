@@ -1,1 +1,1 @@
-../../.ai/rules/notion-workflow.md
+../../.agents/rules/notion-workflow.md

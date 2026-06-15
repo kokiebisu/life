@@ -17,7 +17,7 @@
 ./scripts/life-os-sync.sh status       # life-os との乖離確認
 ./scripts/life-os-sync.sh pull         # life-os/main を life に取り込む
 ./scripts/life-os-sync.sh contrib      # life-os に貢献できるコミットを確認
-./scripts/gen-agents-md.sh             # .agents/skills/ + .ai/rules/ から AGENTS.md を再生成
+./scripts/gen-agents-md.sh             # .agents/skills/ + .agents/rules/ から AGENTS.md を再生成
 bd ready -l defer --json               # defer キューの ready タスクを確認（→ /resume で再開）
 ```
 
@@ -45,9 +45,9 @@ aspects/                 # 生活の各側面（各ディレクトリに CLAUDE.
 
 ## Git & Security
 
-- コミット形式・PR ワークフロー → `.ai/rules/git-workflow.md`
-- セキュリティガイドライン → `.ai/rules/security.md`
-- 認証（OAuth token のみ / API Key 禁止）→ `.ai/rules/auth.md`
+- コミット形式・PR ワークフロー → `.agents/rules/git-workflow.md`
+- セキュリティガイドライン → `.agents/rules/security.md`
+- 認証（OAuth token のみ / API Key 禁止）→ `.agents/rules/auth.md`
 
 ## Fork 管理（life-os との同期）
 

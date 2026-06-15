@@ -1,1 +1,1 @@
-../../.ai/rules/automation.md
+../../.agents/rules/automation.md

@@ -1,1 +1,1 @@
-../../.ai/rules/auth.md
+../../.agents/rules/auth.md

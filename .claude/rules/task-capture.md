@@ -1,1 +1,1 @@
-../../.ai/rules/task-capture.md
+../../.agents/rules/task-capture.md

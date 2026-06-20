@@ -1,0 +1,1 @@
+../../.agents/rules/notion-db-job.md

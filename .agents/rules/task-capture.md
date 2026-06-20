@@ -25,7 +25,7 @@
 
 1. Web Search で商品を調べる（価格・商品ページURL・画像URL）
 2. 該当店舗の `aspects/shopping/stores/店舗名.md` に追記する（ファイルがなければ新規作成）
-3. Notion ショッピング DB（`51f39ff99e804451a4f17d60f6869755`）にレコードを作成する
+3. Notion ショッピング DB（`$NOTION_SHOPPING_DB` — `.env.local` に設定）にレコードを作成する
    - `notion-create-pages` で商品名・店舗・価格・URLをプロパティにセット
    - カバー画像に商品画像URLをセット
    - ページ本文にも商品画像を `![]()` で埋め込む

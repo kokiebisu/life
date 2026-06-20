@@ -11,8 +11,6 @@
  */
 
 import { clearAll, listNamespaces, listPersistentNamespaces, CacheNamespace } from "./lib/cache";
-import { existsSync, readdirSync, unlinkSync } from "fs";
-import { join } from "path";
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -33,36 +31,15 @@ function main() {
   const flags = parseArgs();
   const json = flags.has("json");
   const clear = flags.has("clear");
-  const all = flags.has("all");
   const analyze = flags.has("analyze");
 
   if (clear) {
     const count = clearAll();
-    let persistentCount = 0;
-
-    if (all) {
-      // Also clear persistent caches
-      const travelCacheDir = join(import.meta.dir, "lib", "travel-cache");
-      if (existsSync(travelCacheDir)) {
-        try {
-          const files = readdirSync(travelCacheDir);
-          for (const file of files) {
-            try {
-              unlinkSync(join(travelCacheDir, file));
-              persistentCount++;
-            } catch { /* ignore */ }
-          }
-        } catch { /* ignore */ }
-      }
-    }
 
     if (json) {
-      console.log(JSON.stringify({ cleared: count, persistentCleared: persistentCount }));
+      console.log(JSON.stringify({ cleared: count }));
     } else {
       console.log(`Cleared ${count} cache entries from /tmp`);
-      if (all) {
-        console.log(`Cleared ${persistentCount} persistent cache entries`);
-      }
     }
     return;
   }

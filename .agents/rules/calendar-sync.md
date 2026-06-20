@@ -1,14 +1,14 @@
 # Calendar Sync ルール
 
 ## 睡眠（厳守）
-- 目標: 22:00就寝→5:00起床（7h）。理想23:00 / MUST 24:00
-- 24:00以降にタスクを配置しない。就寝遅延時は起床もずらす
+- 目標・制限時刻は `life.config.json` の `calendar.sleep` に従う（デフォルト: 22:00就寝→5:00起床 / 理想23:00 / MUST 24:00 / 7h）
+- `must_bedtime` 以降にタスクを配置しない。就寝遅延時は起床もずらす
 
 ## 食事（厳守）
 - 食事エントリは原則1時間。fridge.md で食材在庫を確認する
 
 ## DB 優先度
-events > todo > routine > meals > groceries
+`life.config.json` の `calendar.db_priority` に従う。デフォルト: `events > todo > routine > meals > groceries`
 
 ## md↔Notion 同期（必須）
 - md を変更したら Notion も更新。逆も同様。片方だけで終わらせない

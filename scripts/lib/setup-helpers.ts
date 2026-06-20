@@ -52,5 +52,15 @@ export function generateLifeConfig(
   for (const name of selectedAspects) {
     aspects[name] = true;
   }
-  return JSON.stringify({ aspects, user }, null, 2) + "\n";
+  const calendar = {
+    db_priority: ["events", "todo", "routine", "meals", "groceries"],
+    sleep: {
+      target_bedtime: "22:00",
+      target_wakeup: "05:00",
+      ideal_bedtime: "23:00",
+      must_bedtime: "24:00",
+      duration_hours: 7,
+    },
+  };
+  return JSON.stringify({ aspects, user, calendar }, null, 2) + "\n";
 }

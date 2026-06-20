@@ -1,0 +1,22 @@
+{
+  "name": "shopping",
+  "description": "買いたいもの・ウィッシュリスト管理",
+  "notion": {
+    "databases": [
+      {
+        "envKey": "NOTION_SHOPPING_DB",
+        "displayName": "ショッピング",
+        "schema": {
+          "名前": "title",
+          "店舗": "select",
+          "価格": "number",
+          "URL": "url"
+        }
+      }
+    ]
+  },
+  "commands": [],
+  "postSetupNotes": [
+    "Notion の「ショッピング」DB に「ステータス (select: 欲しい/購入済み)」プロパティを手動で追加してください"
+  ]
+}
